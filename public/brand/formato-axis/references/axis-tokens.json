@@ -1,0 +1,22 @@
+{
+  "name": "axis-brand-tokens",
+  "source": "Manual de Uso de Marca AXIS 2024 v3",
+  "colors": {
+    "brand": { "blue": "#003399", "orange": "#FF6600", "gray": "#CCCCCC" },
+    "blue_scale": { "50": "#E6ECF7", "100": "#CCD7EE", "600": "#003399", "700": "#002B82", "800": "#00246B" },
+    "orange_scale": { "50": "#FFF0E6", "500": "#FF6600", "600": "#E05A00" },
+    "gray_scale": { "50": "#F7F7F7", "100": "#F2F2F2", "200": "#E6E6E6", "300": "#CCCCCC", "500": "#737373", "700": "#4D4D4D", "900": "#1A1A1A" },
+    "charcoal": "#1E1E1E",
+    "text": { "primary": "#1A1A1A", "secondary": "#4D4D4D", "muted": "#737373", "on_blue": "#FFFFFF", "on_charcoal": "#F2F2F2" },
+    "status": { "success": "#1E8E3E", "warning": "#B26A00", "error": "#C62828", "info": "#003399" }
+  },
+  "typography": {
+    "family": "'Helvetica Neue', Helvetica, Arial, sans-serif",
+    "office_family": "Arial",
+    "weights": { "regular": 400, "bold": 700 },
+    "scale_px": { "xs": 12, "sm": 14, "base": 16, "lg": 20, "xl": 24, "2xl": 32, "3xl": 44, "4xl": 60 }
+  },
+  "radius_px": { "sm": 6, "md": 10, "lg": 16, "block": 24 },
+  "tricolor_band": { "gray": "58%", "blue": "30%", "orange": "12%", "height_px": 6 },
+  "logo": { "min_width_screen_px": 120, "min_width_print_mm": 25, "min_width_print_no_tagline_mm": 15, "clear_space": "≈12% del ancho del logo por lado" }
+}

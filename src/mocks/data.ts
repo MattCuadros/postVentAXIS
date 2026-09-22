@@ -1,0 +1,79 @@
+/**
+ * Datos de prueba para construir el frontend sin backend.
+ * Nombres y obras son ficticios. Se reemplazan por Server Actions en la Etapa 3.
+ */
+import type {
+  Project, Ticket, TicketCategory, TicketStatusHistory, Unit, User, WorkCrew, Zone,
+} from "@/types/domain";
+
+export const zones: Zone[] = [
+  { id: "z-norte", name: "Zona Norte" },
+  { id: "z-centro", name: "Zona Centro" },
+  { id: "z-sur", name: "Zona Sur" },
+];
+
+export const categories: TicketCategory[] = [
+  { id: "c-sanitarias", name: "Sanitarias" },
+  { id: "c-ceramicas", name: "Cerámicas" },
+  { id: "c-ventanas", name: "Ventanas" },
+  { id: "c-techo", name: "Techo" },
+  { id: "c-pintura", name: "Pintura" },
+  { id: "c-puertas", name: "Puertas" },
+  { id: "c-pisos", name: "Pisos" },
+];
+
+export const users: User[] = [
+  { id: "u-admin", name: "Carolina Fuentes", email: "admin@demo.cl", phone: "+56 9 1111 1111", role: "ADMIN", zoneIds: [], active: true },
+  { id: "u-enc-centro", name: "Rodrigo Pérez", email: "rperez@demo.cl", phone: "+56 9 2222 2222", role: "ENCARGADO", zoneIds: ["z-centro"], active: true },
+  { id: "u-enc-sur", name: "Valentina Rojas", email: "vrojas@demo.cl", phone: "+56 9 3333 3333", role: "ENCARGADO", zoneIds: ["z-sur", "z-norte"], active: true },
+  { id: "u-prop-1", name: "Andrés Muñoz", email: "amunoz@correo.cl", phone: "+56 9 4444 4444", role: "PROPIETARIO", zoneIds: [], active: true },
+  { id: "u-prop-2", name: "Francisca Soto", email: "fsoto@correo.cl", phone: "+56 9 5555 5555", role: "PROPIETARIO", zoneIds: [], active: true },
+];
+
+export const projects: Project[] = [
+  { id: "p-mirador", name: "Edificio Mirador Central", zoneId: "z-centro", address: "Av. Ejemplo 1234", commune: "Santiago", location: { lat: -33.4489, lng: -70.6693 } },
+  { id: "p-bosque", name: "Condominio Los Robles", zoneId: "z-sur", address: "Camino Demo 567", commune: "Puerto Montt", location: { lat: -41.4693, lng: -72.9424 } },
+];
+
+export const units: Unit[] = [
+  { id: "un-1", projectId: "p-mirador", type: "DEPARTAMENTO", tower: "A", floor: 7, number: "704", ownerId: "u-prop-1", deliveryDate: "2026-03-15" },
+  { id: "un-2", projectId: "p-bosque", type: "CASA", tower: null, floor: null, number: "12", ownerId: "u-prop-2", deliveryDate: "2025-11-02" },
+];
+
+export const crews: WorkCrew[] = [
+  { id: "w-int-centro", name: "Cuadrilla Postventa Centro", type: "INTERNO", contactName: "Jaime Lagos", phone: "+56 9 6666 6666", zoneId: "z-centro" },
+  { id: "w-sub-ventanas", name: "Ventanas del Pacífico Ltda.", type: "SUBCONTRATO", contactName: "Marcela Vidal", phone: "+56 9 7777 7777", zoneId: "z-centro" },
+  { id: "w-int-sur", name: "Cuadrilla Postventa Sur", type: "INTERNO", contactName: "Pablo Cárdenas", phone: "+56 9 8888 8888", zoneId: "z-sur" },
+];
+
+export const tickets: Ticket[] = [
+  {
+    id: "t-1", folio: "PV-000101", unitId: "un-1", categoryId: "c-sanitarias", room: "Baño principal",
+    description: "Filtración bajo el lavamanos, se moja el mueble.", status: "PROGRAMADO",
+    photos: [], location: null, createdById: "u-prop-1", encargadoId: "u-enc-centro", crewId: "w-int-centro",
+    visitDate: "2026-09-10", scheduledDate: "2026-09-25", rejectionReason: null,
+    createdAt: "2026-09-02T10:15:00Z", updatedAt: "2026-09-12T16:40:00Z",
+  },
+  {
+    id: "t-2", folio: "PV-000102", unitId: "un-1", categoryId: "c-ventanas", room: "Living",
+    description: "La ventana corredera no cierra completamente.", status: "EN_RECEPCION",
+    photos: [], location: null, createdById: "u-prop-1", encargadoId: "u-enc-centro", crewId: "w-sub-ventanas",
+    visitDate: "2026-08-20", scheduledDate: "2026-09-05", rejectionReason: null,
+    createdAt: "2026-08-14T09:00:00Z", updatedAt: "2026-09-18T12:00:00Z",
+  },
+  {
+    id: "t-3", folio: "PV-000103", unitId: "un-2", categoryId: "c-pintura", room: "Dormitorio 2",
+    description: "Pintura descascarada en muro exterior del dormitorio.", status: "INGRESADO",
+    photos: [], location: { lat: -41.4695, lng: -72.9421 }, createdById: "u-prop-2", encargadoId: null, crewId: null,
+    visitDate: null, scheduledDate: null, rejectionReason: null,
+    createdAt: "2026-09-21T18:30:00Z", updatedAt: "2026-09-21T18:30:00Z",
+  },
+];
+
+export const statusHistory: TicketStatusHistory[] = [
+  { id: "h-1", ticketId: "t-1", from: null, to: "INGRESADO", changedById: "u-prop-1", comment: null, createdAt: "2026-09-02T10:15:00Z" },
+  { id: "h-2", ticketId: "t-1", from: "INGRESADO", to: "EN_REVISION", changedById: "u-enc-centro", comment: null, createdAt: "2026-09-03T08:30:00Z" },
+  { id: "h-3", ticketId: "t-1", from: "EN_REVISION", to: "ASIGNADO", changedById: "u-enc-centro", comment: "Cuadrilla interna.", createdAt: "2026-09-03T09:00:00Z" },
+  { id: "h-4", ticketId: "t-1", from: "ASIGNADO", to: "VISITA_INSPECTIVA", changedById: "u-enc-centro", comment: "Sifón mal sellado.", createdAt: "2026-09-10T11:20:00Z" },
+  { id: "h-5", ticketId: "t-1", from: "VISITA_INSPECTIVA", to: "PROGRAMADO", changedById: "u-enc-centro", comment: "Coordinado con propietario.", createdAt: "2026-09-12T16:40:00Z" },
+];

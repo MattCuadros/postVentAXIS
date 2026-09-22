@@ -1,0 +1,42 @@
+/* Tokens Axis — Manual de Marca 2024 v3 */
+:root {
+  --axis-blue: #003399;
+  --axis-blue-700: #002B82;
+  --axis-blue-50: #E6ECF7;
+  --axis-orange: #FF6600;
+  --axis-orange-50: #FFF0E6;
+  --axis-gray: #CCCCCC;
+  --axis-gray-100: #F2F2F2;
+  --axis-charcoal: #1E1E1E;
+
+  --text-primary: #1A1A1A;
+  --text-secondary: #4D4D4D;
+  --text-muted: #737373;
+
+  --success: #1E8E3E;
+  --warning: #B26A00;
+  --error: #C62828;
+
+  --font: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+}
+
+/* Huincha tricolor corporativa */
+.axis-band {
+  height: 6px;
+  background: linear-gradient(to right,
+    var(--axis-gray) 0 58%,
+    var(--axis-blue) 58% 88%,
+    var(--axis-orange) 88% 100%);
+}
+
+/* Bloque "Construimos cambios" en texto real */
+.axis-tagline {
+  border-left: 4px solid var(--axis-orange);
+  padding-left: 12px;
+  font: 700 14px/1.3 var(--font);
+  color: var(--axis-blue);
+}
+.axis-tagline strong { color: var(--axis-orange); }
