@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, type ReactNode } from "react";
+import { useEffect, useId, useRef, type ReactNode } from "react";
 import { cn } from "@/lib/cn";
 
 export interface DialogProps {
@@ -12,6 +12,7 @@ export interface DialogProps {
 
 export function Dialog({ open, onClose, title, children }: DialogProps) {
   const dialogRef = useRef<HTMLDialogElement>(null);
+  const titleId = useId();
 
   useEffect(() => {
     const dialog = dialogRef.current;
@@ -24,7 +25,7 @@ export function Dialog({ open, onClose, title, children }: DialogProps) {
   return (
     <dialog
       ref={dialogRef}
-      aria-labelledby={title ? "dialog-title" : undefined}
+      aria-labelledby={title ? titleId : undefined}
       className={cn("m-auto w-[calc(100%-2rem)] max-w-lg rounded-lg bg-surface p-0 text-ink shadow-raised")}
       onCancel={(event) => {
         event.preventDefault();
@@ -36,7 +37,7 @@ export function Dialog({ open, onClose, title, children }: DialogProps) {
         <button aria-label="Cerrar diálogo" className="absolute right-4 top-4 inline-flex h-9 w-9 items-center justify-center rounded-md text-ink-secondary transition-colors hover:bg-surface-secondary hover:text-ink focus-visible:ring-2 focus-visible:ring-accent" type="button" onClick={onClose}>
           <span aria-hidden="true" className="text-2xl leading-none">×</span>
         </button>
-        {title && <h2 id="dialog-title" className="pr-10 text-xl">{title}</h2>}
+        {title && <h2 id={titleId} className="pr-10 text-xl">{title}</h2>}
         <div className={cn(title && "mt-5")}>{children}</div>
       </div>
     </dialog>
