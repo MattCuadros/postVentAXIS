@@ -22,6 +22,25 @@ const SIZES: Record<Size, string> = {
   lg: "h-12 px-7 text-base",
 };
 
+interface ButtonStyleOptions {
+  variant?: Variant;
+  size?: Size;
+  fullWidth?: boolean;
+  className?: string;
+}
+
+/** Clases del botón, para dar el mismo aspecto a un `<Link>`. */
+export function buttonClassName({ variant = "primary", size = "md", fullWidth = false, className }: ButtonStyleOptions = {}): string {
+  return cn(
+    "inline-flex items-center justify-center gap-2 rounded-md font-bold transition-colors",
+    "disabled:cursor-not-allowed disabled:opacity-40",
+    VARIANTS[variant],
+    SIZES[size],
+    fullWidth && "w-full",
+    className,
+  );
+}
+
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button(
   { variant = "primary", size = "md", fullWidth = false, className, type = "button", ...props },
   ref,
@@ -30,14 +49,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
     <button
       ref={ref}
       type={type}
-      className={cn(
-        "inline-flex items-center justify-center gap-2 rounded-md font-bold transition-colors",
-        "disabled:cursor-not-allowed disabled:opacity-40",
-        VARIANTS[variant],
-        SIZES[size],
-        fullWidth && "w-full",
-        className,
-      )}
+      className={buttonClassName({ variant, size, fullWidth, className })}
       {...props}
     />
   );

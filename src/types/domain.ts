@@ -94,8 +94,6 @@ export interface Ticket {
   description: string;
   status: TicketStatus;
   photos: TicketPhoto[];
-  /** GPS capturado al ingresar (opcional). */
-  location: GeoPoint | null;
   createdById: string;
   encargadoId: string | null;
   crewId: string | null;

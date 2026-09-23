@@ -44,7 +44,7 @@ export const initialState: DataState = {
 };
 
 export type DataAction =
-  | { type: "CREATE_TICKET"; ticket: Ticket }
+  | { type: "CREATE_TICKET"; ticket: Ticket; historyId: string }
   | {
       type: "TRANSITION_TICKET";
       ticketId: string;
@@ -61,8 +61,23 @@ export type DataAction =
 
 export function reducer(state: DataState, action: DataAction): DataState {
   switch (action.type) {
-    case "CREATE_TICKET":
-      return { ...state, tickets: [...state.tickets, action.ticket] };
+    case "CREATE_TICKET": {
+      const historyEntry: TicketStatusHistory = {
+        id: action.historyId,
+        ticketId: action.ticket.id,
+        from: null,
+        to: action.ticket.status,
+        changedById: action.ticket.createdById,
+        comment: null,
+        createdAt: action.ticket.createdAt,
+      };
+
+      return {
+        ...state,
+        tickets: [...state.tickets, action.ticket],
+        statusHistory: [...state.statusHistory, historyEntry],
+      };
+    }
 
     case "TRANSITION_TICKET": {
       const ticket = state.tickets.find(({ id }) => id === action.ticketId);

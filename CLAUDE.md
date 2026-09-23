@@ -27,12 +27,12 @@ Store en memoria por `Context + useReducer`, sembrado desde `src/mocks/data.ts`:
 - `store.ts` — estado + reducer puro (sin efectos secundarios).
 - `store-context.tsx` — `DataProvider` (envuelve la app en `src/app/layout.tsx`).
 - `api.ts` — funciones async (`getTickets`, `getTicket`, `createTicket`, `transitionTicket`, etc.) que envuelven `dispatch` con una latencia simulada corta (`src/lib/delay.ts`) y devuelven la entidad ya resuelta (el `id`/`folio` se genera antes de despachar, no se re-lee del estado tras el dispatch).
-- `session-context.tsx` — usuario actual simulado, persistido en cookie `pv_user_id` para que `src/middleware.ts` pueda leerla server-side.
+- `session-context.tsx` — usuario actual simulado, persistido en cookie `pv_user_id` para que `src/proxy.ts` (el "middleware" de Next 16) pueda leerla server-side.
 
 ## Sesión y roles
 
 - `/login`: selector de usuario mock (propietario, encargado o admin) → guarda cookie de sesión → redirige a la home de su rol.
-- `src/middleware.ts` redirige según la cookie: sin sesión → `/login`; con sesión, cada rol solo accede a su propio route group (`(propietario)`, `(encargado)`, `(admin)`).
+- `src/proxy.ts` (el "middleware" de Next 16) redirige según la cookie: sin sesión → `/login`; con sesión, cada rol solo accede a su propio route group (`(propietario)`, `(encargado)`, `(admin)`).
 - Conmutador de usuario visible solo en desarrollo (`process.env.NODE_ENV === "development"`), en el header de cada layout por rol.
 
 ## Convenciones de componentes
@@ -44,3 +44,13 @@ Store en memoria por `Context + useReducer`, sembrado desde `src/mocks/data.ts`:
 ## Verificación
 
 Tras cada fase: `npx tsc --noEmit` y `npm run lint`. Antes de dar una fase por cerrada, correr `npm run build`.
+
+<!-- BEGIN:nextjs-agent-rules -->
+
+# This is NOT the Next.js you know
+
+This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` (resolved from this file's directory; in monorepos the `next` package may not be visible from the repo root) before writing any code. Heed deprecation notices.
+
+This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
+
+<!-- END:nextjs-agent-rules -->

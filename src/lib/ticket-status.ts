@@ -13,6 +13,11 @@ export const STATUS_LABEL: Record<TicketStatus, string> = {
   NO_PROCEDE: "No procede",
 };
 
+/** Etiquetas en segunda persona para la vista del propietario. */
+export const OWNER_STATUS_LABEL: Partial<Record<TicketStatus, string>> = {
+  EN_RECEPCION: "Esperando tu conformidad",
+};
+
 /** Camino principal, usado por la línea de tiempo. */
 export const MAIN_FLOW: TicketStatus[] = [
   "INGRESADO",
@@ -77,6 +82,11 @@ export function availableTransitions(status: TicketStatus, role: Role): Transiti
 
 export function canTransition(from: TicketStatus, to: TicketStatus, role: Role): boolean {
   return availableTransitions(from, role).some((t) => t.to === to);
+}
+
+/** El propietario tiene una acción pendiente sobre el ticket (hoy: dar su conformidad). */
+export function requiresOwnerAction(status: TicketStatus): boolean {
+  return availableTransitions(status, "PROPIETARIO").length > 0;
 }
 
 export function isClosed(status: TicketStatus): boolean {

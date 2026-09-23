@@ -10,7 +10,14 @@ const TONES: Record<StatusTone, string> = {
   danger: "bg-danger/10 text-danger",
 };
 
-export function StatusBadge({ status, className }: { status: TicketStatus; className?: string }) {
+interface StatusBadgeProps {
+  status: TicketStatus;
+  /** Reemplaza la etiqueta estándar, ej. "Esperando tu conformidad" para el propietario. */
+  label?: string;
+  className?: string;
+}
+
+export function StatusBadge({ status, label, className }: StatusBadgeProps) {
   return (
     <span
       className={cn(
@@ -19,7 +26,7 @@ export function StatusBadge({ status, className }: { status: TicketStatus; class
         className,
       )}
     >
-      {STATUS_LABEL[status]}
+      {label ?? STATUS_LABEL[status]}
     </span>
   );
 }

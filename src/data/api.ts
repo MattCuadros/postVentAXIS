@@ -8,6 +8,7 @@ import type {
   Project,
   Ticket,
   TicketStatus,
+  TicketStatusHistory,
   Unit,
   User,
   WorkCrew,
@@ -36,6 +37,21 @@ export function useDataApi() {
     return state.tickets.find((ticket) => ticket.id === id);
   }, [state.tickets]);
 
+  const getTicketsByOwner = useCallback(async (ownerId: string): Promise<Ticket[]> => {
+    await simulatedLatency();
+    const unitIds = new Set(state.units.filter((unit) => unit.ownerId === ownerId).map((unit) => unit.id));
+    return state.tickets
+      .filter((ticket) => unitIds.has(ticket.unitId))
+      .toSorted((a, b) => b.createdAt.localeCompare(a.createdAt));
+  }, [state.tickets, state.units]);
+
+  const getTicketHistory = useCallback(async (ticketId: string): Promise<TicketStatusHistory[]> => {
+    await simulatedLatency();
+    return state.statusHistory
+      .filter((entry) => entry.ticketId === ticketId)
+      .toSorted((a, b) => a.createdAt.localeCompare(b.createdAt));
+  }, [state.statusHistory]);
+
   const createTicket = useCallback(async (input: CreateTicketInput): Promise<Ticket> => {
     await simulatedLatency();
     const now = new Date().toISOString();
@@ -48,7 +64,7 @@ export function useDataApi() {
       updatedAt: now,
     };
 
-    dispatch({ type: "CREATE_TICKET", ticket });
+    dispatch({ type: "CREATE_TICKET", ticket, historyId: crypto.randomUUID() });
     return ticket;
   }, [dispatch, state.tickets]);
 
@@ -149,6 +165,8 @@ export function useDataApi() {
   return useMemo(() => ({
     getTickets,
     getTicket,
+    getTicketsByOwner,
+    getTicketHistory,
     createTicket,
     transitionTicket,
     getUnitsByOwner,
@@ -174,7 +192,9 @@ export function useDataApi() {
     getCrewsByZone,
     getProjects,
     getTicket,
+    getTicketHistory,
     getTickets,
+    getTicketsByOwner,
     getUnits,
     getUnitsByOwner,
     getUsers,
