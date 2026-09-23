@@ -1,12 +1,14 @@
 "use client";
 
 import { useCallback, useMemo } from "react";
+import { applyTransition } from "@/data/store";
 import { useDataContext } from "@/data/store-context";
 import { delay } from "@/lib/delay";
 import { nextFolio } from "@/lib/folio";
 import type {
   Project,
   Ticket,
+  TicketChanges,
   TicketStatus,
   TicketStatusHistory,
   Unit,
@@ -45,6 +47,16 @@ export function useDataApi() {
       .toSorted((a, b) => b.createdAt.localeCompare(a.createdAt));
   }, [state.tickets, state.units]);
 
+  /** Tickets de las obras ubicadas en las zonas indicadas (bandeja del encargado). */
+  const getTicketsByZones = useCallback(async (zoneIds: string[]): Promise<Ticket[]> => {
+    await simulatedLatency();
+    const projectIds = new Set(state.projects.filter((project) => zoneIds.includes(project.zoneId)).map((project) => project.id));
+    const unitIds = new Set(state.units.filter((unit) => projectIds.has(unit.projectId)).map((unit) => unit.id));
+    return state.tickets
+      .filter((ticket) => unitIds.has(ticket.unitId))
+      .toSorted((a, b) => b.createdAt.localeCompare(a.createdAt));
+  }, [state.projects, state.tickets, state.units]);
+
   const getTicketHistory = useCallback(async (ticketId: string): Promise<TicketStatusHistory[]> => {
     await simulatedLatency();
     return state.statusHistory
@@ -73,6 +85,7 @@ export function useDataApi() {
     to: TicketStatus,
     changedById: string,
     comment?: string,
+    changes?: TicketChanges,
   ): Promise<Ticket> => {
     await simulatedLatency();
     const existingTicket = state.tickets.find((ticket) => ticket.id === ticketId);
@@ -87,11 +100,12 @@ export function useDataApi() {
       to,
       changedById,
       comment,
+      changes,
       changedAt,
       historyId: crypto.randomUUID(),
     });
 
-    return { ...existingTicket, status: to, updatedAt: changedAt };
+    return applyTransition(existingTicket, to, changedAt, changes);
   }, [dispatch, state.tickets]);
 
   const getUnitsByOwner = useCallback(async (ownerId: string): Promise<Unit[]> => {
@@ -166,6 +180,7 @@ export function useDataApi() {
     getTickets,
     getTicket,
     getTicketsByOwner,
+    getTicketsByZones,
     getTicketHistory,
     createTicket,
     transitionTicket,
@@ -195,6 +210,7 @@ export function useDataApi() {
     getTicketHistory,
     getTickets,
     getTicketsByOwner,
+    getTicketsByZones,
     getUnits,
     getUnitsByOwner,
     getUsers,

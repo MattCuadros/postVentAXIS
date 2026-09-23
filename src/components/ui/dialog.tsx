@@ -26,7 +26,7 @@ export function Dialog({ open, onClose, title, children }: DialogProps) {
     <dialog
       ref={dialogRef}
       aria-labelledby={title ? titleId : undefined}
-      className={cn("m-auto w-[calc(100%-2rem)] max-w-lg rounded-lg bg-surface p-0 text-ink shadow-raised")}
+      className={cn("m-auto max-h-[calc(100dvh-2rem)] w-[calc(100%-2rem)] max-w-lg overflow-y-auto rounded-lg bg-surface p-0 text-ink shadow-raised")}
       onCancel={(event) => {
         event.preventDefault();
         onClose();

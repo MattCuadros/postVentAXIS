@@ -12,6 +12,7 @@ import {
 import type {
   Project,
   Ticket,
+  TicketChanges,
   TicketStatus,
   TicketStatusHistory,
   Unit,
@@ -51,6 +52,7 @@ export type DataAction =
       to: TicketStatus;
       changedById: string;
       comment?: string;
+      changes?: TicketChanges;
       changedAt: string;
       historyId: string;
     }
@@ -58,6 +60,18 @@ export type DataAction =
   | { type: "CREATE_UNIT"; unit: Unit }
   | { type: "CREATE_CREW"; crew: WorkCrew }
   | { type: "CREATE_USER"; user: User };
+
+/** Ticket resultante de una transición; lo usan el reducer y `api.ts` para devolver la entidad resuelta. */
+export function applyTransition(ticket: Ticket, to: TicketStatus, changedAt: string, changes: TicketChanges = {}): Ticket {
+  const { photos, ...fields } = changes;
+  return {
+    ...ticket,
+    ...fields,
+    photos: photos ? [...ticket.photos, ...photos] : ticket.photos,
+    status: to,
+    updatedAt: changedAt,
+  };
+}
 
 export function reducer(state: DataState, action: DataAction): DataState {
   switch (action.type) {
@@ -107,9 +121,7 @@ export function reducer(state: DataState, action: DataAction): DataState {
       return {
         ...state,
         tickets: state.tickets.map((item) =>
-          item.id === ticket.id
-            ? { ...item, status: action.to, updatedAt: action.changedAt }
-            : item,
+          item.id === ticket.id ? applyTransition(item, action.to, action.changedAt, action.changes) : item,
         ),
         statusHistory: [...state.statusHistory, historyEntry],
       };

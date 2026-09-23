@@ -66,7 +66,11 @@ export const TRANSITIONS: Record<TicketStatus, Transition[]> = {
     { to: "PROGRAMADO", roles: STAFF, action: "Programar trabajo", requiresComment: false },
     { to: "NO_PROCEDE", roles: STAFF, action: "Marcar como no procede", requiresComment: true },
   ],
-  PROGRAMADO: [{ to: "EN_EJECUCION", roles: STAFF, action: "Iniciar trabajo", requiresComment: false }],
+  PROGRAMADO: [
+    { to: "EN_EJECUCION", roles: STAFF, action: "Iniciar trabajo", requiresComment: false },
+    // Cambiar la fecha (ej. tras un "No estoy conforme", que devuelve el ticket aquí con la fecha anterior).
+    { to: "PROGRAMADO", roles: STAFF, action: "Reprogramar", requiresComment: false },
+  ],
   EN_EJECUCION: [{ to: "EN_RECEPCION", roles: STAFF, action: "Solicitar recepción", requiresComment: false }],
   EN_RECEPCION: [
     { to: "CERRADO", roles: ["PROPIETARIO"], action: "Recibir conforme", requiresComment: false },

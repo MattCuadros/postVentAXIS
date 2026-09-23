@@ -9,7 +9,7 @@ import { StatusTimeline } from "@/components/ui/status-timeline";
 import { useDataApi } from "@/data/api";
 import { useSession } from "@/data/session-context";
 import { useQuery } from "@/data/use-query";
-import { formatLongDate, unitLabel } from "@/lib/format";
+import { formatLongDate, todayIso, unitLabel } from "@/lib/format";
 import { OWNER_STATUS_LABEL, type Transition } from "@/lib/ticket-status";
 import type { Ticket } from "@/types/domain";
 
@@ -135,7 +135,7 @@ export function OwnerTicketDetail({ ticketId, justCreated }: OwnerTicketDetailPr
 
 /** Fecha (YYYY-MM-DD) de hoy o futura: una fecha pasada ya no sirve de aviso (ej. tras "No estoy conforme"). */
 function isUpcoming(date: string): boolean {
-  return date.slice(0, 10) >= new Date().toLocaleDateString("sv-SE");
+  return date.slice(0, 10) >= todayIso();
 }
 
 function ScheduleInfo({ ticket, crewName }: { ticket: Ticket; crewName?: string }) {

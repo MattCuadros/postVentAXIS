@@ -105,6 +105,17 @@ export interface Ticket {
   updatedAt: string;
 }
 
+/** Datos que una transición puede registrar además del cambio de estado. */
+export interface TicketChanges {
+  encargadoId?: string;
+  crewId?: string;
+  visitDate?: string;
+  scheduledDate?: string;
+  rejectionReason?: string;
+  /** Fotos de terreno: se agregan a las existentes. */
+  photos?: TicketPhoto[];
+}
+
 export interface TicketStatusHistory {
   id: string;
   ticketId: string;

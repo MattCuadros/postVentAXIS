@@ -28,6 +28,8 @@ export const users: User[] = [
   { id: "u-enc-sur", name: "Valentina Rojas", email: "vrojas@demo.cl", phone: "+56 9 3333 3333", role: "ENCARGADO", zoneIds: ["z-sur", "z-norte"], active: true },
   { id: "u-prop-1", name: "Andrés Muñoz", email: "amunoz@correo.cl", phone: "+56 9 4444 4444", role: "PROPIETARIO", zoneIds: [], active: true },
   { id: "u-prop-2", name: "Francisca Soto", email: "fsoto@correo.cl", phone: "+56 9 5555 5555", role: "PROPIETARIO", zoneIds: [], active: true },
+  { id: "u-prop-3", name: "Tomás Herrera", email: "therrera@correo.cl", phone: "+56 9 5656 5656", role: "PROPIETARIO", zoneIds: [], active: true },
+  { id: "u-prop-4", name: "Camila Reyes", email: "creyes@correo.cl", phone: "+56 9 5757 5757", role: "PROPIETARIO", zoneIds: [], active: true },
 ];
 
 export const projects: Project[] = [
@@ -38,6 +40,8 @@ export const projects: Project[] = [
 export const units: Unit[] = [
   { id: "un-1", projectId: "p-mirador", type: "DEPARTAMENTO", tower: "A", floor: 7, number: "704", ownerId: "u-prop-1", deliveryDate: "2026-03-15" },
   { id: "un-2", projectId: "p-bosque", type: "CASA", tower: null, floor: null, number: "12", ownerId: "u-prop-2", deliveryDate: "2025-11-02" },
+  { id: "un-3", projectId: "p-mirador", type: "DEPARTAMENTO", tower: "B", floor: 3, number: "302", ownerId: "u-prop-3", deliveryDate: "2026-03-15" },
+  { id: "un-4", projectId: "p-mirador", type: "DEPARTAMENTO", tower: "C", floor: 1, number: "105", ownerId: "u-prop-4", deliveryDate: "2026-04-10" },
 ];
 
 export const crews: WorkCrew[] = [
@@ -68,6 +72,27 @@ export const tickets: Ticket[] = [
     visitDate: null, scheduledDate: null, rejectionReason: null,
     createdAt: "2026-09-21T18:30:00Z", updatedAt: "2026-09-21T18:30:00Z",
   },
+  {
+    id: "t-4", folio: "PV-000104", unitId: "un-3", categoryId: "c-sanitarias", room: "Cocina",
+    description: "Gotea la llave del lavaplatos aunque esté cerrada.", status: "EN_REVISION",
+    photos: [], createdById: "u-prop-3", encargadoId: "u-enc-centro", crewId: null,
+    visitDate: null, scheduledDate: null, rejectionReason: null,
+    createdAt: "2026-09-21T13:10:00Z", updatedAt: "2026-09-22T09:00:00Z",
+  },
+  {
+    id: "t-5", folio: "PV-000105", unitId: "un-4", categoryId: "c-ceramicas", room: "Baño principal",
+    description: "Cerámica del piso de la ducha suelta y con fisura.", status: "ASIGNADO",
+    photos: [], createdById: "u-prop-4", encargadoId: "u-enc-centro", crewId: "w-int-centro",
+    visitDate: null, scheduledDate: null, rejectionReason: null,
+    createdAt: "2026-09-17T20:45:00Z", updatedAt: "2026-09-19T10:00:00Z",
+  },
+  {
+    id: "t-6", folio: "PV-000106", unitId: "un-3", categoryId: "c-puertas", room: "Dormitorio principal",
+    description: "La puerta roza el piso y cuesta cerrarla.", status: "CERRADO",
+    photos: [], createdById: "u-prop-3", encargadoId: "u-enc-centro", crewId: "w-int-centro",
+    visitDate: "2026-08-25", scheduledDate: "2026-09-01", rejectionReason: null,
+    createdAt: "2026-08-20T11:00:00Z", updatedAt: "2026-09-08T17:00:00Z",
+  },
 ];
 
 export const statusHistory: TicketStatusHistory[] = [
@@ -84,4 +109,17 @@ export const statusHistory: TicketStatusHistory[] = [
   { id: "h-11", ticketId: "t-2", from: "PROGRAMADO", to: "EN_EJECUCION", changedById: "u-enc-centro", comment: null, createdAt: "2026-09-05T08:30:00Z" },
   { id: "h-12", ticketId: "t-2", from: "EN_EJECUCION", to: "EN_RECEPCION", changedById: "u-enc-centro", comment: "Riel cambiado y regulado.", createdAt: "2026-09-18T12:00:00Z" },
   { id: "h-13", ticketId: "t-3", from: null, to: "INGRESADO", changedById: "u-prop-2", comment: null, createdAt: "2026-09-21T18:30:00Z" },
+  { id: "h-14", ticketId: "t-4", from: null, to: "INGRESADO", changedById: "u-prop-3", comment: null, createdAt: "2026-09-21T13:10:00Z" },
+  { id: "h-15", ticketId: "t-4", from: "INGRESADO", to: "EN_REVISION", changedById: "u-enc-centro", comment: null, createdAt: "2026-09-22T09:00:00Z" },
+  { id: "h-16", ticketId: "t-5", from: null, to: "INGRESADO", changedById: "u-prop-4", comment: null, createdAt: "2026-09-17T20:45:00Z" },
+  { id: "h-17", ticketId: "t-5", from: "INGRESADO", to: "EN_REVISION", changedById: "u-enc-centro", comment: null, createdAt: "2026-09-18T08:40:00Z" },
+  { id: "h-18", ticketId: "t-5", from: "EN_REVISION", to: "ASIGNADO", changedById: "u-enc-centro", comment: null, createdAt: "2026-09-19T10:00:00Z" },
+  { id: "h-19", ticketId: "t-6", from: null, to: "INGRESADO", changedById: "u-prop-3", comment: null, createdAt: "2026-08-20T11:00:00Z" },
+  { id: "h-20", ticketId: "t-6", from: "INGRESADO", to: "EN_REVISION", changedById: "u-enc-centro", comment: null, createdAt: "2026-08-21T09:00:00Z" },
+  { id: "h-21", ticketId: "t-6", from: "EN_REVISION", to: "ASIGNADO", changedById: "u-enc-centro", comment: null, createdAt: "2026-08-21T09:30:00Z" },
+  { id: "h-22", ticketId: "t-6", from: "ASIGNADO", to: "VISITA_INSPECTIVA", changedById: "u-enc-centro", comment: "Bisagras descolgadas, requiere cepillar la hoja.", createdAt: "2026-08-25T15:00:00Z" },
+  { id: "h-23", ticketId: "t-6", from: "VISITA_INSPECTIVA", to: "PROGRAMADO", changedById: "u-enc-centro", comment: null, createdAt: "2026-08-26T10:00:00Z" },
+  { id: "h-24", ticketId: "t-6", from: "PROGRAMADO", to: "EN_EJECUCION", changedById: "u-enc-centro", comment: null, createdAt: "2026-09-01T09:00:00Z" },
+  { id: "h-25", ticketId: "t-6", from: "EN_EJECUCION", to: "EN_RECEPCION", changedById: "u-enc-centro", comment: "Puerta cepillada y bisagras reguladas.", createdAt: "2026-09-01T16:00:00Z" },
+  { id: "h-26", ticketId: "t-6", from: "EN_RECEPCION", to: "CERRADO", changedById: "u-prop-3", comment: null, createdAt: "2026-09-08T17:00:00Z" },
 ];
