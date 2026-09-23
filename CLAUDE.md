@@ -54,3 +54,12 @@ This version has breaking changes — APIs, conventions, and file structure may 
 This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
 
 <!-- END:nextjs-agent-rules -->
+
+## Flujo de trabajo
+
+- **Codex (OpenAI) implementa; Claude planifica y revisa.** Claude arma el encargo (contexto, archivos, criterios de aceptación), lo delega a Codex, revisa el diff, corre `tsc`/`lint`/`build`, prueba en el navegador y reporta. Claude no implementa las fases directamente.
+
+## Persistencia local (sin backend)
+
+- `src/data/persistence.ts` guarda el estado completo en `localStorage` (`postventaxis:datos`, versionado). `DataProvider` lo carga al montar, guarda en cada cambio y sincroniza entre pestañas. "Restablecer datos de ejemplo" (menú de usuario) vuelve a `createSeedState()`.
+- La sesión usa dos cookies: `pv_user_id` y `pv_role`. `src/proxy.ts` rutea solo por rol; el cliente valida que el usuario exista y esté activo.

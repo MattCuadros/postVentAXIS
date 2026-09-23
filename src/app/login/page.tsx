@@ -1,13 +1,15 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { useState } from "react";
 import { AxisBand } from "@/components/brand/axis-band";
 import { AxisLogo } from "@/components/brand/axis-logo";
 import { Tagline } from "@/components/brand/tagline";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import { useSession } from "@/data/session-context";
-import { users } from "@/mocks/data";
+import { useDataContext } from "@/data/store-context";
 import type { Role } from "@/types/domain";
 
 const ROLE_DETAILS: Record<Role, { label: string; home: string }> = {
@@ -21,6 +23,12 @@ const ROLES: Role[] = ["PROPIETARIO", "ENCARGADO", "ADMIN"];
 export default function LoginPage() {
   const router = useRouter();
   const { setUser } = useSession();
+  const { state } = useDataContext();
+  const [search, setSearch] = useState("");
+  const term = search.trim().toLocaleLowerCase("es");
+  const users = state.users.filter(
+    (user) => user.active && (!term || `${user.name} ${user.email}`.toLocaleLowerCase("es").includes(term)),
+  );
 
   function handleUserSelect(userId: string, role: Role) {
     setUser(userId);
@@ -40,9 +48,14 @@ export default function LoginPage() {
 
         <Card className="border border-line-soft p-5 sm:p-6">
           <h2 className="text-lg font-bold text-accent">Ingresar como</h2>
+          <div className="mt-4">
+            <Input label="Buscar usuario" name="login-search" type="search" placeholder="Nombre o correo" value={search} onChange={(event) => setSearch(event.target.value)} />
+          </div>
           <div className="mt-5 space-y-6">
+            {users.length === 0 && <p className="text-sm text-ink-secondary">Ningún usuario activo coincide con la búsqueda.</p>}
             {ROLES.map((role) => {
               const roleUsers = users.filter((user) => user.role === role);
+              if (roleUsers.length === 0) return null;
               return (
                 <section key={role} aria-labelledby={`role-${role}`}>
                   <h3 id={`role-${role}`} className="text-sm font-bold text-ink-secondary">

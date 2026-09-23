@@ -1,5 +1,5 @@
-import { EncargadoInbox } from "@/components/tickets/encargado-inbox";
+import { StaffInbox } from "@/components/tickets/staff-inbox";
 
 export default function BandejaEncargadoPage() {
-  return <EncargadoInbox />;
+  return <StaffInbox basePath="/encargado/tickets" />;
 }

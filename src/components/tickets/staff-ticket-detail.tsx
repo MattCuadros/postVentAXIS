@@ -9,6 +9,7 @@ import { useDataApi } from "@/data/api";
 import { useSession } from "@/data/session-context";
 import { useQuery } from "@/data/use-query";
 import { daysOpen, formatLongDate, unitLabel } from "@/lib/format";
+import { mapsUrl } from "@/lib/geo";
 import { STATUS_LABEL, type Transition } from "@/lib/ticket-status";
 import type { Ticket, TicketPhoto, TicketStatusHistory } from "@/types/domain";
 
@@ -28,7 +29,13 @@ function ownerRejection(history: TicketStatusHistory[]): TicketStatusHistory | u
   return last?.from === "EN_RECEPCION" && last.to === "PROGRAMADO" ? last : undefined;
 }
 
-export function EncargadoTicketDetail({ ticketId }: { ticketId: string }) {
+interface StaffTicketDetailProps {
+  ticketId: string;
+  /** Vuelta a la bandeja del rol, ej. "/encargado". */
+  backHref: string;
+}
+
+export function StaffTicketDetail({ ticketId, backHref }: StaffTicketDetailProps) {
   const { user } = useSession();
   const api = useDataApi();
   const [notice, setNotice] = useState<string | null>(null);
@@ -55,7 +62,7 @@ export function EncargadoTicketDetail({ ticketId }: { ticketId: string }) {
     return (
       <div className="mx-auto mt-6 w-full max-w-lg rounded-lg border border-line-soft bg-surface p-6 text-center">
         <p className="font-bold text-ink">No encontramos este requerimiento en tus zonas</p>
-        <Link href="/encargado" className="mt-3 inline-block text-sm font-bold text-accent hover:underline">
+        <Link href={backHref} className="mt-3 inline-block text-sm font-bold text-accent hover:underline">
           Volver a la bandeja
         </Link>
       </div>
@@ -70,7 +77,6 @@ export function EncargadoTicketDetail({ ticketId }: { ticketId: string }) {
   const ownerPhotos = ticket.photos.filter((photo) => photo.uploadedById === unit.ownerId);
   const fieldPhotos = ticket.photos.filter((photo) => photo.uploadedById !== unit.ownerId);
   const days = daysOpen(ticket);
-  const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${project.location.lat},${project.location.lng}`;
 
   function handleDone(transition: Transition) {
     setNotice(DONE_MESSAGE[transition.to] ?? "Cambio guardado.");
@@ -78,7 +84,7 @@ export function EncargadoTicketDetail({ ticketId }: { ticketId: string }) {
 
   return (
     <div className="pb-8">
-      <Link href="/encargado" className="inline-flex items-center gap-1 text-sm font-bold text-accent hover:underline">
+      <Link href={backHref} className="inline-flex items-center gap-1 text-sm font-bold text-accent hover:underline">
         <svg aria-hidden width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <path d="M12.5 15 7.5 10l5-5" />
         </svg>
@@ -136,7 +142,7 @@ export function EncargadoTicketDetail({ ticketId }: { ticketId: string }) {
             <p className="text-sm text-ink-secondary">{project.address}, {project.commune}</p>
             {zone && <p className="text-sm text-ink-secondary">{zone.name}</p>}
             <p className="mt-1 text-xs text-ink-meta">Entregada el {formatLongDate(unit.deliveryDate)}</p>
-            <a href={mapsUrl} target="_blank" rel="noopener noreferrer" className="mt-2 inline-block text-sm font-bold text-accent hover:underline">
+            <a href={mapsUrl(project.location)} target="_blank" rel="noopener noreferrer" className="mt-2 inline-block text-sm font-bold text-accent hover:underline">
               Ver obra en el mapa
             </a>
           </Panel>

@@ -33,16 +33,10 @@ export interface DataState {
   statusHistory: TicketStatusHistory[];
 }
 
-export const initialState: DataState = {
-  zones: [...zones],
-  categories: [...categories],
-  users: [...users],
-  projects: [...projects],
-  units: [...units],
-  crews: [...crews],
-  tickets: [...tickets],
-  statusHistory: [...statusHistory],
-};
+/** Estado inicial con los datos de ejemplo (copia nueva cada vez: se usa también al restablecer). */
+export function createSeedState(): DataState {
+  return structuredClone({ zones, categories, users, projects, units, crews, tickets, statusHistory });
+}
 
 export type DataAction =
   | { type: "CREATE_TICKET"; ticket: Ticket; historyId: string }
@@ -59,7 +53,10 @@ export type DataAction =
   | { type: "CREATE_PROJECT"; project: Project }
   | { type: "CREATE_UNIT"; unit: Unit }
   | { type: "CREATE_CREW"; crew: WorkCrew }
-  | { type: "CREATE_USER"; user: User };
+  | { type: "CREATE_USER"; user: User }
+  | { type: "UPDATE_USER"; userId: string; changes: Partial<Omit<User, "id">> }
+  /** Reemplaza todo el estado (datos leídos del almacenamiento local o restablecidos). */
+  | { type: "REPLACE_STATE"; state: DataState };
 
 /** Ticket resultante de una transición; lo usan el reducer y `api.ts` para devolver la entidad resuelta. */
 export function applyTransition(ticket: Ticket, to: TicketStatus, changedAt: string, changes: TicketChanges = {}): Ticket {
@@ -135,5 +132,12 @@ export function reducer(state: DataState, action: DataAction): DataState {
       return { ...state, crews: [...state.crews, action.crew] };
     case "CREATE_USER":
       return { ...state, users: [...state.users, action.user] };
+    case "UPDATE_USER":
+      return {
+        ...state,
+        users: state.users.map((user) => (user.id === action.userId ? { ...user, ...action.changes, id: user.id } : user)),
+      };
+    case "REPLACE_STATE":
+      return action.state;
   }
 }

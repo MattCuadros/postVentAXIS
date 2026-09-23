@@ -1,24 +1,33 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { users } from "@/mocks/data";
+import type { Role } from "@/types/domain";
 
-const ROLE_HOME = {
+const ROLE_HOME: Record<Role, string> = {
   PROPIETARIO: "/propietario",
   ENCARGADO: "/encargado",
   ADMIN: "/admin",
-} as const;
+};
 
+function isRole(value: string | undefined): value is Role {
+  return value !== undefined && value in ROLE_HOME;
+}
+
+/**
+ * Ruteo por rol con la sesión simulada. Los usuarios viven en el navegador (localStorage), así que
+ * aquí solo se lee el rol desde la cookie; el cliente valida que el usuario exista y esté activo.
+ * Con backend real esto pasa a validar una sesión firmada.
+ */
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const userId = request.cookies.get("pv_user_id")?.value;
-  const user = users.find((item) => item.id === userId);
+  const role = request.cookies.get("pv_role")?.value;
 
-  if (user === undefined) {
+  if (!userId || !isRole(role)) {
     return pathname === "/login"
       ? NextResponse.next()
       : NextResponse.redirect(new URL("/login", request.url));
   }
 
-  const roleHome = ROLE_HOME[user.role];
+  const roleHome = ROLE_HOME[role];
   const isRoleRoute = pathname === roleHome || pathname.startsWith(`${roleHome}/`);
 
   if (pathname === "/" || pathname === "/login" || !isRoleRoute) {

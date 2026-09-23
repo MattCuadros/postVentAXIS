@@ -1,10 +1,12 @@
 "use client";
 
 import { createContext, useCallback, useContext, useMemo, useSyncExternalStore, type ReactNode } from "react";
-import { users } from "@/mocks/data";
+import { useDataContext } from "@/data/store-context";
 import type { Role, User } from "@/types/domain";
 
-const COOKIE_NAME = "pv_user_id";
+/** Cookies de sesión simulada. El rol va aparte para que `src/proxy.ts` pueda rutear sin leer los datos locales. */
+export const USER_COOKIE = "pv_user_id";
+export const ROLE_COOKIE = "pv_role";
 const ONE_YEAR_IN_SECONDS = 60 * 60 * 24 * 365;
 
 interface SessionContextValue {
@@ -21,6 +23,12 @@ function getCookie(name: string): string | null {
   return cookie === undefined ? null : decodeURIComponent(cookie.slice(prefix.length));
 }
 
+function writeCookie(name: string, value: string | null): void {
+  document.cookie = value === null
+    ? `${name}=; path=/; max-age=0`
+    : `${name}=${encodeURIComponent(value)}; path=/; max-age=${ONE_YEAR_IN_SECONDS}; samesite=lax`;
+}
+
 const listeners = new Set<() => void>();
 
 function subscribeToCookie(onStoreChange: () => void): () => void {
@@ -29,7 +37,7 @@ function subscribeToCookie(onStoreChange: () => void): () => void {
 }
 
 function getCookieSnapshot(): string | null {
-  return getCookie(COOKIE_NAME);
+  return getCookie(USER_COOKIE);
 }
 
 function getServerCookieSnapshot(): string | null {
@@ -41,18 +49,17 @@ function notifyCookieChange(): void {
 }
 
 export function SessionProvider({ children }: { children: ReactNode }) {
+  const { state } = useDataContext();
   const userId = useSyncExternalStore(subscribeToCookie, getCookieSnapshot, getServerCookieSnapshot);
-  const user = useMemo(() => users.find((item) => item.id === userId) ?? null, [userId]);
+  // Un usuario desactivado (o eliminado de los datos locales) queda sin sesión.
+  const user = useMemo(() => state.users.find((item) => item.id === userId && item.active) ?? null, [state.users, userId]);
 
   const setUser = useCallback((nextUserId: string | null) => {
-    const nextUser = users.find((item) => item.id === nextUserId) ?? null;
-    if (nextUser === null) {
-      document.cookie = `${COOKIE_NAME}=; path=/; max-age=0`;
-    } else {
-      document.cookie = `${COOKIE_NAME}=${encodeURIComponent(nextUser.id)}; path=/; max-age=${ONE_YEAR_IN_SECONDS}`;
-    }
+    const nextUser = state.users.find((item) => item.id === nextUserId && item.active) ?? null;
+    writeCookie(USER_COOKIE, nextUser?.id ?? null);
+    writeCookie(ROLE_COOKIE, nextUser?.role ?? null);
     notifyCookieChange();
-  }, []);
+  }, [state.users]);
 
   const value = useMemo<SessionContextValue>(() => ({
     user,

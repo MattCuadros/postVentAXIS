@@ -29,14 +29,24 @@ interface Row {
   days: number;
 }
 
-/** Bandeja del encargado: solo los tickets de las obras de sus zonas. */
-export function EncargadoInbox() {
+interface StaffInboxProps {
+  /** Ruta base del detalle, ej. "/encargado/tickets". */
+  basePath: string;
+  /** Admin: todas las zonas. Encargado: solo las suyas. */
+  allZones?: boolean;
+}
+
+/** Bandeja de requerimientos del equipo Axis (encargado por zona, admin global). */
+export function StaffInbox({ basePath, allZones = false }: StaffInboxProps) {
   const { user } = useSession();
   const api = useDataApi();
   const zoneIds = user?.zoneIds;
 
   const { data: tickets } = useQuery(
-    useCallback(async () => (zoneIds ? api.getTicketsByZones(zoneIds) : []), [api, zoneIds]),
+    useCallback(async () => {
+      if (allZones) return (await api.getTickets()).toSorted((a, b) => b.createdAt.localeCompare(a.createdAt));
+      return zoneIds ? api.getTicketsByZones(zoneIds) : [];
+    }, [api, zoneIds, allZones]),
   );
   const { data: units } = useQuery(api.getUnits);
   const { data: projects } = useQuery(api.getProjects);
@@ -83,7 +93,8 @@ export function EncargadoInbox() {
   const openCount = rows?.filter((row) => !isClosed(row.ticket.status)).length ?? 0;
   const newCount = rows?.filter((row) => row.ticket.status === "INGRESADO").length ?? 0;
   const receptionCount = rows?.filter((row) => row.ticket.status === "EN_RECEPCION").length ?? 0;
-  const myZones = zones?.filter((item) => zoneIds?.includes(item.id)) ?? [];
+  const myZones = zones?.filter((item) => allZones || zoneIds?.includes(item.id)) ?? [];
+  const scopeLabel = allZones ? "en todas las zonas" : "en tus zonas";
 
   return (
     <div className="pb-8">
@@ -94,7 +105,7 @@ export function EncargadoInbox() {
             {rows === undefined
               ? "Cargando…"
               : [
-                  `${openCount} ${openCount === 1 ? "abierto" : "abiertos"} en tus zonas`,
+                  `${openCount} ${openCount === 1 ? "abierto" : "abiertos"} ${scopeLabel}`,
                   newCount > 0 && `${newCount} por revisar`,
                   receptionCount > 0 && `${receptionCount} esperando conformidad`,
                 ]
@@ -120,7 +131,7 @@ export function EncargadoInbox() {
           {STATUS_OPTIONS.map((item) => <option key={item} value={item}>{STATUS_LABEL[item]}</option>)}
         </Select>
         <Select label="Zona" name="zone" value={zone} disabled={myZones.length < 2} onChange={(event) => setZone(event.target.value)}>
-          {myZones.length !== 1 && <option value="">Todas mis zonas</option>}
+          {myZones.length !== 1 && <option value="">{allZones ? "Todas las zonas" : "Todas mis zonas"}</option>}
           {myZones.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
         </Select>
       </div>
@@ -138,7 +149,7 @@ export function EncargadoInbox() {
           <ul className="mt-6 flex flex-col gap-3 md:hidden">
             {filtered.map((row) => (
               <li key={row.ticket.id}>
-                <Link href={`/encargado/tickets/${row.ticket.id}`} className="block rounded-lg border border-line-soft bg-surface p-4 transition-colors hover:border-accent/40">
+                <Link href={`${basePath}/${row.ticket.id}`} className="block rounded-lg border border-line-soft bg-surface p-4 transition-colors hover:border-accent/40">
                   <div className="flex items-baseline justify-between gap-3">
                     <span className="text-sm font-bold text-accent">{row.ticket.folio}</span>
                     <span className="text-xs text-ink-meta">{row.days} {row.days === 1 ? "día" : "días"}</span>
@@ -168,7 +179,7 @@ export function EncargadoInbox() {
                 {filtered.map((row) => (
                   <tr key={row.ticket.id} className="border-b border-line-soft last:border-b-0 hover:bg-surface-warm">
                     <td className="py-4 pr-4">
-                      <Link href={`/encargado/tickets/${row.ticket.id}`} className="font-bold text-accent underline underline-offset-2">
+                      <Link href={`${basePath}/${row.ticket.id}`} className="font-bold text-accent underline underline-offset-2">
                         {row.ticket.folio}
                       </Link>
                     </td>

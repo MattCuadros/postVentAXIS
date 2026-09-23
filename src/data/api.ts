@@ -21,6 +21,7 @@ export type CreateProjectInput = Omit<Project, "id">;
 export type CreateUnitInput = Omit<Unit, "id">;
 export type CreateCrewInput = Omit<WorkCrew, "id">;
 export type CreateUserInput = Omit<User, "id">;
+export type UpdateUserInput = Partial<Omit<User, "id">>;
 
 function simulatedLatency(): Promise<void> {
   return delay(150 + Math.floor(Math.random() * 151));
@@ -62,6 +63,11 @@ export function useDataApi() {
     return state.statusHistory
       .filter((entry) => entry.ticketId === ticketId)
       .toSorted((a, b) => a.createdAt.localeCompare(b.createdAt));
+  }, [state.statusHistory]);
+
+  const getStatusHistory = useCallback(async (): Promise<TicketStatusHistory[]> => {
+    await simulatedLatency();
+    return state.statusHistory;
   }, [state.statusHistory]);
 
   const createTicket = useCallback(async (input: CreateTicketInput): Promise<Ticket> => {
@@ -176,12 +182,25 @@ export function useDataApi() {
     return user;
   }, [dispatch]);
 
+  const updateUser = useCallback(async (userId: string, changes: UpdateUserInput): Promise<User> => {
+    await simulatedLatency();
+    const existingUser = state.users.find((user) => user.id === userId);
+    if (existingUser === undefined) {
+      throw new Error(`User not found: ${userId}`);
+    }
+
+    const user: User = { ...existingUser, ...changes, id: existingUser.id };
+    dispatch({ type: "UPDATE_USER", userId, changes });
+    return user;
+  }, [dispatch, state.users]);
+
   return useMemo(() => ({
     getTickets,
     getTicket,
     getTicketsByOwner,
     getTicketsByZones,
     getTicketHistory,
+    getStatusHistory,
     createTicket,
     transitionTicket,
     getUnitsByOwner,
@@ -196,6 +215,7 @@ export function useDataApi() {
     createUnit,
     createCrew,
     createUser,
+    updateUser,
   }), [
     createCrew,
     createProject,
@@ -206,6 +226,7 @@ export function useDataApi() {
     getCrews,
     getCrewsByZone,
     getProjects,
+    getStatusHistory,
     getTicket,
     getTicketHistory,
     getTickets,
@@ -216,5 +237,6 @@ export function useDataApi() {
     getUsers,
     getZones,
     transitionTicket,
+    updateUser,
   ]);
 }
