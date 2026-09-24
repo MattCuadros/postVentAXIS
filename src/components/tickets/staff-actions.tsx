@@ -6,6 +6,7 @@ import { PhotoPicker, type PickedPhoto } from "@/components/tickets/photo-picker
 import { Button } from "@/components/ui/button";
 import { Dialog } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 import { useDataApi } from "@/data/api";
 import { useQuery } from "@/data/use-query";
@@ -213,7 +214,10 @@ function TransitionForm({ spec, zoneId, userId, busy, error, onCancel, onSubmit 
         <fieldset>
           <legend className="mb-2 text-sm font-bold text-ink">Equipo de trabajo</legend>
           {crews === undefined ? (
-            <p className="text-sm text-ink-secondary" role="status">Cargando equipos…</p>
+            <div role="status" aria-label="Cargando equipos…" className="flex flex-col gap-2">
+              <Skeleton className="h-14 w-full" />
+              <Skeleton className="h-14 w-full" />
+            </div>
           ) : crews.length === 0 ? (
             <p className="text-sm text-ink-secondary">No hay equipos registrados en esta zona.</p>
           ) : (

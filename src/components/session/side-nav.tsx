@@ -26,7 +26,7 @@ export function SideNav({ items, label, rootHref }: { items: NavItem[]; label: s
 
   return (
     <nav aria-label={label} className="shrink-0 border-b border-line-soft bg-surface md:w-60 md:border-b-0 md:border-r">
-      <div className="flex gap-1 overflow-x-auto px-4 py-3 md:sticky md:top-0 md:flex-col md:gap-2 md:py-6">
+      <div className="flex gap-1 overflow-x-auto px-4 py-3 md:sticky md:top-[var(--role-header-height,98px)] md:max-h-[calc(100dvh-var(--role-header-height,98px))] md:overflow-y-auto md:flex-col md:gap-2 md:py-6">
         {items.map(({ href, label: itemLabel }) => {
           const active = isActive(href);
           return (

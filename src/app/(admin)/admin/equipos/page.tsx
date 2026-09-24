@@ -4,7 +4,10 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { Notice } from "@/components/ui/notice";
+import { PageHeader } from "@/components/ui/page-header";
 import { Select } from "@/components/ui/select";
+import { ContentSkeleton } from "@/components/ui/skeleton";
 import { useDataApi } from "@/data/api";
 import { useQuery } from "@/data/use-query";
 import { crewSchema, fieldErrors } from "@/lib/schemas";
@@ -23,23 +26,16 @@ export default function EquiposAdminPage() {
 
   return (
     <div className="pb-8">
-      <header className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <h1 className="text-2xl">Equipos de trabajo</h1>
-          <p className="mt-1 text-sm text-ink-secondary">Cuadrillas internas y subcontratos que los encargados pueden asignar en cada zona.</p>
-        </div>
-        <Button onClick={() => setCreating(true)}>Nuevo equipo</Button>
-      </header>
+      <PageHeader
+        title="Equipos de trabajo"
+        subtitle="Cuadrillas internas y subcontratos que los encargados pueden asignar en cada zona."
+        actions={<Button onClick={() => setCreating(true)}>Nuevo equipo</Button>}
+      />
 
-      {notice && (
-        <div className="mt-5 flex items-start justify-between gap-3 rounded-md bg-success/10 p-4 text-sm text-success" role="status">
-          <p>{notice}</p>
-          <button type="button" aria-label="Cerrar aviso" className="shrink-0 font-bold" onClick={() => setNotice(null)}>×</button>
-        </div>
-      )}
+      {notice && <Notice tone="success" className="mt-5" onDismiss={() => setNotice(null)}>{notice}</Notice>}
 
       {crews === undefined || zones === undefined ? (
-        <p className="mt-6 text-sm text-ink-secondary" role="status">Cargando equipos…</p>
+        <ContentSkeleton label="Cargando equipos…" />
       ) : (
         zones.map((zone) => {
           const zoneCrews = crews.filter((crew) => crew.zoneId === zone.id);
@@ -53,7 +49,7 @@ export default function EquiposAdminPage() {
                   {zoneCrews.map((crew) => {
                     const active = tickets?.filter((ticket) => ticket.crewId === crew.id && !isClosed(ticket.status)).length ?? 0;
                     return (
-                      <li key={crew.id} className="rounded-lg border border-line-soft bg-surface p-4">
+                      <li key={crew.id} className="rounded-lg border border-line-soft bg-surface p-4 shadow-card">
                         <p className="font-bold text-ink">{crew.name}</p>
                         <p className="text-xs text-ink-secondary">{CREW_TYPE_LABEL[crew.type]}</p>
                         <p className="mt-2 text-sm text-ink">{crew.contactName} · {crew.phone}</p>

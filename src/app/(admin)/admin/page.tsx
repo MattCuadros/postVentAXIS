@@ -5,7 +5,9 @@ import { CategoryBars } from "@/components/admin/category-bars";
 import { StatTile } from "@/components/admin/stat-tile";
 import { ZoneChart } from "@/components/admin/zone-chart";
 import { Button } from "@/components/ui/button";
+import { PageHeader } from "@/components/ui/page-header";
 import { Select } from "@/components/ui/select";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useDataApi } from "@/data/api";
 import { useQuery } from "@/data/use-query";
 import { exportTicketsToExcel } from "@/lib/export-tickets";
@@ -49,27 +51,39 @@ export default function IndicadoresPage() {
 
   return (
     <div className="pb-8">
-      <header className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <h1 className="text-2xl">Indicadores</h1>
-          <p className="mt-1 text-sm text-ink-secondary">
-            {periodCaption.charAt(0).toUpperCase() + periodCaption.slice(1)}
-          </p>
-        </div>
-        <div className="flex items-end gap-3">
-          <div className="w-44">
-            <Select label="Período" name="period" value={period} onChange={(event) => setPeriod(event.target.value as Period)}>
-              {PERIODS.map((item) => <option key={item} value={item}>{PERIOD_LABEL[item]}</option>)}
-            </Select>
-          </div>
-          <Button variant="secondary" disabled={exporting || !tickets} onClick={handleExport}>
-            {exporting ? "Exportando…" : "Exportar a Excel"}
-          </Button>
-        </div>
-      </header>
+      <PageHeader
+        title="Indicadores"
+        subtitle={periodCaption.charAt(0).toUpperCase() + periodCaption.slice(1)}
+        actions={
+          <>
+            <div className="w-44">
+              <Select label="Período" name="period" value={period} onChange={(event) => setPeriod(event.target.value as Period)}>
+                {PERIODS.map((item) => <option key={item} value={item}>{PERIOD_LABEL[item]}</option>)}
+              </Select>
+            </div>
+            <Button variant="secondary" disabled={exporting || !tickets} onClick={handleExport}>
+              {exporting ? "Exportando…" : "Exportar a Excel"}
+            </Button>
+          </>
+        }
+      />
 
       {indicators === undefined ? (
-        <p className="mt-6 text-sm text-ink-secondary" role="status">Calculando indicadores…</p>
+        <div role="status" aria-label="Calculando indicadores…">
+          <div className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            {Array.from({ length: 4 }, (_, index) => (
+              <div key={index} className="rounded-lg border border-line-soft bg-surface p-6 shadow-card">
+                <Skeleton className="h-1 w-12" />
+                <Skeleton className="mt-4 h-9 w-20" />
+                <Skeleton className="mt-2 h-4 w-32" />
+              </div>
+            ))}
+          </div>
+          <div className="mt-6 grid gap-4 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
+            <Skeleton className="h-80 rounded-lg" />
+            <Skeleton className="h-80 rounded-lg" />
+          </div>
+        </div>
       ) : (
         <>
           <section aria-label="Resumen" className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -99,7 +113,7 @@ export default function IndicadoresPage() {
 /** Tarjeta de gráfico con su vista de tabla (el dato nunca queda solo en el color o la forma). */
 function ChartCard({ title, rows, empty, children }: { title: string; rows: CountRow[]; empty: boolean; children: ReactNode }) {
   return (
-    <section className="rounded-lg border border-line-soft bg-surface p-6">
+    <section className="rounded-lg border border-line-soft bg-surface p-6 shadow-card">
       <h2 className="text-lg text-ink">{title}</h2>
       <div className="mt-4">
         {empty ? <p className="py-10 text-center text-sm text-ink-secondary">Sin requerimientos en este período.</p> : children}

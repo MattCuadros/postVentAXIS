@@ -3,7 +3,9 @@
 import Link from "next/link";
 import { useCallback, useMemo, useState } from "react";
 import { Input } from "@/components/ui/input";
+import { PageHeader } from "@/components/ui/page-header";
 import { Select } from "@/components/ui/select";
+import { ContentSkeleton, TableSkeleton } from "@/components/ui/skeleton";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { useDataApi } from "@/data/api";
 import { useSession } from "@/data/session-context";
@@ -98,10 +100,10 @@ export function StaffInbox({ basePath, allZones = false }: StaffInboxProps) {
 
   return (
     <div className="pb-8">
-      <header className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <h1 className="text-2xl">Requerimientos</h1>
-          <p className="mt-1 text-sm text-ink-secondary" aria-live="polite">
+      <PageHeader
+        title="Requerimientos"
+        subtitle={
+          <p aria-live="polite">
             {rows === undefined
               ? "Cargando…"
               : [
@@ -112,11 +114,11 @@ export function StaffInbox({ basePath, allZones = false }: StaffInboxProps) {
                   .filter(Boolean)
                   .join(" · ")}
           </p>
-        </div>
-        <span aria-hidden className="mb-1 hidden h-1 w-24 rounded-pill bg-brand-orange sm:block" />
-      </header>
+        }
+        actions={<span aria-hidden className="mb-1 hidden h-1 w-24 rounded-pill bg-brand-orange sm:block" />}
+      />
 
-      <div className="mt-6 grid gap-4 rounded-lg border border-line-soft bg-surface p-4 sm:p-5 md:grid-cols-[1fr_12rem_12rem]">
+      <div className="mt-6 grid gap-4 rounded-lg border border-line-soft bg-surface p-4 shadow-card sm:p-5 md:grid-cols-[1fr_12rem_12rem]">
         <Input
           label="Buscar"
           name="search"
@@ -137,9 +139,12 @@ export function StaffInbox({ basePath, allZones = false }: StaffInboxProps) {
       </div>
 
       {filtered === undefined ? (
-        <p className="mt-6 text-sm text-ink-secondary" role="status">Cargando requerimientos…</p>
+        <>
+          <ContentSkeleton label="Cargando requerimientos…" lines={4} className="md:hidden" />
+          <TableSkeleton label="Cargando requerimientos…" rows={6} className="mt-6 hidden md:block" />
+        </>
       ) : filtered.length === 0 ? (
-        <div className="mt-6 rounded-lg border border-line-soft bg-surface p-8 text-center">
+        <div className="mt-6 rounded-lg border border-line-soft bg-surface p-8 text-center shadow-card">
           <p className="font-bold text-ink">No hay requerimientos con estos filtros</p>
           <p className="mt-1 text-sm text-ink-secondary">Prueba con otro estado o borra la búsqueda.</p>
         </div>
@@ -149,7 +154,7 @@ export function StaffInbox({ basePath, allZones = false }: StaffInboxProps) {
           <ul className="mt-6 flex flex-col gap-3 md:hidden">
             {filtered.map((row) => (
               <li key={row.ticket.id}>
-                <Link href={`${basePath}/${row.ticket.id}`} className="block rounded-lg border border-line-soft bg-surface p-4 transition-colors hover:border-accent/40">
+                <Link href={`${basePath}/${row.ticket.id}`} className="block rounded-lg border border-line-soft bg-surface p-4 shadow-card transition duration-150 ease-axis-out hover:border-accent/40 hover:shadow-raised active:scale-[0.99]">
                   <div className="flex items-baseline justify-between gap-3">
                     <span className="text-sm font-bold text-accent">{row.ticket.folio}</span>
                     <span className="text-xs text-ink-meta">{row.days} {row.days === 1 ? "día" : "días"}</span>
@@ -163,7 +168,7 @@ export function StaffInbox({ basePath, allZones = false }: StaffInboxProps) {
           </ul>
 
           {/* Escritorio: tabla */}
-          <div className="mt-6 hidden overflow-x-auto rounded-lg border border-line-soft bg-surface px-6 py-2 md:block">
+          <div className="mt-6 hidden overflow-x-auto rounded-lg border border-line-soft bg-surface px-6 py-2 shadow-card md:block">
             <table className="w-full text-left text-sm">
               <thead>
                 <tr className="border-b border-line-soft text-ink">
@@ -177,7 +182,7 @@ export function StaffInbox({ basePath, allZones = false }: StaffInboxProps) {
               </thead>
               <tbody>
                 {filtered.map((row) => (
-                  <tr key={row.ticket.id} className="border-b border-line-soft last:border-b-0 hover:bg-surface-warm">
+                  <tr key={row.ticket.id} className="border-b border-line-soft transition-colors last:border-b-0 hover:bg-surface-warm">
                     <td className="py-4 pr-4">
                       <Link href={`${basePath}/${row.ticket.id}`} className="font-bold text-accent underline underline-offset-2">
                         {row.ticket.folio}

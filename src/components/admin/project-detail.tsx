@@ -6,6 +6,9 @@ import { UnitForm } from "@/components/admin/unit-form";
 import { UnitImporter } from "@/components/admin/unit-importer";
 import { Button } from "@/components/ui/button";
 import { Dialog } from "@/components/ui/dialog";
+import { Notice } from "@/components/ui/notice";
+import { PageHeader } from "@/components/ui/page-header";
+import { ContentSkeleton } from "@/components/ui/skeleton";
 import { useDataApi } from "@/data/api";
 import { useQuery } from "@/data/use-query";
 import { formatLongDate, unitLabel } from "@/lib/format";
@@ -22,12 +25,12 @@ export function ProjectDetail({ projectId }: { projectId: string }) {
   const [dialog, setDialog] = useState<"add" | "import" | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
 
-  if (projects === undefined) return <p className="text-sm text-ink-secondary" role="status">Cargando obra…</p>;
+  if (projects === undefined) return <ContentSkeleton label="Cargando obra…" />;
 
   const project = projects.find((item) => item.id === projectId);
   if (project === undefined) {
     return (
-      <div className="mx-auto mt-6 w-full max-w-lg rounded-lg border border-line-soft bg-surface p-6 text-center">
+      <div className="mx-auto mt-6 w-full max-w-lg rounded-lg border border-line-soft bg-surface p-6 text-center shadow-card">
         <p className="font-bold text-ink">No encontramos esta obra</p>
         <Link href="/admin/obras" className="mt-3 inline-block text-sm font-bold text-accent hover:underline">Volver a obras</Link>
       </div>
@@ -41,39 +44,40 @@ export function ProjectDetail({ projectId }: { projectId: string }) {
 
   return (
     <div className="pb-8">
-      <Link href="/admin/obras" className="text-sm font-bold text-accent hover:underline">‹ Obras</Link>
-      <header className="mt-3 flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <h1 className="text-2xl">{project.name}</h1>
-          <p className="mt-1 text-sm text-ink-secondary">
-            {project.address}, {project.commune} · {zone?.name}
-          </p>
-          <p className="text-xs text-ink-meta">
-            Ubicación: {formatCoordinates(project.location)} ·{" "}
-            <a href={mapsUrl(project.location)} target="_blank" rel="noopener noreferrer" className="font-bold text-accent hover:underline">Ver en el mapa</a>
-          </p>
-        </div>
-        <div className="flex gap-3">
-          <Button variant="secondary" onClick={() => setDialog("import")}>Importar unidades (CSV)</Button>
-          <Button onClick={() => setDialog("add")}>Agregar unidad</Button>
-        </div>
-      </header>
+      <PageHeader
+        back={{ href: "/admin/obras", label: "Obras" }}
+        title={project.name}
+        subtitle={
+          <>
+            <p>
+              {project.address}, {project.commune} · {zone?.name}
+            </p>
+            <p className="text-xs text-ink-meta">
+              Ubicación: {formatCoordinates(project.location)} ·{" "}
+              <a href={mapsUrl(project.location)} target="_blank" rel="noopener noreferrer" className="font-bold text-accent hover:underline">
+                Ver en el mapa
+              </a>
+            </p>
+          </>
+        }
+        actions={
+          <>
+            <Button variant="secondary" onClick={() => setDialog("import")}>Importar unidades (CSV)</Button>
+            <Button onClick={() => setDialog("add")}>Agregar unidad</Button>
+          </>
+        }
+      />
 
-      {notice && (
-        <div className="mt-5 flex items-start justify-between gap-3 rounded-md bg-success/10 p-4 text-sm text-success" role="status">
-          <p>{notice}</p>
-          <button type="button" aria-label="Cerrar aviso" className="shrink-0 font-bold" onClick={() => setNotice(null)}>×</button>
-        </div>
-      )}
+      {notice && <Notice tone="success" className="mt-5" onDismiss={() => setNotice(null)}>{notice}</Notice>}
 
       {projectUnits.length === 0 ? (
-        <div className="mt-6 rounded-lg border border-line-soft bg-surface p-8 text-center">
+        <div className="mt-6 rounded-lg border border-line-soft bg-surface p-8 text-center shadow-card">
           <p className="font-bold text-ink">Esta obra aún no tiene unidades</p>
           <p className="mt-1 text-sm text-ink-secondary">Agrega cada vivienda con su propietario para que pueda ingresar requerimientos.</p>
           <p className="mt-1 text-sm text-ink-secondary">Si son muchas, usa <strong className="text-ink">Importar unidades (CSV)</strong> con la plantilla.</p>
         </div>
       ) : (
-        <div className="mt-6 overflow-x-auto rounded-lg border border-line-soft bg-surface px-6 py-2">
+        <div className="mt-6 overflow-x-auto rounded-lg border border-line-soft bg-surface px-6 py-2 shadow-card">
           <table className="w-full min-w-[40rem] text-left text-sm">
             <thead>
               <tr className="border-b border-line-soft">

@@ -6,6 +6,9 @@ import { TransitionActions } from "@/components/tickets/transition-actions";
 import { BottomBar } from "@/components/ui/bottom-bar";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { StatusTimeline } from "@/components/ui/status-timeline";
+import { ChevronLeftIcon } from "@/components/ui/icons";
+import { Notice } from "@/components/ui/notice";
+import { ContentSkeleton } from "@/components/ui/skeleton";
 import { useDataApi } from "@/data/api";
 import { useSession } from "@/data/session-context";
 import { useQuery } from "@/data/use-query";
@@ -47,13 +50,13 @@ export function OwnerTicketDetail({ ticketId, justCreated }: OwnerTicketDetailPr
   const unit = units?.find((item) => item.id === ticket?.unitId);
 
   if (user === null || (ticket === undefined && loading) || units === undefined) {
-    return <p className="text-sm text-ink-secondary" role="status">Cargando requerimiento…</p>;
+    return <ContentSkeleton label="Cargando requerimiento…" />;
   }
 
   // Un propietario solo ve los tickets de sus viviendas.
   if (ticket === undefined || unit?.ownerId !== user.id) {
     return (
-      <div className="rounded-lg border border-line-soft bg-surface p-6 text-center">
+      <div className="rounded-lg border border-line-soft bg-surface p-6 text-center shadow-card">
         <p className="font-bold text-ink">No encontramos este requerimiento</p>
         <Link href="/propietario" className="mt-3 inline-block text-sm font-bold text-accent hover:underline">
           Volver a mis requerimientos
@@ -77,20 +80,13 @@ export function OwnerTicketDetail({ ticketId, justCreated }: OwnerTicketDetailPr
     <>
       <header className="-mx-4 -mt-6 flex items-center gap-3 border-b border-line-soft bg-surface px-4 py-4 sm:-mx-6 sm:px-6">
         <Link href="/propietario" aria-label="Volver a mis requerimientos" className="flex h-9 w-9 items-center justify-center rounded-md text-accent hover:bg-accent-soft">
-          <svg aria-hidden width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M12.5 15 7.5 10l5-5" />
-          </svg>
+          <ChevronLeftIcon />
         </Link>
         <p className="font-bold text-ink">{ticket.folio}</p>
       </header>
 
       {notice && (
-        <div className="mt-5 flex items-start justify-between gap-3 rounded-md bg-success/10 p-4 text-sm text-success" role="status">
-          <p>{notice}</p>
-          <button type="button" aria-label="Cerrar aviso" className="shrink-0 font-bold" onClick={() => setNotice(null)}>
-            ×
-          </button>
-        </div>
+        <Notice tone="success" onDismiss={() => setNotice(null)} className="mt-5">{notice}</Notice>
       )}
 
       <section className="pt-6">

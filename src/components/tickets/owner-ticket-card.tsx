@@ -9,7 +9,7 @@ export function OwnerTicketCard({ ticket }: { ticket: Ticket }) {
   return (
     <Link
       href={`/propietario/tickets/${ticket.id}`}
-      className="block rounded-lg border border-line-soft bg-surface p-4 transition-colors hover:border-accent/40"
+      className="block rounded-lg border border-line-soft bg-surface p-4 shadow-card transition duration-150 ease-axis-out hover:border-accent/40 hover:shadow-raised active:scale-[0.99]"
     >
       <div className="flex items-baseline justify-between gap-3">
         <span className="text-sm font-bold text-accent">{ticket.folio}</span>

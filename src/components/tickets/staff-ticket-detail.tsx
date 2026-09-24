@@ -4,6 +4,10 @@ import Link from "next/link";
 import { useCallback, useState, type ReactNode } from "react";
 import { StaffActions } from "@/components/tickets/staff-actions";
 import { TicketHistory } from "@/components/tickets/ticket-history";
+import { AlertIcon } from "@/components/ui/icons";
+import { Notice } from "@/components/ui/notice";
+import { PageHeader } from "@/components/ui/page-header";
+import { ContentSkeleton } from "@/components/ui/skeleton";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { useDataApi } from "@/data/api";
 import { useSession } from "@/data/session-context";
@@ -53,14 +57,14 @@ export function StaffTicketDetail({ ticketId, backHref }: StaffTicketDetailProps
   const project = projects?.find((item) => item.id === unit?.projectId);
 
   if (user === null || (ticket === undefined && loading) || units === undefined || projects === undefined) {
-    return <p className="text-sm text-ink-secondary" role="status">Cargando requerimiento…</p>;
+    return <ContentSkeleton label="Cargando requerimiento…" />;
   }
 
   // El encargado solo accede a tickets de obras en sus zonas; el admin, a todos.
   const allowed = user.role === "ADMIN" || (project !== undefined && user.zoneIds.includes(project.zoneId));
   if (ticket === undefined || unit === undefined || project === undefined || !allowed) {
     return (
-      <div className="mx-auto mt-6 w-full max-w-lg rounded-lg border border-line-soft bg-surface p-6 text-center">
+      <div className="mx-auto mt-6 w-full max-w-lg rounded-lg border border-line-soft bg-surface p-6 text-center shadow-card">
         <p className="font-bold text-ink">No encontramos este requerimiento en tus zonas</p>
         <Link href={backHref} className="mt-3 inline-block text-sm font-bold text-accent hover:underline">
           Volver a la bandeja
@@ -84,26 +88,21 @@ export function StaffTicketDetail({ ticketId, backHref }: StaffTicketDetailProps
 
   return (
     <div className="pb-8">
-      <Link href={backHref} className="inline-flex items-center gap-1 text-sm font-bold text-accent hover:underline">
-        <svg aria-hidden width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M12.5 15 7.5 10l5-5" />
-        </svg>
-        Bandeja
-      </Link>
-
-      <header className="mt-3 flex flex-wrap items-center gap-3">
-        <h1 className="text-2xl">{ticket.folio}</h1>
-        <StatusBadge status={ticket.status} />
-        <span className="text-sm text-ink-meta">
-          {days} {days === 1 ? "día" : "días"} {ticket.status === "CERRADO" || ticket.status === "NO_PROCEDE" ? "en total" : "abierto"}
-        </span>
-      </header>
+      <PageHeader
+        back={{ href: backHref, label: "Bandeja" }}
+        title={ticket.folio}
+        aside={
+          <>
+            <StatusBadge status={ticket.status} />
+            <span className="text-sm text-ink-meta">
+              {days} {days === 1 ? "día" : "días"} {ticket.status === "CERRADO" || ticket.status === "NO_PROCEDE" ? "en total" : "abierto"}
+            </span>
+          </>
+        }
+      />
 
       {notice && (
-        <div className="mt-5 flex items-start justify-between gap-3 rounded-md bg-success/10 p-4 text-sm text-success" role="status">
-          <p>{notice}</p>
-          <button type="button" aria-label="Cerrar aviso" className="shrink-0 font-bold" onClick={() => setNotice(null)}>×</button>
-        </div>
+        <Notice tone="success" className="mt-5" onDismiss={() => setNotice(null)}>{notice}</Notice>
       )}
 
       <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1fr)_22rem]">
@@ -111,8 +110,8 @@ export function StaffTicketDetail({ ticketId, backHref }: StaffTicketDetailProps
         <aside className="flex flex-col gap-4 lg:order-2">
           <Panel title="Próximo paso">
             {rejection && (
-              <div className="mb-4 rounded-md border-l-4 border-brand-orange bg-brand-orange-soft p-3 text-sm">
-                <p className="font-bold text-brand-orange-ink">El propietario no quedó conforme</p>
+              <div className="mb-4 rounded-md bg-brand-orange-soft p-3 text-sm">
+                <p className="flex items-center gap-2 font-bold text-brand-orange-ink"><AlertIcon className="h-4 w-4" />El propietario no quedó conforme</p>
                 {rejection.comment && <p className="mt-1 text-ink-secondary">{rejection.comment}</p>}
               </div>
             )}
@@ -172,7 +171,7 @@ export function StaffTicketDetail({ ticketId, backHref }: StaffTicketDetailProps
 
           <Panel title="Historial">
             {history === undefined || users === undefined ? (
-              <p className="text-sm text-ink-secondary" role="status">Cargando historial…</p>
+              <ContentSkeleton label="Cargando historial…" lines={2} />
             ) : (
               <TicketHistory history={history} users={users} />
             )}
@@ -185,7 +184,7 @@ export function StaffTicketDetail({ ticketId, backHref }: StaffTicketDetailProps
 
 function Panel({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <section className="rounded-lg border border-line-soft bg-surface p-5">
+    <section className="rounded-lg border border-line-soft bg-surface p-5 shadow-card">
       <h2 className="mb-3 text-base">{title}</h2>
       {children}
     </section>

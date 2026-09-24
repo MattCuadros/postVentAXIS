@@ -33,7 +33,17 @@ const config: Config = {
         "4xl": ["60px", "1.05"],
       },
       borderRadius: { sm: "6px", md: "10px", lg: "16px", block: "24px", pill: "980px" },
-      boxShadow: { raised: "0 8px 24px rgba(0,51,153,0.10)" },
+      boxShadow: {
+        card: "0 1px 2px rgba(0,31,92,0.05), 0 5px 14px rgba(0,31,92,0.06)",
+        raised: "0 16px 40px rgba(0,31,92,0.16), 0 2px 8px rgba(0,31,92,0.10)",
+      },
+      transitionTimingFunction: { "axis-out": "cubic-bezier(0.22, 1, 0.36, 1)" },
+      keyframes: {
+        "menu-in": { "0%": { opacity: "0", transform: "scale(.96) translateY(-4px)" }, "100%": { opacity: "1", transform: "scale(1) translateY(0)" } },
+        "dialog-in": { "0%": { opacity: "0", transform: "scale(.98)" }, "100%": { opacity: "1", transform: "scale(1)" } },
+        "backdrop-in": { "0%": { opacity: "0" }, "100%": { opacity: "1" } },
+      },
+      animation: { "menu-in": "menu-in 150ms cubic-bezier(0.22, 1, 0.36, 1)", "dialog-in": "dialog-in 200ms cubic-bezier(0.22, 1, 0.36, 1)" },
     },
   },
   plugins: [],

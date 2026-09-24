@@ -1,5 +1,7 @@
 "use client";
 
+import { PageHeader } from "@/components/ui/page-header";
+import { ContentSkeleton } from "@/components/ui/skeleton";
 import { useDataApi } from "@/data/api";
 import { useSession } from "@/data/session-context";
 import { useQuery } from "@/data/use-query";
@@ -20,11 +22,10 @@ export default function EquiposEncargadoPage() {
 
   return (
     <div className="pb-8">
-      <h1 className="text-2xl">Equipos de trabajo</h1>
-      <p className="mt-1 text-sm text-ink-secondary">Cuadrillas y subcontratos disponibles en tus zonas.</p>
+      <PageHeader title="Equipos de trabajo" subtitle="Cuadrillas y subcontratos disponibles en tus zonas." />
 
       {crews === undefined || tickets === undefined ? (
-        <p className="mt-6 text-sm text-ink-secondary" role="status">Cargando equipos…</p>
+        <ContentSkeleton label="Cargando equipos…" />
       ) : (
         myZones.map((zone) => {
           const zoneCrews = crews.filter((crew) => crew.zoneId === zone.id);
@@ -38,7 +39,7 @@ export default function EquiposEncargadoPage() {
                   {zoneCrews.map((crew) => {
                     const active = tickets.filter((ticket) => ticket.crewId === crew.id && !isClosed(ticket.status)).length;
                     return (
-                      <li key={crew.id} className="rounded-lg border border-line-soft bg-surface p-4">
+                      <li key={crew.id} className="rounded-lg border border-line-soft bg-surface p-4 shadow-card">
                         <p className="font-bold text-ink">{crew.name}</p>
                         <p className="text-xs text-ink-secondary">{CREW_TYPE_LABEL[crew.type]}</p>
                         <p className="mt-2 text-sm text-ink">{crew.contactName}</p>

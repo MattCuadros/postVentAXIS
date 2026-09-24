@@ -30,6 +30,22 @@ export function RoleHeader() {
   const { state, resetData, storageError } = useDataContext();
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+  const headerRef = useRef<HTMLElement>(null);
+
+  // Publica la altura real del encabezado fijo para que el menú lateral quede justo debajo.
+  useEffect(() => {
+    const header = headerRef.current;
+    if (!header) return;
+    const root = document.documentElement;
+    const observer = new ResizeObserver(([entry]) => {
+      root.style.setProperty("--role-header-height", `${Math.ceil(entry.borderBoxSize[0]?.blockSize ?? header.offsetHeight)}px`);
+    });
+    observer.observe(header);
+    return () => {
+      observer.disconnect();
+      root.style.removeProperty("--role-header-height");
+    };
+  }, []);
 
   useEffect(() => {
     if (!menuOpen) return;
@@ -90,7 +106,7 @@ export function RoleHeader() {
   }
 
   return (
-    <header className="border-b border-line-soft bg-surface">
+    <header className="translucent-surface sticky top-0 z-30 bg-surface/80 shadow-[0_5px_16px_rgba(0,31,92,0.06)] backdrop-blur-md backdrop-saturate-150" ref={headerRef}>
       <div className="flex w-full items-center justify-between gap-4 px-4 py-3 sm:px-6 lg:px-8">
         <div className="flex items-center gap-5">
           <AxisLogo width={120} priority />
@@ -103,7 +119,7 @@ export function RoleHeader() {
               type="button"
               aria-haspopup="menu"
               aria-expanded={menuOpen}
-              className="flex items-center gap-3 rounded-md p-1 text-right transition-colors hover:bg-surface-secondary"
+              className="flex items-center gap-3 rounded-md p-1 text-right transition duration-150 ease-axis-out hover:bg-surface-secondary active:scale-[0.98]"
               onClick={() => setMenuOpen((open) => !open)}
             >
               <span className="hidden flex-col sm:flex">
@@ -117,7 +133,7 @@ export function RoleHeader() {
             </button>
 
             {menuOpen && (
-              <div role="menu" className="absolute right-0 top-full z-20 mt-2 w-72 rounded-lg border border-line-soft bg-surface p-4 shadow-raised">
+              <div role="menu" className="absolute right-0 top-full z-20 mt-2 w-72 origin-top-right rounded-lg border border-line-soft bg-surface p-4 shadow-raised animate-menu-in">
                 <div className="sm:hidden">
                   <p className="text-sm font-bold text-ink">{user.name}</p>
                   <p className="text-xs text-ink-secondary">{subtitle(user)}</p>

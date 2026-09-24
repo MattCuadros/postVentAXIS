@@ -5,6 +5,9 @@ import { useState } from "react";
 import { ProjectForm } from "@/components/admin/project-form";
 import { Button } from "@/components/ui/button";
 import { Dialog } from "@/components/ui/dialog";
+import { Notice } from "@/components/ui/notice";
+import { PageHeader } from "@/components/ui/page-header";
+import { ContentSkeleton } from "@/components/ui/skeleton";
 import { useDataApi } from "@/data/api";
 import { useQuery } from "@/data/use-query";
 import { mapsUrl } from "@/lib/geo";
@@ -32,27 +35,20 @@ export default function ObrasPage() {
 
   return (
     <div className="pb-8">
-      <header className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <h1 className="text-2xl">Obras y unidades</h1>
-          <p className="mt-1 text-sm text-ink-secondary">Obras de edificación con su ubicación, y las viviendas de cada una.</p>
-        </div>
-        <Button onClick={() => setCreating(true)}>Nueva obra</Button>
-      </header>
+      <PageHeader
+        title="Obras y unidades"
+        subtitle="Obras de edificación con su ubicación, y las viviendas de cada una."
+        actions={<Button onClick={() => setCreating(true)}>Nueva obra</Button>}
+      />
 
-      {notice && (
-        <div className="mt-5 flex items-start justify-between gap-3 rounded-md bg-success/10 p-4 text-sm text-success" role="status">
-          <p>{notice}</p>
-          <button type="button" aria-label="Cerrar aviso" className="shrink-0 font-bold" onClick={() => setNotice(null)}>×</button>
-        </div>
-      )}
+      {notice && <Notice tone="success" className="mt-5" onDismiss={() => setNotice(null)}>{notice}</Notice>}
 
       {rows === undefined ? (
-        <p className="mt-6 text-sm text-ink-secondary" role="status">Cargando obras…</p>
+        <ContentSkeleton label="Cargando obras…" />
       ) : (
         <ul className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           {rows.map(({ project, zone, units: unitCount, open }) => (
-            <li key={project.id} className="flex flex-col rounded-lg border border-line-soft bg-surface p-5">
+            <li key={project.id} className="flex flex-col rounded-lg border border-line-soft bg-surface p-5 shadow-card transition duration-150 ease-axis-out hover:shadow-raised">
               <Link href={`/admin/obras/${project.id}`} className="text-lg font-bold text-accent hover:underline">
                 {project.name}
               </Link>

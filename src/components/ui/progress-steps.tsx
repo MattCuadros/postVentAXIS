@@ -1,4 +1,5 @@
 import { cn } from "@/lib/cn";
+import { CheckIcon } from "@/components/ui/icons";
 
 export interface ProgressStepsProps {
   steps: string[];
@@ -21,7 +22,7 @@ export function ProgressSteps({ steps, currentStep }: ProgressStepsProps) {
             <li key={step} className="flex min-w-0 flex-1 items-center last:flex-none">
               <div className="flex min-w-0 flex-col items-center">
                 <span className={cn("flex h-7 w-7 shrink-0 items-center justify-center rounded-full border text-xs font-bold", (complete || current) && "border-accent bg-accent text-white", !complete && !current && "border-line bg-surface-secondary text-ink-muted")} aria-current={current ? "step" : undefined}>
-                  {complete ? "✓" : index + 1}
+                  {complete ? <CheckIcon className="h-4 w-4" /> : index + 1}
                 </span>
                 <span className="mt-2 hidden text-center text-xs font-bold text-ink-secondary sm:block">{step}</span>
               </div>

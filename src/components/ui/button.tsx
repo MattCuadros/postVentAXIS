@@ -32,7 +32,7 @@ interface ButtonStyleOptions {
 /** Clases del botón, para dar el mismo aspecto a un `<Link>`. */
 export function buttonClassName({ variant = "primary", size = "md", fullWidth = false, className }: ButtonStyleOptions = {}): string {
   return cn(
-    "inline-flex items-center justify-center gap-2 rounded-md font-bold transition-colors",
+    "inline-flex items-center justify-center gap-2 rounded-md font-bold transition duration-150 ease-axis-out active:scale-[0.98]",
     "disabled:cursor-not-allowed disabled:opacity-40",
     VARIANTS[variant],
     SIZES[size],

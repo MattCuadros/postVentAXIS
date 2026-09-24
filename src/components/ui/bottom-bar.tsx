@@ -11,7 +11,7 @@ export function BottomBar({ children, className }: { children: ReactNode; classN
       <div aria-hidden className="min-h-8 flex-1" />
       <div
         className={cn(
-          "sticky bottom-0 -mx-4 flex gap-3 border-t border-line-soft bg-surface px-4 py-4 sm:-mx-6 sm:px-6",
+          "translucent-surface sticky bottom-0 -mx-4 flex gap-3 border-t border-white/70 bg-surface/80 px-4 py-4 shadow-[0_-6px_18px_rgba(0,31,92,0.06)] backdrop-blur-md backdrop-saturate-150 sm:-mx-6 sm:px-6",
           className,
         )}
       >

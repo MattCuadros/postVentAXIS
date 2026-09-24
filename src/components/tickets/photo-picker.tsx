@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { CloseIcon, PlusIcon } from "@/components/ui/icons";
 
 export interface PickedPhoto {
   id: string;
@@ -105,18 +106,18 @@ export function PhotoPicker({ photos, max, onAdd, onRemove }: PhotoPickerProps) 
               className="absolute right-1 top-1 flex h-7 w-7 items-center justify-center rounded-full bg-ink/70 text-white hover:bg-ink"
               onClick={() => onRemove(photo.id)}
             >
-              <span aria-hidden className="text-lg leading-none">×</span>
+              <CloseIcon className="h-4 w-4" />
             </button>
           </div>
         ))}
         {remaining > 0 && (
           <button
             type="button"
-            className="flex h-24 w-24 items-center justify-center rounded-md border border-dashed border-line text-accent transition-colors hover:border-accent hover:bg-accent-soft"
+            className="flex h-24 w-24 items-center justify-center rounded-md border border-dashed border-line text-accent transition duration-150 ease-axis-out hover:border-accent hover:bg-accent-soft active:scale-[0.97] disabled:cursor-wait disabled:opacity-60"
             disabled={processing}
             onClick={() => inputRef.current?.click()}
           >
-            <span aria-hidden className="text-3xl leading-none">+</span>
+            <PlusIcon className="h-7 w-7" />
             <span className="sr-only">Agregar fotos</span>
           </button>
         )}

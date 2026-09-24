@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { Ticket } from "@/types/domain";
+import { AlertIcon } from "@/components/ui/icons";
 
 /**
  * Aviso destacado cuando el propietario debe actuar (dar conformidad).
@@ -9,9 +10,9 @@ export function OwnerActionCallout({ ticket }: { ticket: Ticket }) {
   return (
     <Link
       href={`/propietario/tickets/${ticket.id}`}
-      className="block rounded-lg border-l-4 border-brand-orange bg-brand-orange-soft p-4 transition-colors hover:bg-brand-orange-soft/70"
+      className="block rounded-lg bg-brand-orange-soft p-4 shadow-card transition duration-150 ease-axis-out hover:shadow-raised active:scale-[0.99]"
     >
-      <p className="text-xs font-bold uppercase tracking-wide text-brand-orange-ink">Te toca a ti</p>
+      <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-brand-orange-ink"><AlertIcon className="h-4 w-4" />Te toca a ti</p>
       <p className="mt-1 font-bold text-ink">
         {ticket.folio} · {ticket.room}
       </p>

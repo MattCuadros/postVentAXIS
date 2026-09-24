@@ -6,6 +6,9 @@ import { OwnerActionCallout } from "@/components/tickets/owner-action-callout";
 import { OwnerTicketCard } from "@/components/tickets/owner-ticket-card";
 import { BottomBar } from "@/components/ui/bottom-bar";
 import { buttonClassName } from "@/components/ui/button";
+import { PlusIcon } from "@/components/ui/icons";
+import { PageHeader } from "@/components/ui/page-header";
+import { ContentSkeleton } from "@/components/ui/skeleton";
 import { useDataApi } from "@/data/api";
 import { useSession } from "@/data/session-context";
 import { useQuery } from "@/data/use-query";
@@ -25,12 +28,12 @@ export default function MisRequerimientosPage() {
 
   return (
     <>
-      <h1 className="text-xl">Mis requerimientos</h1>
+      <PageHeader title="Mis requerimientos" />
 
       {tickets === undefined ? (
-        <p className="mt-6 text-sm text-ink-secondary" role="status">Cargando requerimientos…</p>
+        <ContentSkeleton label="Cargando requerimientos…" />
       ) : tickets.length === 0 ? (
-        <div className="mt-6 rounded-lg border border-line-soft bg-surface p-6 text-center">
+        <div className="mt-6 rounded-lg border border-line-soft bg-surface p-6 text-center shadow-card">
           <p className="font-bold text-ink">Aún no tienes requerimientos</p>
           <p className="mt-1 text-sm text-ink-secondary">
             Si detectas una falla en tu vivienda, ingrésala aquí y te avisaremos cada avance.
@@ -45,7 +48,7 @@ export default function MisRequerimientosPage() {
 
       <BottomBar>
         <Link href="/propietario/nuevo" className={buttonClassName({ size: "lg", fullWidth: true })}>
-          <span aria-hidden className="text-xl leading-none">+</span>
+          <PlusIcon />
           Nuevo requerimiento
         </Link>
       </BottomBar>

@@ -7,7 +7,9 @@ import { z } from "zod";
 import { PhotoPicker, type PickedPhoto } from "@/components/tickets/photo-picker";
 import { BottomBar } from "@/components/ui/bottom-bar";
 import { Button } from "@/components/ui/button";
+import { ChevronLeftIcon } from "@/components/ui/icons";
 import { Select } from "@/components/ui/select";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 import { useDataApi } from "@/data/api";
 import { useSession } from "@/data/session-context";
@@ -153,11 +155,11 @@ export function NewTicketWizard() {
         <div className="flex items-center gap-3">
           {step === 0 ? (
             <Link href="/propietario" aria-label="Volver a mis requerimientos" className="flex h-9 w-9 items-center justify-center rounded-md text-accent hover:bg-accent-soft">
-              <Chevron />
+              <ChevronLeftIcon />
             </Link>
           ) : (
             <button type="button" aria-label="Paso anterior" onClick={handleBack} className="flex h-9 w-9 items-center justify-center rounded-md text-accent hover:bg-accent-soft">
-              <Chevron />
+              <ChevronLeftIcon />
             </button>
           )}
           <p className="font-bold text-ink">Nuevo requerimiento</p>
@@ -301,8 +303,8 @@ function ChoiceCard({ name, checked, onChange, children }: { name: string; check
   return (
     <label
       className={cn(
-        "block cursor-pointer rounded-md border bg-surface p-4 transition-colors focus-within:ring-2 focus-within:ring-accent",
-        checked ? "border-accent bg-accent-soft" : "border-line-soft hover:border-accent/40",
+        "block cursor-pointer rounded-md border bg-surface p-4 transition duration-150 ease-axis-out focus-within:ring-2 focus-within:ring-accent active:scale-[0.99]",
+        checked ? "border-accent bg-accent-soft" : "border-line-soft shadow-card hover:border-accent/40",
       )}
     >
       <input type="radio" name={name} checked={checked} onChange={onChange} className="sr-only" />
@@ -330,14 +332,10 @@ function FieldError({ message }: { message?: string }) {
 }
 
 function Loading() {
-  return <p className="text-sm text-ink-secondary" role="status">Cargando…</p>;
-}
-
-function Chevron() {
   return (
-    <svg aria-hidden width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M12.5 15 7.5 10l5-5" />
-    </svg>
+    <div role="status" aria-label="Cargando…" className="flex flex-col gap-3">
+      <Skeleton className="h-16 w-full" />
+      <Skeleton className="h-16 w-full" />
+    </div>
   );
 }
-
