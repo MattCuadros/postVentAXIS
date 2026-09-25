@@ -7,9 +7,10 @@ import type {
 } from "@/types/domain";
 
 export const zones: Zone[] = [
-  { id: "z-norte", name: "Zona Norte" },
-  { id: "z-centro", name: "Zona Centro" },
-  { id: "z-sur", name: "Zona Sur" },
+  { id: "z-norte", name: "Zona Norte", code: "N" },
+  { id: "z-centro", name: "Zona Centro", code: "C" },
+  { id: "z-sur", name: "Zona Sur", code: "S" },
+  { id: "z-austral", name: "Zona Austral", code: "A" },
 ];
 
 export const categories: TicketCategory[] = [
@@ -33,8 +34,8 @@ export const users: User[] = [
 ];
 
 export const projects: Project[] = [
-  { id: "p-mirador", name: "Edificio Mirador Central", zoneId: "z-centro", address: "Av. Ejemplo 1234", commune: "Santiago", location: { lat: -33.4489, lng: -70.6693 } },
-  { id: "p-bosque", name: "Condominio Los Robles", zoneId: "z-sur", address: "Camino Demo 567", commune: "Puerto Montt", location: { lat: -41.4693, lng: -72.9424 } },
+  { id: "p-mirador", name: "Edificio Mirador Central", code: "MIR", zoneId: "z-centro", address: "Av. Ejemplo 1234", commune: "Santiago", location: { lat: -33.4489, lng: -70.6693 } },
+  { id: "p-bosque", name: "Condominio Los Robles", code: "ROB", zoneId: "z-sur", address: "Camino Demo 567", commune: "Puerto Montt", location: { lat: -41.4693, lng: -72.9424 } },
 ];
 
 export const units: Unit[] = [
@@ -45,52 +46,52 @@ export const units: Unit[] = [
 ];
 
 export const crews: WorkCrew[] = [
-  { id: "w-int-centro", name: "Cuadrilla Postventa Centro", type: "INTERNO", contactName: "Jaime Lagos", phone: "+56 9 6666 6666", zoneId: "z-centro" },
-  { id: "w-sub-ventanas", name: "Ventanas del Pacífico Ltda.", type: "SUBCONTRATO", contactName: "Marcela Vidal", phone: "+56 9 7777 7777", zoneId: "z-centro" },
-  { id: "w-int-sur", name: "Cuadrilla Postventa Sur", type: "INTERNO", contactName: "Pablo Cárdenas", phone: "+56 9 8888 8888", zoneId: "z-sur" },
+  { id: "w-int-centro", name: "Cuadrilla Postventa Centro", type: "INTERNO", contactName: "Jaime Lagos", phone: "+56 9 6666 6666", zoneId: "z-centro", projectIds: ["p-mirador"] },
+  { id: "w-sub-ventanas", name: "Ventanas del Pacífico Ltda.", type: "SUBCONTRATO", contactName: "Marcela Vidal", phone: "+56 9 7777 7777", zoneId: "z-centro", projectIds: ["p-mirador"] },
+  { id: "w-int-sur", name: "Cuadrilla Postventa Sur", type: "INTERNO", contactName: "Pablo Cárdenas", phone: "+56 9 8888 8888", zoneId: "z-sur", projectIds: ["p-bosque"] },
 ];
 
 export const tickets: Ticket[] = [
   {
-    id: "t-1", folio: "PV-000101", unitId: "un-1", categoryId: "c-sanitarias", room: "Baño principal",
+    id: "t-1", folio: "MIR-0001-C", unitId: "un-1", categoryId: "c-sanitarias", reportedCategoryId: "c-sanitarias", room: "Baño principal",
     description: "Filtración bajo el lavamanos, se moja el mueble.", status: "PROGRAMADO",
     photos: [], createdById: "u-prop-1", encargadoId: "u-enc-centro", crewId: "w-int-centro",
-    visitDate: "2026-09-10", scheduledDate: "2026-09-25", rejectionReason: null,
+    visitDate: "2026-09-10", scheduledDate: "2026-09-25", rejectionReason: null, specialCase: null,
     createdAt: "2026-09-02T10:15:00Z", updatedAt: "2026-09-12T16:40:00Z",
   },
   {
-    id: "t-2", folio: "PV-000102", unitId: "un-1", categoryId: "c-ventanas", room: "Living",
+    id: "t-2", folio: "MIR-0002-C", unitId: "un-1", categoryId: "c-ventanas", reportedCategoryId: "c-ventanas", room: "Living",
     description: "La ventana corredera no cierra completamente.", status: "EN_RECEPCION",
     photos: [], createdById: "u-prop-1", encargadoId: "u-enc-centro", crewId: "w-sub-ventanas",
-    visitDate: "2026-08-20", scheduledDate: "2026-09-05", rejectionReason: null,
+    visitDate: "2026-08-20", scheduledDate: "2026-09-05", rejectionReason: null, specialCase: null,
     createdAt: "2026-08-14T09:00:00Z", updatedAt: "2026-09-18T12:00:00Z",
   },
   {
-    id: "t-3", folio: "PV-000103", unitId: "un-2", categoryId: "c-pintura", room: "Dormitorio 2",
+    id: "t-3", folio: "ROB-0001-S", unitId: "un-2", categoryId: "c-pintura", reportedCategoryId: "c-pintura", room: "Dormitorio 2",
     description: "Pintura descascarada en muro exterior del dormitorio.", status: "INGRESADO",
     photos: [], createdById: "u-prop-2", encargadoId: null, crewId: null,
-    visitDate: null, scheduledDate: null, rejectionReason: null,
+    visitDate: null, scheduledDate: null, rejectionReason: null, specialCase: null,
     createdAt: "2026-09-21T18:30:00Z", updatedAt: "2026-09-21T18:30:00Z",
   },
   {
-    id: "t-4", folio: "PV-000104", unitId: "un-3", categoryId: "c-sanitarias", room: "Cocina",
+    id: "t-4", folio: "MIR-0003-C", unitId: "un-3", categoryId: "c-sanitarias", reportedCategoryId: "c-sanitarias", room: "Cocina",
     description: "Gotea la llave del lavaplatos aunque esté cerrada.", status: "EN_REVISION",
     photos: [], createdById: "u-prop-3", encargadoId: "u-enc-centro", crewId: null,
-    visitDate: null, scheduledDate: null, rejectionReason: null,
+    visitDate: null, scheduledDate: null, rejectionReason: null, specialCase: null,
     createdAt: "2026-09-21T13:10:00Z", updatedAt: "2026-09-22T09:00:00Z",
   },
   {
-    id: "t-5", folio: "PV-000105", unitId: "un-4", categoryId: "c-ceramicas", room: "Baño principal",
+    id: "t-5", folio: "MIR-0004-C", unitId: "un-4", categoryId: "c-ceramicas", reportedCategoryId: "c-ceramicas", room: "Baño principal",
     description: "Cerámica del piso de la ducha suelta y con fisura.", status: "ASIGNADO",
     photos: [], createdById: "u-prop-4", encargadoId: "u-enc-centro", crewId: "w-int-centro",
-    visitDate: null, scheduledDate: null, rejectionReason: null,
+    visitDate: null, scheduledDate: null, rejectionReason: null, specialCase: null,
     createdAt: "2026-09-17T20:45:00Z", updatedAt: "2026-09-19T10:00:00Z",
   },
   {
-    id: "t-6", folio: "PV-000106", unitId: "un-3", categoryId: "c-puertas", room: "Dormitorio principal",
+    id: "t-6", folio: "MIR-0005-C", unitId: "un-3", categoryId: "c-puertas", reportedCategoryId: "c-puertas", room: "Dormitorio principal",
     description: "La puerta roza el piso y cuesta cerrarla.", status: "CERRADO",
     photos: [], createdById: "u-prop-3", encargadoId: "u-enc-centro", crewId: "w-int-centro",
-    visitDate: "2026-08-25", scheduledDate: "2026-09-01", rejectionReason: null,
+    visitDate: "2026-08-25", scheduledDate: "2026-09-01", rejectionReason: null, specialCase: null,
     createdAt: "2026-08-20T11:00:00Z", updatedAt: "2026-09-08T17:00:00Z",
   },
 ];

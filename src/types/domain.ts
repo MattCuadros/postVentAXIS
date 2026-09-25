@@ -28,6 +28,7 @@ export interface GeoPoint {
 export interface Zone {
   id: string;
   name: string;
+  code: "N" | "C" | "S" | "A";
 }
 
 export interface User {
@@ -44,6 +45,8 @@ export interface User {
 export interface Project {
   id: string;
   name: string;
+  /** Sigla única de 2 a 4 letras usada en el folio. */
+  code: string;
   zoneId: string;
   address: string;
   commune: string;
@@ -74,6 +77,8 @@ export interface WorkCrew {
   contactName: string;
   phone: string;
   zoneId: string;
+  /** Obras que atiende el equipo dentro de su zona base. */
+  projectIds: string[];
 }
 
 export interface TicketPhoto {
@@ -85,10 +90,12 @@ export interface TicketPhoto {
 
 export interface Ticket {
   id: string;
-  /** Correlativo legible, ej. PV-000123. */
+  /** Correlativo legible por obra y zona, ej. MIR-0012-C. */
   folio: string;
   unitId: string;
   categoryId: string;
+  /** Categoría elegida originalmente por el propietario. */
+  reportedCategoryId: string;
   /** Recinto donde está la falla: baño, cocina, dormitorio, etc. */
   room: string;
   description: string;
@@ -101,6 +108,8 @@ export interface Ticket {
   scheduledDate: string | null;
   /** Motivo obligatorio cuando status = NO_PROCEDE. */
   rejectionReason: string | null;
+  /** Atención excepcional fuera de garantía, visible solo para el equipo Axis. */
+  specialCase: { reason: string; markedById: string; markedAt: string } | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -112,6 +121,7 @@ export interface TicketChanges {
   visitDate?: string;
   scheduledDate?: string;
   rejectionReason?: string;
+  categoryId?: string;
   /** Fotos de terreno: se agregan a las existentes. */
   photos?: TicketPhoto[];
 }

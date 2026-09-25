@@ -46,7 +46,7 @@ export function ProjectDetail({ projectId }: { projectId: string }) {
     <div className="pb-8">
       <PageHeader
         back={{ href: "/admin/obras", label: "Obras" }}
-        title={project.name}
+        title={`${project.name} · ${project.code}`}
         subtitle={
           <>
             <p>

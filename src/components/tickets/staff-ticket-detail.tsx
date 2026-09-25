@@ -86,6 +86,10 @@ export function StaffTicketDetail({ ticketId, backHref }: StaffTicketDetailProps
     setNotice(DONE_MESSAGE[transition.to] ?? "Cambio guardado.");
   }
 
+  function handleSpecialCase() {
+    setNotice("Registrado como caso especial. El flujo continúa normalmente.");
+  }
+
   return (
     <div className="pb-8">
       <PageHeader
@@ -94,6 +98,11 @@ export function StaffTicketDetail({ ticketId, backHref }: StaffTicketDetailProps
         aside={
           <>
             <StatusBadge status={ticket.status} />
+            {ticket.specialCase && (
+              <span className="inline-flex items-center rounded-sm bg-accent-soft px-3 py-1 text-xs font-semibold text-accent">
+                Caso especial
+              </span>
+            )}
             <span className="text-sm text-ink-meta">
               {days} {days === 1 ? "día" : "días"} {ticket.status === "CERRADO" || ticket.status === "NO_PROCEDE" ? "en total" : "abierto"}
             </span>
@@ -117,7 +126,15 @@ export function StaffTicketDetail({ ticketId, backHref }: StaffTicketDetailProps
             )}
             <NextStepInfo ticket={ticket} />
             <div className="mt-4">
-              <StaffActions ticket={ticket} role={user.role} userId={user.id} zoneId={project.zoneId} onDone={handleDone} />
+              <StaffActions
+                ticket={ticket}
+                role={user.role}
+                userId={user.id}
+                zoneId={project.zoneId}
+                projectId={project.id}
+                onDone={handleDone}
+                onSpecialCase={handleSpecialCase}
+              />
             </div>
           </Panel>
 
@@ -159,6 +176,18 @@ export function StaffTicketDetail({ ticketId, backHref }: StaffTicketDetailProps
               {[category?.name, ticket.room, `Ingresado el ${formatLongDate(ticket.createdAt)}`].filter(Boolean).join(" · ")}
             </p>
             <p className="mt-2 whitespace-pre-line text-ink">{ticket.description}</p>
+            {ticket.reportedCategoryId !== ticket.categoryId && (
+              <p className="mt-3 text-sm text-ink-secondary">
+                Origen reportado por el propietario:{" "}
+                {categories?.find((item) => item.id === ticket.reportedCategoryId)?.name ?? "—"}
+              </p>
+            )}
+            {ticket.specialCase && (
+              <div className="mt-4 rounded-md bg-accent-soft p-3 text-sm">
+                <p className="font-bold text-accent">Caso especial</p>
+                <p className="mt-1 text-ink-secondary">{ticket.specialCase.reason}</p>
+              </div>
+            )}
             {ticket.status === "NO_PROCEDE" && ticket.rejectionReason && (
               <div className="mt-4 rounded-md bg-danger/5 p-3 text-sm">
                 <p className="font-bold text-danger">Motivo de no procede</p>

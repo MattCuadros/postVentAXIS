@@ -40,6 +40,7 @@ export function createSeedState(): DataState {
 
 export type DataAction =
   | { type: "CREATE_TICKET"; ticket: Ticket; historyId: string }
+  | { type: "MARK_SPECIAL_CASE"; ticketId: string; markedById: string; reason: string; markedAt: string; historyId: string }
   | {
       type: "TRANSITION_TICKET";
       ticketId: string;
@@ -120,6 +121,25 @@ export function reducer(state: DataState, action: DataAction): DataState {
         tickets: state.tickets.map((item) =>
           item.id === ticket.id ? applyTransition(item, action.to, action.changedAt, action.changes) : item,
         ),
+        statusHistory: [...state.statusHistory, historyEntry],
+      };
+    }
+
+    case "MARK_SPECIAL_CASE": {
+      const ticket = state.tickets.find(({ id }) => id === action.ticketId);
+      const user = state.users.find(({ id }) => id === action.markedById);
+      if (!ticket || !user || action.reason.trim().length < 10 || user.role === "PROPIETARIO" || ticket.specialCase !== null || !["EN_REVISION", "VISITA_INSPECTIVA"].includes(ticket.status)) {
+        throw new Error("Invalid special case action");
+      }
+      const historyEntry: TicketStatusHistory = {
+        id: action.historyId, ticketId: ticket.id, from: ticket.status, to: ticket.status,
+        changedById: user.id, comment: `Caso especial: ${action.reason}`, createdAt: action.markedAt,
+      };
+      return {
+        ...state,
+        tickets: state.tickets.map((item) => item.id === ticket.id
+          ? { ...item, specialCase: { reason: action.reason, markedById: user.id, markedAt: action.markedAt }, updatedAt: action.markedAt }
+          : item),
         statusHistory: [...state.statusHistory, historyEntry],
       };
     }

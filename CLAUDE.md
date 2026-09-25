@@ -16,7 +16,7 @@ Antes de tocar cualquier UI, lee `public/brand/formato-axis/SKILL.md` y `public/
 
 ## Dominio
 
-- Tipos: `src/types/domain.ts` (espejo del futuro `schema.prisma`).
+- Tipos: `src/types/domain.ts` (espejo del futuro `schema.prisma`). Zonas tienen código y las obras un código único para folios `<OBRA>-<NNNN>-<ZONA>`; los tickets conservan origen reportado/confirmado y pueden marcarse como caso especial por personal.
 - Máquina de estados de tickets: `src/lib/ticket-status.ts` (`TRANSITIONS`, `availableTransitions`, `canTransition`, `STATUS_LABEL`, `STATUS_TONE`, `MAIN_FLOW`).
 - Datos semilla: `src/mocks/data.ts` (zones, categories, users, projects, units, crews, tickets, statusHistory).
 
@@ -61,5 +61,5 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 ## Persistencia local (sin backend)
 
-- `src/data/persistence.ts` guarda el estado completo en `localStorage` (`postventaxis:datos`, versionado). `DataProvider` lo carga al montar, guarda en cada cambio y sincroniza entre pestañas. "Restablecer datos de ejemplo" (menú de usuario) vuelve a `createSeedState()`.
+- `src/data/persistence.ts` guarda el estado completo en `localStorage` (`postventaxis:datos`, versionado; v2 migra automáticamente el estado v1). `DataProvider` lo carga al montar, guarda en cada cambio y sincroniza entre pestañas. "Restablecer datos de ejemplo" (menú de usuario) vuelve a `createSeedState()`.
 - La sesión usa dos cookies: `pv_user_id` y `pv_role`. `src/proxy.ts` rutea solo por rol; el cliente valida que el usuario exista y esté activo.

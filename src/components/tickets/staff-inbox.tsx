@@ -16,7 +16,8 @@ import type { Ticket, TicketStatus } from "@/types/domain";
 
 const OPEN = "ABIERTOS";
 const ALL = "TODOS";
-type StatusFilter = typeof OPEN | typeof ALL | TicketStatus;
+const SPECIAL = "CASOS_ESPECIALES";
+type StatusFilter = typeof OPEN | typeof ALL | typeof SPECIAL | TicketStatus;
 
 const STATUS_OPTIONS: TicketStatus[] = [...MAIN_FLOW, "NO_PROCEDE"];
 
@@ -85,6 +86,7 @@ export function StaffInbox({ basePath, allZones = false }: StaffInboxProps) {
     const term = search.trim().toLocaleLowerCase("es");
     return rows.filter((row) => {
       if (status === OPEN && isClosed(row.ticket.status)) return false;
+      if (status === SPECIAL && row.ticket.specialCase === null) return false;
       if (status !== OPEN && status !== ALL && row.ticket.status !== status) return false;
       if (zone && row.zoneId !== zone) return false;
       if (!term) return true;
@@ -130,6 +132,7 @@ export function StaffInbox({ basePath, allZones = false }: StaffInboxProps) {
         <Select label="Estado" name="status" value={status} onChange={(event) => setStatus(event.target.value as StatusFilter)}>
           <option value={OPEN}>Abiertos</option>
           <option value={ALL}>Todos</option>
+          <option value={SPECIAL}>Casos especiales</option>
           {STATUS_OPTIONS.map((item) => <option key={item} value={item}>{STATUS_LABEL[item]}</option>)}
         </Select>
         <Select label="Zona" name="zone" value={zone} disabled={myZones.length < 2} onChange={(event) => setZone(event.target.value)}>
@@ -162,6 +165,7 @@ export function StaffInbox({ basePath, allZones = false }: StaffInboxProps) {
                   <p className="mt-1 font-bold text-ink">{row.place} · {row.unit}</p>
                   <p className="text-sm text-ink-secondary">{row.category} · {row.crew}</p>
                   <StatusBadge status={row.ticket.status} className="mt-3" />
+                  {row.ticket.specialCase && <span className="ml-2 inline-flex rounded-sm bg-accent-soft px-3 py-1 text-xs font-semibold text-accent">Caso especial</span>}
                 </Link>
               </li>
             ))}
@@ -190,7 +194,7 @@ export function StaffInbox({ basePath, allZones = false }: StaffInboxProps) {
                     </td>
                     <td className="py-4 pr-4 text-ink">{row.place} · {row.unit}</td>
                     <td className="py-4 pr-4 text-ink">{row.category}</td>
-                    <td className="py-4 pr-4"><StatusBadge status={row.ticket.status} /></td>
+                    <td className="py-4 pr-4"><StatusBadge status={row.ticket.status} />{row.ticket.specialCase && <span className="ml-2 inline-flex rounded-sm bg-accent-soft px-2 py-1 text-xs font-semibold text-accent">Caso especial</span>}</td>
                     <td className="py-4 pr-4 text-right tabular-nums text-ink">{row.days}</td>
                     <td className="py-4 pl-4 text-ink">{row.crew}</td>
                   </tr>

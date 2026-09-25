@@ -16,7 +16,7 @@ import type {
   WorkCrew,
 } from "@/types/domain";
 
-export type CreateTicketInput = Omit<Ticket, "id" | "folio" | "status" | "createdAt" | "updatedAt">;
+export type CreateTicketInput = Omit<Ticket, "id" | "folio" | "status" | "createdAt" | "updatedAt" | "reportedCategoryId" | "specialCase">;
 export type CreateProjectInput = Omit<Project, "id">;
 export type CreateUnitInput = Omit<Unit, "id">;
 export type CreateCrewInput = Omit<WorkCrew, "id">;
@@ -73,10 +73,16 @@ export function useDataApi() {
   const createTicket = useCallback(async (input: CreateTicketInput): Promise<Ticket> => {
     await simulatedLatency();
     const now = new Date().toISOString();
+    const unit = state.units.find((item) => item.id === input.unitId);
+    const project = state.projects.find((item) => item.id === unit?.projectId);
+    const zone = state.zones.find((item) => item.id === project?.zoneId);
+    if (!unit || !project || !zone) throw new Error("No encontramos la obra para generar el folio.");
     const ticket: Ticket = {
       ...input,
       id: crypto.randomUUID(),
-      folio: nextFolio(state.tickets),
+      folio: nextFolio(state.tickets, state.units, project, zone),
+      reportedCategoryId: input.categoryId,
+      specialCase: null,
       status: "INGRESADO",
       createdAt: now,
       updatedAt: now,
@@ -84,6 +90,17 @@ export function useDataApi() {
 
     dispatch({ type: "CREATE_TICKET", ticket, historyId: crypto.randomUUID() });
     return ticket;
+  }, [dispatch, state.projects, state.tickets, state.units, state.zones]);
+
+  const markSpecialCase = useCallback(async (ticketId: string, markedById: string, reason: string): Promise<Ticket> => {
+    await simulatedLatency();
+    const cleanReason = reason.trim();
+    if (cleanReason.length < 10) throw new Error("Special case reason is too short");
+    const ticket = state.tickets.find((item) => item.id === ticketId);
+    if (!ticket) throw new Error(`Ticket not found: ${ticketId}`);
+    const markedAt = new Date().toISOString();
+    dispatch({ type: "MARK_SPECIAL_CASE", ticketId, markedById, reason: cleanReason, markedAt, historyId: crypto.randomUUID() });
+    return { ...ticket, specialCase: { reason: cleanReason, markedById, markedAt }, updatedAt: markedAt };
   }, [dispatch, state.tickets]);
 
   const transitionTicket = useCallback(async (
@@ -156,10 +173,11 @@ export function useDataApi() {
 
   const createProject = useCallback(async (input: CreateProjectInput): Promise<Project> => {
     await simulatedLatency();
+    if (state.projects.some((project) => project.code === input.code)) throw new Error("Project code already exists");
     const project: Project = { ...input, id: crypto.randomUUID() };
     dispatch({ type: "CREATE_PROJECT", project });
     return project;
-  }, [dispatch]);
+  }, [dispatch, state.projects]);
 
   const createUnit = useCallback(async (input: CreateUnitInput): Promise<Unit> => {
     await simulatedLatency();
@@ -203,6 +221,7 @@ export function useDataApi() {
     getStatusHistory,
     createTicket,
     transitionTicket,
+    markSpecialCase,
     getUnitsByOwner,
     getUnits,
     getProjects,
@@ -237,6 +256,7 @@ export function useDataApi() {
     getUsers,
     getZones,
     transitionTicket,
+    markSpecialCase,
     updateUser,
   ]);
 }

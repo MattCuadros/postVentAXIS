@@ -70,7 +70,7 @@ export default function IndicadoresPage() {
 
       {indicators === undefined ? (
         <div role="status" aria-label="Calculando indicadores…">
-          <div className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <div className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
             {Array.from({ length: 4 }, (_, index) => (
               <div key={index} className="rounded-lg border border-line-soft bg-surface p-6 shadow-card">
                 <Skeleton className="h-1 w-12" />
@@ -90,6 +90,7 @@ export default function IndicadoresPage() {
             <StatTile label={period === "MES" ? "Ingresados este mes" : `Ingresados · ${PERIOD_LABEL[period].toLowerCase()}`} value={String(indicators.created)} />
             <StatTile label="Abiertos ahora" value={String(indicators.open)} />
             <StatTile label="Esperando conformidad" value={String(indicators.awaitingOwner)} tone="action" />
+            <StatTile label="Casos especiales" value={String(indicators.specialCases)} />
             <StatTile
               label="Días promedio de cierre"
               value={indicators.avgDaysToClose === null ? "—" : oneDecimal.format(indicators.avgDaysToClose)}

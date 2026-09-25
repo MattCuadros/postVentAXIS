@@ -26,7 +26,8 @@ export async function exportTicketsToExcel(sources: ExportSources): Promise<void
       Obra: project?.name ?? "",
       Unidad: unit ? unitLabel(unit) : "",
       Zona: zones.find((item) => item.id === project?.zoneId)?.name ?? "",
-      Categoría: categories.find((item) => item.id === ticket.categoryId)?.name ?? "",
+      "Categoría reportada": categories.find((item) => item.id === ticket.reportedCategoryId)?.name ?? "",
+      "Categoría confirmada": categories.find((item) => item.id === ticket.categoryId)?.name ?? "",
       Recinto: ticket.room,
       Descripción: ticket.description,
       Propietario: users.find((item) => item.id === unit?.ownerId)?.name ?? "",
@@ -37,6 +38,8 @@ export async function exportTicketsToExcel(sources: ExportSources): Promise<void
       "Trabajo programado": ticket.scheduledDate ?? "",
       "Días abierto": daysOpen(ticket),
       "Motivo no procede": ticket.rejectionReason ?? "",
+      "Caso especial": ticket.specialCase ? "Sí" : "No",
+      "Motivo caso especial": ticket.specialCase?.reason ?? "",
     };
   });
 

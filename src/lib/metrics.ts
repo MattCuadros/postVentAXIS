@@ -31,6 +31,7 @@ export interface Indicators {
   open: number;
   /** Esperando conformidad hoy. */
   awaitingOwner: number;
+  specialCases: number;
   /** Promedio de días entre ingreso y cierre conforme, para los cerrados en el período. null si no hay. */
   avgDaysToClose: number | null;
   byZone: CountRow[];
@@ -84,6 +85,7 @@ export function computeIndicators(period: Period, sources: Sources, now: Date = 
     created: created.length,
     open: tickets.filter((ticket) => !isClosed(ticket.status)).length,
     awaitingOwner: tickets.filter((ticket) => ticket.status === "EN_RECEPCION").length,
+    specialCases: tickets.filter((ticket) => ticket.specialCase !== null).length,
     avgDaysToClose: closeDays.length === 0 ? null : closeDays.reduce((sum, days) => sum + days, 0) / closeDays.length,
     byZone,
     byCategory,

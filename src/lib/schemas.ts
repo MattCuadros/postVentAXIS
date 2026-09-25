@@ -7,6 +7,7 @@ const requiredText = (label: string) => z.string().trim().min(1, `${label} es ob
 
 export const projectSchema = z.object({
   name: requiredText("El nombre"),
+  code: z.string().trim().regex(/^[A-Z]{2,4}$/, "El código debe tener entre 2 y 4 letras mayúsculas."),
   zoneId: z.string().min(1, "Elige la zona."),
   address: requiredText("La dirección"),
   commune: requiredText("La comuna"),
@@ -54,6 +55,7 @@ export const crewSchema = z.object({
   contactName: requiredText("El contacto"),
   phone: requiredText("El teléfono"),
   zoneId: z.string().min(1, "Elige la zona."),
+  projectIds: z.array(z.string()),
 });
 
 /** Primer mensaje de error por campo, para mostrar bajo cada input. */

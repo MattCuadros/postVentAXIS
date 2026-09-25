@@ -50,7 +50,7 @@ export default function ObrasPage() {
           {rows.map(({ project, zone, units: unitCount, open }) => (
             <li key={project.id} className="flex flex-col rounded-lg border border-line-soft bg-surface p-5 shadow-card transition duration-150 ease-axis-out hover:shadow-raised">
               <Link href={`/admin/obras/${project.id}`} className="text-lg font-bold text-accent hover:underline">
-                {project.name}
+                {project.name} · {project.code}
               </Link>
               <p className="text-sm text-ink-secondary">{project.address}, {project.commune}</p>
               <p className="text-sm text-ink-secondary">{zone}</p>
