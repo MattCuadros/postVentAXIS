@@ -8,7 +8,7 @@ Sistema de postventa/garantías inmobiliarias para Axis Desarrollos Constructivo
 - Tailwind **v3** (no v4 — el `tailwind.config.ts` y `globals.css` del proyecto usan sintaxis v3: `@tailwind`, `theme.extend`, `@apply`). No cambiar a v4 sin migrar también esos archivos.
 - Sin librerías de UI de terceros (sin Radix, sin shadcn, etc.): los primitivos (`Dialog`, `Tabs`, `Select`, etc.) se construyen a mano en `src/components/ui/` con Tailwind + elementos nativos del navegador (ej. `<dialog>`).
 - Excepción: el calendario del encargado usa FullCalendar 6.1 (`@fullcalendar/*`), con estilos propios en `src/components/tickets/staff-calendar.css` (tokens de marca).
-- Validación de formularios: `zod`. Gráficos (solo en `/admin`): `recharts`. Parseo de Excel (solo en importador de usuarios): `xlsx`.
+- Validación de formularios: `zod`. Gráficos (solo en `/admin`): `recharts`. Excel (`xlsx`, cargado bajo demanda): importadores de planillas y exportaciones (requerimientos del admin, estadísticas del encargado).
 - Sin Prisma, sin backend real: todo el estado vive en `src/data/` (store en memoria).
 
 ## Marca Axis
@@ -81,3 +81,8 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 - `src/data/persistence.ts` guarda el estado completo en `localStorage` (`postventaxis:datos`, versionado; cada versión migra la anterior: v1→v2 folios por obra, v2→v3 horas de visita/trabajo, v3→v4 referencias y documentos de tickets, v4→v5 zonas Postventa y `projectIds`, v5→v6 `photos` → `media`). `DataProvider` lo carga al montar, guarda en cada cambio y sincroniza entre pestañas. "Restablecer datos de ejemplo" (menú de usuario) vuelve a `createSeedState()`.
 - La sesión usa dos cookies: `pv_user_id` y `pv_role`. `src/proxy.ts` rutea solo por rol; el cliente valida que el usuario exista y esté activo.
+
+## Estadísticas del encargado
+
+- `/encargado/estadisticas`: tablero de sus zonas con ventana móvil (última semana, 2 semanas, mes, 3 meses, todo), filtros (zona, obra, origen, equipo, estado) y descarga Excel.
+- Cálculos puros en `src/lib/zone-stats.ts` (la pantalla y el Excel usan los mismos); Excel en `src/lib/export-zone-stats.ts`.
