@@ -16,7 +16,7 @@ import type {
   WorkCrew,
 } from "@/types/domain";
 
-export type CreateTicketInput = Omit<Ticket, "id" | "folio" | "status" | "createdAt" | "updatedAt" | "reportedCategoryId" | "specialCase">;
+export type CreateTicketInput = Omit<Ticket, "id" | "folio" | "status" | "createdAt" | "updatedAt" | "reportedCategoryId" | "specialCase" | "visitTime" | "scheduledTime">;
 export type CreateProjectInput = Omit<Project, "id">;
 export type CreateUnitInput = Omit<Unit, "id">;
 export type CreateCrewInput = Omit<WorkCrew, "id">;
@@ -83,6 +83,8 @@ export function useDataApi() {
       folio: nextFolio(state.tickets, state.units, project, zone),
       reportedCategoryId: input.categoryId,
       specialCase: null,
+      visitTime: null,
+      scheduledTime: null,
       status: "INGRESADO",
       createdAt: now,
       updatedAt: now,
@@ -101,6 +103,31 @@ export function useDataApi() {
     const markedAt = new Date().toISOString();
     dispatch({ type: "MARK_SPECIAL_CASE", ticketId, markedById, reason: cleanReason, markedAt, historyId: crypto.randomUUID() });
     return { ...ticket, specialCase: { reason: cleanReason, markedById, markedAt }, updatedAt: markedAt };
+  }, [dispatch, state.tickets]);
+
+  /** Agenda o reagenda la visita inspectiva de un ticket ASIGNADO, sin cambiar su estado. */
+  const scheduleVisit = useCallback(async (
+    ticketId: string,
+    changedById: string,
+    visitDate: string,
+    visitTime: string | null,
+    comment: string,
+  ): Promise<Ticket> => {
+    await simulatedLatency();
+    const ticket = state.tickets.find((item) => item.id === ticketId);
+    if (!ticket) throw new Error(`Ticket not found: ${ticketId}`);
+    const changedAt = new Date().toISOString();
+    dispatch({
+      type: "SCHEDULE_VISIT",
+      ticketId,
+      visitDate,
+      visitTime,
+      changedById,
+      comment,
+      changedAt,
+      historyId: crypto.randomUUID(),
+    });
+    return { ...ticket, visitDate, visitTime, updatedAt: changedAt };
   }, [dispatch, state.tickets]);
 
   const transitionTicket = useCallback(async (
@@ -222,6 +249,7 @@ export function useDataApi() {
     createTicket,
     transitionTicket,
     markSpecialCase,
+    scheduleVisit,
     getUnitsByOwner,
     getUnits,
     getProjects,
@@ -257,6 +285,7 @@ export function useDataApi() {
     getZones,
     transitionTicket,
     markSpecialCase,
+    scheduleVisit,
     updateUser,
   ]);
 }

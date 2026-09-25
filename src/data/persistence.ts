@@ -2,7 +2,7 @@ import type { DataState } from "@/data/store";
 import type { Project, Ticket, Zone } from "@/types/domain";
 
 export const STORAGE_KEY = "postventaxis:datos";
-const VERSION = 2;
+const VERSION = 3;
 
 interface StoredData {
   version: number;
@@ -117,6 +117,18 @@ function migrateV1(state: DataState): DataState {
   return { ...old, zones, projects, crews, tickets };
 }
 
+/** v2 → v3: las visitas y los trabajos pasan a tener hora (null en lo ya registrado). */
+function migrateV2(state: DataState): DataState {
+  return {
+    ...state,
+    tickets: state.tickets.map((ticket) => ({
+      ...ticket,
+      visitTime: ticket.visitTime ?? null,
+      scheduledTime: ticket.scheduledTime ?? null,
+    })),
+  };
+}
+
 export function loadState(raw: string | null = readRaw()): DataState | null {
   if (!raw) return null;
 
@@ -124,7 +136,8 @@ export function loadState(raw: string | null = readRaw()): DataState | null {
     const stored = JSON.parse(raw) as Partial<StoredData>;
     if (!isDataState(stored.state)) return null;
     if (stored.version === VERSION) return stored.state;
-    return stored.version === 1 ? migrateV1(stored.state) : null;
+    if (stored.version === 2) return migrateV2(stored.state);
+    return stored.version === 1 ? migrateV2(migrateV1(stored.state)) : null;
   } catch {
     return null;
   }

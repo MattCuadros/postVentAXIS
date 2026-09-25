@@ -7,6 +7,7 @@ Sistema de postventa/garantías inmobiliarias para Axis Desarrollos Constructivo
 - Next.js 16 (App Router, `src/` dir, alias `@/*`), React 19, TypeScript `strict: true`.
 - Tailwind **v3** (no v4 — el `tailwind.config.ts` y `globals.css` del proyecto usan sintaxis v3: `@tailwind`, `theme.extend`, `@apply`). No cambiar a v4 sin migrar también esos archivos.
 - Sin librerías de UI de terceros (sin Radix, sin shadcn, etc.): los primitivos (`Dialog`, `Tabs`, `Select`, etc.) se construyen a mano en `src/components/ui/` con Tailwind + elementos nativos del navegador (ej. `<dialog>`).
+- Excepción: el calendario del encargado usa FullCalendar 6.1 (`@fullcalendar/*`), con estilos propios en `src/components/tickets/staff-calendar.css` (tokens de marca).
 - Validación de formularios: `zod`. Gráficos (solo en `/admin`): `recharts`. Parseo de Excel (solo en importador de usuarios): `xlsx`.
 - Sin Prisma, sin backend real: todo el estado vive en `src/data/` (store en memoria).
 
@@ -58,8 +59,9 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 ## Flujo de trabajo
 
 - **Codex (OpenAI) implementa; Claude planifica y revisa.** Claude arma el encargo (contexto, archivos, criterios de aceptación), lo delega a Codex, revisa el diff, corre `tsc`/`lint`/`build`, prueba en el navegador y reporta. Claude no implementa las fases directamente.
+- Excepción vigente (desde 2026-09-25): sin cupo de Codex, Claude implementa hasta que haya un plan pagado.
 
 ## Persistencia local (sin backend)
 
-- `src/data/persistence.ts` guarda el estado completo en `localStorage` (`postventaxis:datos`, versionado; v2 migra automáticamente el estado v1). `DataProvider` lo carga al montar, guarda en cada cambio y sincroniza entre pestañas. "Restablecer datos de ejemplo" (menú de usuario) vuelve a `createSeedState()`.
+- `src/data/persistence.ts` guarda el estado completo en `localStorage` (`postventaxis:datos`, versionado; cada versión migra la anterior: v1→v2 folios por obra, v2→v3 horas de visita/trabajo). `DataProvider` lo carga al montar, guarda en cada cambio y sincroniza entre pestañas. "Restablecer datos de ejemplo" (menú de usuario) vuelve a `createSeedState()`.
 - La sesión usa dos cookies: `pv_user_id` y `pv_role`. `src/proxy.ts` rutea solo por rol; el cliente valida que el usuario exista y esté activo.

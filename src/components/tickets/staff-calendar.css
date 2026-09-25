@@ -1,0 +1,193 @@
+/* FullCalendar con los tokens de marca Axis (tailwind.config.ts). Acotado a .pv-calendar. */
+.pv-calendar {
+  --fc-border-color: #e6e6e6;
+  --fc-page-bg-color: #ffffff;
+  --fc-neutral-bg-color: #f2f2f2;
+  --fc-neutral-text-color: #4d4d4d;
+  --fc-today-bg-color: #e6ecf7;
+  --fc-now-indicator-color: #ff6600;
+  --fc-highlight-color: rgba(0, 51, 153, 0.08);
+  --fc-non-business-color: rgba(242, 242, 242, 0.6);
+  --fc-list-event-hover-bg-color: #f7f7f7;
+  --fc-event-bg-color: #003399;
+  --fc-event-border-color: #003399;
+  --fc-event-text-color: #ffffff;
+  --fc-button-text-color: #003399;
+  --fc-button-bg-color: #ffffff;
+  --fc-button-border-color: #003399;
+  --fc-button-hover-bg-color: #e6ecf7;
+  --fc-button-hover-border-color: #003399;
+  --fc-button-active-bg-color: #003399;
+  --fc-button-active-border-color: #003399;
+  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-size: 14px;
+  color: #1a1a1a;
+}
+
+.pv-calendar .fc .fc-toolbar {
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.pv-calendar .fc .fc-toolbar-title {
+  color: #003399;
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+/* Solo la primera letra en mayúscula ("Septiembre de 2026", no "Septiembre De 2026"). */
+.pv-calendar .fc .fc-toolbar-title::first-letter,
+.pv-calendar .fc .fc-list-day-text::first-letter,
+.pv-calendar .fc .fc-list-day-side-text::first-letter,
+.pv-calendar .fc .fc-col-header-cell-cushion::first-letter {
+  text-transform: uppercase;
+}
+
+.pv-calendar .fc .fc-button {
+  border-radius: 10px;
+  font-weight: 700;
+  font-size: 13px;
+  padding: 0.45rem 0.8rem;
+  box-shadow: none;
+  text-transform: capitalize;
+  transition: background-color 150ms ease-out;
+}
+
+.pv-calendar .fc .fc-button:focus-visible {
+  outline: 2px solid #003399;
+  outline-offset: 2px;
+  box-shadow: none;
+}
+
+.pv-calendar .fc .fc-button-primary:not(:disabled).fc-button-active,
+.pv-calendar .fc .fc-button-primary:not(:disabled):active {
+  color: #ffffff;
+}
+
+.pv-calendar .fc .fc-button-primary:disabled {
+  opacity: 0.4;
+}
+
+.pv-calendar .fc .fc-button-group > .fc-button:not(:first-child) {
+  margin-left: -1px;
+}
+
+.pv-calendar .fc-theme-standard .fc-scrollgrid {
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.pv-calendar .fc .fc-col-header-cell-cushion,
+.pv-calendar .fc .fc-daygrid-day-number,
+.pv-calendar .fc .fc-list-day-text,
+.pv-calendar .fc .fc-list-day-side-text {
+  color: #4d4d4d;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.pv-calendar .fc .fc-day-today .fc-daygrid-day-number {
+  color: #003399;
+}
+
+.pv-calendar .fc .fc-timegrid-slot-label-cushion,
+.pv-calendar .fc .fc-list-event-time {
+  color: #737373;
+  font-variant-numeric: tabular-nums;
+}
+
+.pv-calendar .fc .fc-event {
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.pv-calendar .fc .fc-event:focus-visible {
+  outline: 2px solid #003399;
+  outline-offset: 2px;
+}
+
+/* Visita agendada: azul suave; trabajo: azul Axis; realizado: gris neutro. */
+.pv-calendar .fc .pv-event--visit {
+  background-color: #e6ecf7;
+  border-color: rgba(0, 51, 153, 0.4);
+}
+
+.pv-calendar .fc .pv-event--visit .fc-event-main,
+.pv-calendar .fc .pv-event--visit .fc-event-title,
+.pv-calendar .fc .pv-event--visit .fc-event-time {
+  color: #003399;
+}
+
+.pv-calendar .fc .pv-event--work {
+  background-color: #003399;
+  border-color: #003399;
+}
+
+.pv-calendar .fc .pv-event--done {
+  background-color: #f2f2f2;
+  border-color: #cccccc;
+}
+
+.pv-calendar .fc .pv-event--done .fc-event-main,
+.pv-calendar .fc .pv-event--done .fc-event-title,
+.pv-calendar .fc .pv-event--done .fc-event-time {
+  color: #737373;
+}
+
+/* Vista mes y agenda: el punto de color reemplaza al fondo. */
+.pv-calendar .fc .fc-daygrid-dot-event.pv-event--visit,
+.pv-calendar .fc .fc-daygrid-dot-event.pv-event--work,
+.pv-calendar .fc .fc-daygrid-dot-event.pv-event--done {
+  background-color: transparent;
+}
+
+.pv-calendar .fc .fc-daygrid-dot-event .fc-event-title,
+.pv-calendar .fc .fc-daygrid-dot-event .fc-event-time,
+.pv-calendar .fc .fc-list-event-title a {
+  color: #1a1a1a;
+}
+
+.pv-calendar .fc .pv-event--visit .fc-daygrid-event-dot,
+.pv-calendar .fc .pv-event--visit .fc-list-event-dot {
+  border-color: #6f8fd0;
+}
+
+.pv-calendar .fc .pv-event--work .fc-daygrid-event-dot,
+.pv-calendar .fc .pv-event--work .fc-list-event-dot {
+  border-color: #003399;
+}
+
+.pv-calendar .fc .pv-event--done .fc-daygrid-event-dot,
+.pv-calendar .fc .pv-event--done .fc-list-event-dot {
+  border-color: #cccccc;
+}
+
+.pv-calendar .fc .pv-event--visit.fc-list-event,
+.pv-calendar .fc .pv-event--work.fc-list-event,
+.pv-calendar .fc .pv-event--done.fc-list-event {
+  background-color: transparent;
+}
+
+.pv-calendar .fc .fc-daygrid-more-link {
+  color: #003399;
+  font-weight: 700;
+}
+
+@media (max-width: 767px) {
+  .pv-calendar .fc .fc-toolbar {
+    justify-content: space-between;
+  }
+
+  .pv-calendar .fc .fc-toolbar-title {
+    font-size: 15px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pv-calendar .fc .fc-button {
+    transition: none;
+  }
+}

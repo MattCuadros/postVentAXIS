@@ -104,8 +104,13 @@ export interface Ticket {
   createdById: string;
   encargadoId: string | null;
   crewId: string | null;
+  /** Fecha de la visita inspectiva (agendada mientras está ASIGNADO; efectiva después). */
   visitDate: string | null;
+  /** Hora "HH:mm" de la visita; null si no se definió. */
+  visitTime: string | null;
   scheduledDate: string | null;
+  /** Hora "HH:mm" del trabajo programado; null si no se definió. */
+  scheduledTime: string | null;
   /** Motivo obligatorio cuando status = NO_PROCEDE. */
   rejectionReason: string | null;
   /** Atención excepcional fuera de garantía, visible solo para el equipo Axis. */
@@ -119,7 +124,9 @@ export interface TicketChanges {
   encargadoId?: string;
   crewId?: string;
   visitDate?: string;
+  visitTime?: string | null;
   scheduledDate?: string;
+  scheduledTime?: string | null;
   rejectionReason?: string;
   categoryId?: string;
   /** Fotos de terreno: se agregan a las existentes. */

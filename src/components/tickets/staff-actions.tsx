@@ -12,7 +12,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useDataApi } from "@/data/api";
 import { useQuery } from "@/data/use-query";
 import { cn } from "@/lib/cn";
-import { todayIso } from "@/lib/format";
+import { formatDateAndTime, isValidTime, todayIso } from "@/lib/format";
 import { availableTransitions, type Transition } from "@/lib/ticket-status";
 import type { Role, Ticket, TicketChanges, TicketStatus, WorkCrew, WorkCrewType } from "@/types/domain";
 
@@ -27,7 +27,13 @@ interface FormSpec {
     field: "visitDate" | "scheduledDate";
     notAfterToday?: boolean;
     notBeforeToday?: boolean;
+    /** La fecha puede quedar vacía (ej. agendar la visita al asignar equipo). */
+    optional?: boolean;
   };
+  /** Hora junto a la fecha: "required" exige hora cuando hay fecha; "optional" la deja libre. */
+  time?: "required" | "optional";
+  /** Texto del historial que describe la fecha elegida, ej. "Visita agendada para el". */
+  dateNote?: string;
   comment: { label: string; required: boolean; placeholder?: string };
   photos?: boolean;
   category?: boolean;
@@ -39,12 +45,16 @@ const FORMS: Partial<Record<TicketStatus, FormSpec>> = {
   ASIGNADO: {
     title: "Asignar equipo",
     crew: true,
+    date: { label: "Agendar visita inspectiva (opcional)", field: "visitDate", notBeforeToday: true, optional: true },
+    time: "required",
+    dateNote: "Visita agendada para el",
     comment: { label: "Indicaciones para el equipo (opcional)", required: false },
     submitLabel: "Asignar equipo",
   },
   VISITA_INSPECTIVA: {
     title: "Registrar visita inspectiva",
     date: { label: "Fecha de la visita", field: "visitDate", notAfterToday: true },
+    time: "optional",
     comment: { label: "Diagnóstico", required: true, placeholder: "Qué encontraste y qué hay que hacer." },
     photos: true,
     category: true,
@@ -54,6 +64,8 @@ const FORMS: Partial<Record<TicketStatus, FormSpec>> = {
     title: "Programar trabajo",
     description: "Agenda la fecha con el propietario antes de registrarla.",
     date: { label: "Fecha del trabajo", field: "scheduledDate", notBeforeToday: true },
+    time: "required",
+    dateNote: "Trabajo programado para el",
     comment: { label: "Nota para el propietario (opcional)", required: false, placeholder: "Ej.: llegaremos entre 9:00 y 11:00." },
     submitLabel: "Programar",
   },
@@ -86,6 +98,8 @@ interface StaffActionsProps {
   projectId: string;
   onDone?: (transition: Transition) => void;
   onSpecialCase?: () => void;
+  /** Se llama tras agendar o reagendar la visita, con el texto a mostrar. */
+  onVisitScheduled?: (message: string) => void;
 }
 
 export function StaffActions({
@@ -96,6 +110,7 @@ export function StaffActions({
   projectId,
   onDone,
   onSpecialCase,
+  onVisitScheduled,
 }: StaffActionsProps) {
   const { transitionTicket, markSpecialCase } = useDataApi();
   const transitions = availableTransitions(ticket.status, role);
@@ -105,6 +120,7 @@ export function StaffActions({
   const [error, setError] = useState<string | null>(null);
   const [specialOpen, setSpecialOpen] = useState(false);
   const [specialReason, setSpecialReason] = useState("");
+  const [scheduleOpen, setScheduleOpen] = useState(false);
 
   async function run(transition: Transition, comment?: string, changes: TicketChanges = {}) {
     setRunning(transition);
@@ -149,9 +165,10 @@ export function StaffActions({
     ticket.specialCase === null &&
     ["EN_REVISION", "VISITA_INSPECTIVA"].includes(ticket.status) &&
     role !== "PROPIETARIO";
+  const canScheduleVisit = ticket.status === "ASIGNADO" && role !== "PROPIETARIO";
   const busy = running !== null || markingSpecial;
 
-  if (transitions.length === 0 && !canMarkSpecial) return null;
+  if (transitions.length === 0 && !canMarkSpecial && !canScheduleVisit) return null;
 
   const spec = open ? FORMS[open.to] : undefined;
 
@@ -170,6 +187,17 @@ export function StaffActions({
             {running === transition && !open ? "Guardando…" : transition.action}
           </Button>
         ))}
+        {canScheduleVisit && (
+          <Button
+            fullWidth
+            size="lg"
+            variant="secondary"
+            disabled={busy}
+            onClick={() => setScheduleOpen(true)}
+          >
+            {ticket.visitDate ? "Reagendar visita" : "Agendar visita"}
+          </Button>
+        )}
         {canMarkSpecial && (
           <Button
             fullWidth
@@ -203,6 +231,24 @@ export function StaffActions({
             error={error}
             onCancel={() => setOpen(null)}
             onSubmit={(comment, changes) => run(open, comment, changes)}
+          />
+        )}
+      </Dialog>
+
+      <Dialog
+        open={scheduleOpen}
+        title={ticket.visitDate ? "Reagendar visita inspectiva" : "Agendar visita inspectiva"}
+        onClose={() => setScheduleOpen(false)}
+      >
+        {scheduleOpen && (
+          <ScheduleVisitForm
+            ticket={ticket}
+            userId={userId}
+            onCancel={() => setScheduleOpen(false)}
+            onSaved={(message) => {
+              setScheduleOpen(false);
+              onVisitScheduled?.(message);
+            }}
           />
         )}
       </Dialog>
@@ -275,40 +321,50 @@ function TransitionForm({
   const today = todayIso();
   const projectCrews = crews?.filter((crew) => crew.projectIds.includes(projectId)) ?? [];
   const otherCrews = crews?.filter((crew) => !crew.projectIds.includes(projectId)) ?? [];
+  const initial = initialSchedule(spec, ticket, today);
   const [crewId, setCrewId] = useState("");
-  const [date, setDate] = useState(spec.date?.notAfterToday ? today : "");
+  const [date, setDate] = useState(initial.date);
+  const [time, setTime] = useState(initial.time);
   const [comment, setComment] = useState("");
   const [photos, setPhotos] = useState<PickedPhoto[]>([]);
   const [categoryId, setCategoryId] = useState(ticket.categoryId);
   const [errors, setErrors] = useState<
-    Partial<Record<"crew" | "date" | "comment" | "category", string>>
+    Partial<Record<"crew" | "date" | "time" | "comment" | "category", string>>
   >({});
 
   function buildSchema() {
     const commentField = spec.comment.required
       ? z.string().trim().min(10, spec.comment.label + ": escribe al menos 10 caracteres.")
       : z.string().trim();
-    let dateField = z.string().min(1, "Elige una fecha.");
+    let dateField = spec.date?.optional ? z.string() : z.string().min(1, "Elige una fecha.");
 
     if (spec.date?.notAfterToday) {
-      dateField = dateField.refine((value) => value <= today, "La fecha no puede ser futura.");
+      dateField = dateField.refine((value) => value === "" || value <= today, "La fecha no puede ser futura.");
     }
     if (spec.date?.notBeforeToday) {
-      dateField = dateField.refine((value) => value >= today, "La fecha no puede ser pasada.");
+      dateField = dateField.refine((value) => value === "" || value >= today, "La fecha no puede ser pasada.");
     }
 
-    return z.object({
-      crew: spec.crew ? z.string().min(1, "Elige un equipo.") : z.string(),
-      date: spec.date ? dateField : z.string(),
-      comment: commentField,
-      category: spec.category ? z.string().min(1, "Confirma el origen de la falla.") : z.string(),
-    });
+    return z
+      .object({
+        crew: spec.crew ? z.string().min(1, "Elige un equipo.") : z.string(),
+        date: spec.date ? dateField : z.string(),
+        time: z.string().refine((value) => value === "" || isValidTime(value), "Hora no válida."),
+        comment: commentField,
+        category: spec.category ? z.string().min(1, "Confirma el origen de la falla.") : z.string(),
+      })
+      .superRefine((values, context) => {
+        if (spec.time === "required" && values.date !== "" && values.time === "") {
+          context.addIssue({ code: "custom", path: ["time"], message: "Indica la hora." });
+        }
+      });
   }
 
   function handleSubmit() {
     const result = buildSchema().safeParse({
       crew: crewId,
       date,
+      time,
       comment,
       category: categoryId,
     });
@@ -328,7 +384,14 @@ function TransitionForm({
 
     if (spec.crew) changes.crewId = result.data.crew;
     if (spec.category) changes.categoryId = result.data.category;
-    if (spec.date) changes[spec.date.field] = result.data.date;
+    let dateNote: string | undefined;
+    if (spec.date && result.data.date !== "") {
+      const selectedTime = result.data.time === "" ? null : result.data.time;
+      changes[spec.date.field] = result.data.date;
+      if (spec.date.field === "visitDate") changes.visitTime = selectedTime;
+      else changes.scheduledTime = selectedTime;
+      if (spec.dateNote) dateNote = spec.dateNote + " " + formatDateAndTime(result.data.date, selectedTime);
+    }
     if (spec.photos && photos.length > 0) {
       changes.photos = photos.map((photo) => ({
         id: photo.id,
@@ -343,7 +406,7 @@ function TransitionForm({
     const reclassified = spec.category && result.data.category !== ticket.categoryId
       ? "Origen reclasificado: " + (previous ?? "—") + " → " + (confirmed ?? "—")
       : undefined;
-    const text = [result.data.comment || undefined, reclassified].filter(Boolean).join(" · ") || undefined;
+    const text = [dateNote, result.data.comment || undefined, reclassified].filter(Boolean).join(" · ") || undefined;
 
     if (spec.rejection && text) changes.rejectionReason = text;
     onSubmit(text, changes);
@@ -400,19 +463,35 @@ function TransitionForm({
       )}
 
       {spec.date && (
-        <Input
-          label={spec.date.label}
-          name="transition-date"
-          type="date"
-          value={date}
-          min={spec.date.notBeforeToday ? today : undefined}
-          max={spec.date.notAfterToday ? today : undefined}
-          error={errors.date}
-          onChange={(event) => {
-            setDate(event.target.value);
-            setErrors((current) => ({ ...current, date: undefined }));
-          }}
-        />
+        <div className="grid gap-4 sm:grid-cols-[1fr_9rem]">
+          <Input
+            label={spec.date.label}
+            name="transition-date"
+            type="date"
+            value={date}
+            min={spec.date.notBeforeToday ? today : undefined}
+            max={spec.date.notAfterToday ? today : undefined}
+            error={errors.date}
+            onChange={(event) => {
+              setDate(event.target.value);
+              setErrors((current) => ({ ...current, date: undefined }));
+            }}
+          />
+          {spec.time && (
+            <Input
+              label={spec.time === "required" ? "Hora" : "Hora (opcional)"}
+              name="transition-time"
+              type="time"
+              step={900}
+              value={time}
+              error={errors.time}
+              onChange={(event) => {
+                setTime(event.target.value);
+                setErrors((current) => ({ ...current, time: undefined }));
+              }}
+            />
+          )}
+        </div>
       )}
 
       {spec.category && (
@@ -472,6 +551,104 @@ function TransitionForm({
       </div>
     </div>
   );
+}
+
+interface ScheduleVisitFormProps {
+  ticket: Ticket;
+  userId: string;
+  onCancel: () => void;
+  onSaved: (message: string) => void;
+}
+
+/** Agenda la visita inspectiva de un ticket ya asignado (fecha y hora obligatorias). */
+function ScheduleVisitForm({ ticket, userId, onCancel, onSaved }: ScheduleVisitFormProps) {
+  const { scheduleVisit } = useDataApi();
+  const today = todayIso();
+  const upcoming = ticket.visitDate !== null && ticket.visitDate >= today;
+  const [date, setDate] = useState(upcoming && ticket.visitDate ? ticket.visitDate : "");
+  const [time, setTime] = useState(upcoming ? (ticket.visitTime ?? "") : "");
+  const [errors, setErrors] = useState<Partial<Record<"date" | "time", string>>>({});
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+
+  async function handleSubmit() {
+    const next: typeof errors = {};
+    if (date === "") next.date = "Elige una fecha.";
+    else if (date < today) next.date = "La fecha no puede ser pasada.";
+    if (!isValidTime(time)) next.time = "Indica la hora.";
+    if (Object.keys(next).length > 0) {
+      setErrors(next);
+      return;
+    }
+
+    const verb = ticket.visitDate ? "Visita reagendada para el" : "Visita agendada para el";
+    const message = verb + " " + formatDateAndTime(date, time);
+    setSaving(true);
+    setSaveError(null);
+    try {
+      await scheduleVisit(ticket.id, userId, date, time, message);
+      onSaved(message + ".");
+    } catch {
+      setSaveError("No pudimos agendar la visita. Intenta nuevamente.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div className="flex flex-col gap-5">
+      <p className="text-sm text-ink-secondary">Coordina la fecha con el propietario antes de registrarla.</p>
+      <div className="grid gap-4 sm:grid-cols-[1fr_9rem]">
+        <Input
+          label="Fecha de la visita"
+          name="visit-date"
+          type="date"
+          min={today}
+          value={date}
+          error={errors.date}
+          onChange={(event) => {
+            setDate(event.target.value);
+            setErrors((current) => ({ ...current, date: undefined }));
+          }}
+        />
+        <Input
+          label="Hora"
+          name="visit-time"
+          type="time"
+          step={900}
+          value={time}
+          error={errors.time}
+          onChange={(event) => {
+            setTime(event.target.value);
+            setErrors((current) => ({ ...current, time: undefined }));
+          }}
+        />
+      </div>
+      {saveError && <p className="text-sm text-danger" role="alert">{saveError}</p>}
+      <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+        <Button variant="secondary" disabled={saving} onClick={onCancel}>Cancelar</Button>
+        <Button disabled={saving} onClick={handleSubmit}>{saving ? "Guardando…" : "Guardar visita"}</Button>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Fecha y hora con que abre cada formulario: la visita registrada parte en la agendada (si ya
+ * ocurrió) y la reprogramación de un trabajo parte en la fecha vigente (si no ha pasado).
+ */
+function initialSchedule(spec: FormSpec, ticket: Ticket, today: string): { date: string; time: string } {
+  if (spec.date?.field === "visitDate" && spec.date.notAfterToday) {
+    const agreed = ticket.visitDate !== null && ticket.visitDate <= today;
+    return {
+      date: agreed && ticket.visitDate ? ticket.visitDate : today,
+      time: agreed ? (ticket.visitTime ?? "") : "",
+    };
+  }
+  if (spec.date?.field === "scheduledDate" && ticket.scheduledDate !== null && ticket.scheduledDate >= today) {
+    return { date: ticket.scheduledDate, time: ticket.scheduledTime ?? "" };
+  }
+  return { date: "", time: "" };
 }
 
 function CrewOption({

@@ -43,3 +43,13 @@ export function unitLabel(unit: Unit): string {
   if (unit.type === "CASA") return `Casa ${unit.number}`;
   return unit.tower === null ? `Depto. ${unit.number}` : `Torre ${unit.tower} ${unit.number}`;
 }
+
+/** "30 de septiembre, 10:00" (sin hora: "30 de septiembre"). */
+export function formatDateAndTime(date: string, time: string | null): string {
+  return time ? `${formatLongDate(date)}, ${time}` : formatLongDate(date);
+}
+
+/** Hora válida "HH:mm" de 00:00 a 23:59. */
+export function isValidTime(value: string): boolean {
+  return /^([01]\d|2[0-3]):[0-5]\d$/.test(value);
+}

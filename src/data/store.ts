@@ -33,14 +33,49 @@ export interface DataState {
   statusHistory: TicketStatusHistory[];
 }
 
+/** Fecha YYYY-MM-DD (hora local) a `days` días de hoy. */
+function daysFromToday(days: number): string {
+  const date = new Date();
+  date.setDate(date.getDate() + days);
+  return date.toLocaleDateString("sv-SE");
+}
+
+/**
+ * Agenda de la demo relativa a hoy: la visita del ticket ASIGNADO y el trabajo del PROGRAMADO
+ * quedan siempre en los próximos días, para que el calendario del encargado nunca esté vacío.
+ */
+function withUpcomingAgenda(seedTickets: Ticket[]): Ticket[] {
+  return seedTickets.map((ticket) => {
+    if (ticket.status === "ASIGNADO") {
+      return { ...ticket, visitDate: daysFromToday(2), visitTime: "10:00" };
+    }
+    if (ticket.status === "PROGRAMADO") {
+      return { ...ticket, scheduledDate: daysFromToday(4), scheduledTime: "09:00" };
+    }
+    return ticket;
+  });
+}
+
 /** Estado inicial con los datos de ejemplo (copia nueva cada vez: se usa también al restablecer). */
 export function createSeedState(): DataState {
-  return structuredClone({ zones, categories, users, projects, units, crews, tickets, statusHistory });
+  const seed = structuredClone({ zones, categories, users, projects, units, crews, tickets, statusHistory });
+  return { ...seed, tickets: withUpcomingAgenda(seed.tickets) };
 }
 
 export type DataAction =
   | { type: "CREATE_TICKET"; ticket: Ticket; historyId: string }
   | { type: "MARK_SPECIAL_CASE"; ticketId: string; markedById: string; reason: string; markedAt: string; historyId: string }
+  | {
+      /** Agenda o reagenda la visita inspectiva sin cambiar el estado (solo mientras está ASIGNADO). */
+      type: "SCHEDULE_VISIT";
+      ticketId: string;
+      visitDate: string;
+      visitTime: string | null;
+      changedById: string;
+      comment: string;
+      changedAt: string;
+      historyId: string;
+    }
   | {
       type: "TRANSITION_TICKET";
       ticketId: string;
@@ -140,6 +175,34 @@ export function reducer(state: DataState, action: DataAction): DataState {
         tickets: state.tickets.map((item) => item.id === ticket.id
           ? { ...item, specialCase: { reason: action.reason, markedById: user.id, markedAt: action.markedAt }, updatedAt: action.markedAt }
           : item),
+        statusHistory: [...state.statusHistory, historyEntry],
+      };
+    }
+
+    case "SCHEDULE_VISIT": {
+      const ticket = state.tickets.find(({ id }) => id === action.ticketId);
+      const user = state.users.find(({ id }) => id === action.changedById);
+      if (!ticket || !user || user.role === "PROPIETARIO" || ticket.status !== "ASIGNADO") {
+        throw new Error("Invalid schedule visit action");
+      }
+
+      const historyEntry: TicketStatusHistory = {
+        id: action.historyId,
+        ticketId: ticket.id,
+        from: ticket.status,
+        to: ticket.status,
+        changedById: user.id,
+        comment: action.comment,
+        createdAt: action.changedAt,
+      };
+
+      return {
+        ...state,
+        tickets: state.tickets.map((item) =>
+          item.id === ticket.id
+            ? { ...item, visitDate: action.visitDate, visitTime: action.visitTime, updatedAt: action.changedAt }
+            : item,
+        ),
         statusHistory: [...state.statusHistory, historyEntry],
       };
     }

@@ -12,7 +12,7 @@ import { ContentSkeleton } from "@/components/ui/skeleton";
 import { useDataApi } from "@/data/api";
 import { useSession } from "@/data/session-context";
 import { useQuery } from "@/data/use-query";
-import { formatLongDate, todayIso, unitLabel } from "@/lib/format";
+import { formatDateAndTime, formatLongDate, todayIso, unitLabel } from "@/lib/format";
 import { OWNER_STATUS_LABEL, type Transition } from "@/lib/ticket-status";
 import type { Ticket } from "@/types/domain";
 
@@ -137,10 +137,10 @@ function isUpcoming(date: string): boolean {
 function ScheduleInfo({ ticket, crewName }: { ticket: Ticket; crewName?: string }) {
   const lines: string[] = [];
   if ((ticket.status === "ASIGNADO" || ticket.status === "VISITA_INSPECTIVA") && ticket.visitDate && isUpcoming(ticket.visitDate)) {
-    lines.push(`Visita inspectiva: ${formatLongDate(ticket.visitDate)}`);
+    lines.push(`Visita inspectiva: ${formatDateAndTime(ticket.visitDate, ticket.visitTime)}`);
   }
   if ((ticket.status === "PROGRAMADO" || ticket.status === "EN_EJECUCION") && ticket.scheduledDate && isUpcoming(ticket.scheduledDate)) {
-    lines.push(`Trabajo programado para el ${formatLongDate(ticket.scheduledDate)}`);
+    lines.push(`Trabajo programado para el ${formatDateAndTime(ticket.scheduledDate, ticket.scheduledTime)}`);
   }
   if (crewName && ticket.status !== "CERRADO") lines.push(`Equipo: ${crewName}`);
 

@@ -12,7 +12,7 @@ import { StatusBadge } from "@/components/ui/status-badge";
 import { useDataApi } from "@/data/api";
 import { useSession } from "@/data/session-context";
 import { useQuery } from "@/data/use-query";
-import { daysOpen, formatLongDate, unitLabel } from "@/lib/format";
+import { daysOpen, formatDateAndTime, formatLongDate, unitLabel } from "@/lib/format";
 import { mapsUrl } from "@/lib/geo";
 import { STATUS_LABEL, type Transition } from "@/lib/ticket-status";
 import type { Ticket, TicketPhoto, TicketStatusHistory } from "@/types/domain";
@@ -134,6 +134,7 @@ export function StaffTicketDetail({ ticketId, backHref }: StaffTicketDetailProps
                 projectId={project.id}
                 onDone={handleDone}
                 onSpecialCase={handleSpecialCase}
+                onVisitScheduled={setNotice}
               />
             </div>
           </Panel>
@@ -165,8 +166,8 @@ export function StaffTicketDetail({ ticketId, backHref }: StaffTicketDetailProps
 
           <Panel title="Equipo y fechas">
             <InfoRow label="Equipo" value={crew ? `${crew.name} · ${crew.contactName} · ${crew.phone}` : "Sin asignar"} />
-            <InfoRow label="Visita inspectiva" value={ticket.visitDate ? formatLongDate(ticket.visitDate) : "—"} />
-            <InfoRow label="Trabajo programado" value={ticket.scheduledDate ? formatLongDate(ticket.scheduledDate) : "—"} />
+            <InfoRow label="Visita inspectiva" value={ticket.visitDate ? formatDateAndTime(ticket.visitDate, ticket.visitTime) : "—"} />
+            <InfoRow label="Trabajo programado" value={ticket.scheduledDate ? formatDateAndTime(ticket.scheduledDate, ticket.scheduledTime) : "—"} />
           </Panel>
         </aside>
 
@@ -249,7 +250,7 @@ function PhotoStrip({ title, photos }: { title: string; photos: TicketPhoto[] })
 const NEXT_STEP: Partial<Record<Ticket["status"], string>> = {
   INGRESADO: "Revisa si el requerimiento procede.",
   EN_REVISION: "Asigna una cuadrilla o subcontrato de la zona, o márcalo como no procede.",
-  ASIGNADO: "Visita la vivienda y registra el diagnóstico el mismo día.",
+  ASIGNADO: "Agenda la visita con el propietario y, tras visitar la vivienda, registra el diagnóstico el mismo día.",
   VISITA_INSPECTIVA: "Agenda el trabajo con el propietario, o márcalo como no procede.",
   PROGRAMADO: "Cuando el equipo llegue a la vivienda, inicia el trabajo. Si cambia la fecha, reprograma.",
   EN_EJECUCION: "Al terminar, registra el trabajo realizado y pide la recepción.",
