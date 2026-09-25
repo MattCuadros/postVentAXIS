@@ -7,10 +7,9 @@ import type {
 } from "@/types/domain";
 
 export const zones: Zone[] = [
-  { id: "z-norte", name: "Zona Norte", code: "N" },
-  { id: "z-centro", name: "Zona Centro", code: "C" },
-  { id: "z-sur", name: "Zona Sur", code: "S" },
-  { id: "z-austral", name: "Zona Austral", code: "A" },
+  { id: "z-centro", name: "Postventa Centro", code: "C" },
+  { id: "z-sur", name: "Postventa Sur", code: "S" },
+  { id: "z-austral", name: "Postventa Austral", code: "A" },
 ];
 
 export const categories: TicketCategory[] = [
@@ -27,17 +26,18 @@ export const categories: TicketCategory[] = [
 ];
 
 export const users: User[] = [
-  { id: "u-admin", name: "Carolina Fuentes", email: "admin@demo.cl", phone: "+56 9 1111 1111", role: "ADMIN", zoneIds: [], active: true },
-  { id: "u-enc-centro", name: "Rodrigo Pérez", email: "rperez@demo.cl", phone: "+56 9 2222 2222", role: "ENCARGADO", zoneIds: ["z-centro"], active: true },
-  { id: "u-enc-sur", name: "Valentina Rojas", email: "vrojas@demo.cl", phone: "+56 9 3333 3333", role: "ENCARGADO", zoneIds: ["z-sur", "z-norte"], active: true },
-  { id: "u-prop-1", name: "Andrés Muñoz", email: "amunoz@correo.cl", phone: "+56 9 4444 4444", role: "PROPIETARIO", zoneIds: [], active: true },
-  { id: "u-prop-2", name: "Francisca Soto", email: "fsoto@correo.cl", phone: "+56 9 5555 5555", role: "PROPIETARIO", zoneIds: [], active: true },
-  { id: "u-prop-3", name: "Tomás Herrera", email: "therrera@correo.cl", phone: "+56 9 5656 5656", role: "PROPIETARIO", zoneIds: [], active: true },
-  { id: "u-prop-4", name: "Camila Reyes", email: "creyes@correo.cl", phone: "+56 9 5757 5757", role: "PROPIETARIO", zoneIds: [], active: true },
-  { id: "u-enc-austral", name: "Viviana Hernández", email: "vhernandez@demo.cl", phone: "+56 9 3434 3434", role: "ENCARGADO", zoneIds: ["z-austral"], active: true },
-  { id: "u-prop-5", name: "Ignacio Vera", email: "ivera@correo.cl", phone: "+56 9 6161 6161", role: "PROPIETARIO", zoneIds: [], active: true },
-  { id: "u-prop-6", name: "Paula Contreras", email: "pcontreras@correo.cl", phone: "+56 9 6262 6262", role: "PROPIETARIO", zoneIds: [], active: true },
-  { id: "u-prop-7", name: "Martín Olivares", email: "molivares@correo.cl", phone: "+56 9 6363 6363", role: "PROPIETARIO", zoneIds: [], active: true },
+  { id: "u-admin", name: "Carolina Fuentes", email: "admin@demo.cl", phone: "+56 9 1111 1111", role: "ADMIN", zoneIds: [], projectIds: [], active: true },
+  { id: "u-enc-centro", name: "Rodrigo Pérez", email: "rperez@demo.cl", phone: "+56 9 2222 2222", role: "ENCARGADO", zoneIds: ["z-centro"], projectIds: [], active: true },
+  { id: "u-enc-sur", name: "Valentina Rojas", email: "vrojas@demo.cl", phone: "+56 9 3333 3333", role: "ENCARGADO", zoneIds: ["z-sur", "z-austral"], projectIds: [], active: true },
+  { id: "u-prop-1", name: "Andrés Muñoz", email: "amunoz@correo.cl", phone: "+56 9 4444 4444", role: "PROPIETARIO", zoneIds: [], projectIds: [], active: true },
+  { id: "u-prop-2", name: "Francisca Soto", email: "fsoto@correo.cl", phone: "+56 9 5555 5555", role: "PROPIETARIO", zoneIds: [], projectIds: [], active: true },
+  { id: "u-prop-3", name: "Tomás Herrera", email: "therrera@correo.cl", phone: "+56 9 5656 5656", role: "PROPIETARIO", zoneIds: [], projectIds: [], active: true },
+  { id: "u-prop-4", name: "Camila Reyes", email: "creyes@correo.cl", phone: "+56 9 5757 5757", role: "PROPIETARIO", zoneIds: [], projectIds: [], active: true },
+  { id: "u-admin-obra", name: "Gonzalo Ibáñez", email: "gibanez@demo.cl", phone: "+56 9 4545 4545", role: "ADMIN_OBRA", zoneIds: [], projectIds: ["p-mirador"], active: true },
+  { id: "u-enc-austral", name: "Viviana Hernández", email: "vhernandez@demo.cl", phone: "+56 9 3434 3434", role: "ENCARGADO", zoneIds: ["z-austral"], projectIds: [], active: true },
+  { id: "u-prop-5", name: "Ignacio Vera", email: "ivera@correo.cl", phone: "+56 9 6161 6161", role: "PROPIETARIO", zoneIds: [], projectIds: [], active: true },
+  { id: "u-prop-6", name: "Paula Contreras", email: "pcontreras@correo.cl", phone: "+56 9 6262 6262", role: "PROPIETARIO", zoneIds: [], projectIds: [], active: true },
+  { id: "u-prop-7", name: "Martín Olivares", email: "molivares@correo.cl", phone: "+56 9 6363 6363", role: "PROPIETARIO", zoneIds: [], projectIds: [], active: true },
 ];
 
 export const projects: Project[] = [
@@ -67,42 +67,42 @@ export const tickets: Ticket[] = [
   {
     id: "t-1", folio: "MIR-0001-C", unitId: "un-1", categoryId: "c-sanitarias", reportedCategoryId: "c-sanitarias", room: "Baño principal",
     description: "Filtración bajo el lavamanos, se moja el mueble.", status: "PROGRAMADO",
-    photos: [], createdById: "u-prop-1", encargadoId: "u-enc-centro", crewId: "w-int-centro",
+    media: [], createdById: "u-prop-1", encargadoId: "u-enc-centro", crewId: "w-int-centro",
     visitDate: "2026-09-10", visitTime: null, scheduledDate: "2026-09-25", scheduledTime: null, rejectionReason: null, specialCase: null, externalRefs: [], documents: [],
     createdAt: "2026-09-02T10:15:00Z", updatedAt: "2026-09-12T16:40:00Z",
   },
   {
     id: "t-2", folio: "MIR-0002-C", unitId: "un-1", categoryId: "c-ventanas", reportedCategoryId: "c-ventanas", room: "Living",
     description: "La ventana corredera no cierra completamente.", status: "EN_RECEPCION",
-    photos: [], createdById: "u-prop-1", encargadoId: "u-enc-centro", crewId: "w-sub-ventanas",
+    media: [], createdById: "u-prop-1", encargadoId: "u-enc-centro", crewId: "w-sub-ventanas",
     visitDate: "2026-08-20", visitTime: null, scheduledDate: "2026-09-05", scheduledTime: null, rejectionReason: null, specialCase: null, externalRefs: [], documents: [],
     createdAt: "2026-08-14T09:00:00Z", updatedAt: "2026-09-18T12:00:00Z",
   },
   {
     id: "t-3", folio: "ROB-0001-S", unitId: "un-2", categoryId: "c-pintura", reportedCategoryId: "c-pintura", room: "Dormitorio 2",
     description: "Pintura descascarada en muro exterior del dormitorio.", status: "INGRESADO",
-    photos: [], createdById: "u-prop-2", encargadoId: null, crewId: null,
+    media: [], createdById: "u-prop-2", encargadoId: null, crewId: null,
     visitDate: null, visitTime: null, scheduledDate: null, scheduledTime: null, rejectionReason: null, specialCase: null, externalRefs: [], documents: [],
     createdAt: "2026-09-21T18:30:00Z", updatedAt: "2026-09-21T18:30:00Z",
   },
   {
     id: "t-4", folio: "MIR-0003-C", unitId: "un-3", categoryId: "c-sanitarias", reportedCategoryId: "c-sanitarias", room: "Cocina",
     description: "Gotea la llave del lavaplatos aunque esté cerrada.", status: "EN_REVISION",
-    photos: [], createdById: "u-prop-3", encargadoId: "u-enc-centro", crewId: null,
+    media: [], createdById: "u-prop-3", encargadoId: "u-enc-centro", crewId: null,
     visitDate: null, visitTime: null, scheduledDate: null, scheduledTime: null, rejectionReason: null, specialCase: null, externalRefs: [], documents: [],
     createdAt: "2026-09-21T13:10:00Z", updatedAt: "2026-09-22T09:00:00Z",
   },
   {
     id: "t-5", folio: "MIR-0004-C", unitId: "un-4", categoryId: "c-ceramicas", reportedCategoryId: "c-ceramicas", room: "Baño principal",
     description: "Cerámica del piso de la ducha suelta y con fisura.", status: "ASIGNADO",
-    photos: [], createdById: "u-prop-4", encargadoId: "u-enc-centro", crewId: "w-int-centro",
+    media: [], createdById: "u-prop-4", encargadoId: "u-enc-centro", crewId: "w-int-centro",
     visitDate: null, visitTime: null, scheduledDate: null, scheduledTime: null, rejectionReason: null, specialCase: null, externalRefs: [], documents: [],
     createdAt: "2026-09-17T20:45:00Z", updatedAt: "2026-09-19T10:00:00Z",
   },
   {
     id: "t-6", folio: "MIR-0005-C", unitId: "un-3", categoryId: "c-puertas", reportedCategoryId: "c-puertas", room: "Dormitorio principal",
     description: "La puerta roza el piso y cuesta cerrarla.", status: "CERRADO",
-    photos: [], createdById: "u-prop-3", encargadoId: "u-enc-centro", crewId: "w-int-centro",
+    media: [], createdById: "u-prop-3", encargadoId: "u-enc-centro", crewId: "w-int-centro",
     visitDate: "2026-08-25", visitTime: null, scheduledDate: "2026-09-01", scheduledTime: null, rejectionReason: null, specialCase: null, externalRefs: [], documents: [],
     createdAt: "2026-08-20T11:00:00Z", updatedAt: "2026-09-08T17:00:00Z",
   },

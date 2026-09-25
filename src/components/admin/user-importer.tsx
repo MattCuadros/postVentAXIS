@@ -18,6 +18,7 @@ export function UserImporter({ onDone, onCancel }: UserImporterProps) {
   const api = useDataApi();
   const { data: zones } = useQuery(api.getZones);
   const { data: users } = useQuery(api.getUsers);
+  const { data: projects } = useQuery(api.getProjects);
   const inputRef = useRef<HTMLInputElement>(null);
   const [fileName, setFileName] = useState<string | null>(null);
   const [rows, setRows] = useState<ImportRow[] | null>(null);
@@ -42,7 +43,7 @@ export function UserImporter({ onDone, onCancel }: UserImporterProps) {
     setFileName(file.name);
     try {
       const data = await readSheetRows(file);
-      const parsed = validateImport(data, zones, users.map((user) => user.email));
+      const parsed = validateImport(data, zones, users.map((user) => user.email), projects ?? []);
       if (parsed.length === 0) {
         setRows(null);
         setReadError("La planilla no tiene filas con datos. Usa la plantilla como guía.");

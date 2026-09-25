@@ -4,7 +4,11 @@
  * tipos y, al llegar el backend, solo cambia la fuente de datos.
  */
 
-export type Role = "ADMIN" | "ENCARGADO" | "PROPIETARIO";
+/**
+ * ADMIN_OBRA: administrador de obra, solo lectura de indicadores de fallas de sus obras (incluidas
+ * las ya entregadas). No participa en la máquina de estados de los tickets.
+ */
+export type Role = "ADMIN" | "ENCARGADO" | "PROPIETARIO" | "ADMIN_OBRA";
 
 export type TicketStatus =
   | "INGRESADO"
@@ -39,6 +43,8 @@ export interface User {
   role: Role;
   /** Solo ENCARGADO: zonas bajo su responsabilidad. */
   zoneIds: string[];
+  /** Solo ADMIN_OBRA: obras que administra (en construcción o ya entregadas). */
+  projectIds: string[];
   active: boolean;
 }
 
@@ -81,9 +87,26 @@ export interface WorkCrew {
   projectIds: string[];
 }
 
-export interface TicketPhoto {
+/** Límites de captura, validados en el cliente antes de subir (y luego en el backend). */
+export const MAX_VIDEO_SECONDS = 5;
+export const MAX_IMAGE_MB = 3;
+export const MAX_VIDEO_MB = 15;
+
+export type TicketMediaType = "IMAGE" | "VIDEO";
+/** Paso del flujo en que se capturó: ingreso del propietario, visita inspectiva o solución. */
+export type TicketMediaStage = "PROBLEMA" | "VISITA" | "SOLUCION";
+
+/**
+ * Foto o video corto de un ticket. `url` es hoy un data URL (fotos) o una referencia local
+ * "local-media:<id>" (videos en IndexedDB); con backend será la clave del objeto en Cloudflare R2.
+ */
+export interface TicketMedia {
   id: string;
   url: string;
+  type: TicketMediaType;
+  /** Solo VIDEO; null en imágenes. */
+  durationSeconds: number | null;
+  stage: TicketMediaStage;
   uploadedById: string;
   createdAt: string;
 }
@@ -100,7 +123,11 @@ export interface Ticket {
   room: string;
   description: string;
   status: TicketStatus;
-  photos: TicketPhoto[];
+  /**
+   * Registro completo de fotos y videos. Se conserva siempre (no hay borrado al cerrar el ticket):
+   * es el historial de fallas que usa el Administrador de Obra para prevenir en obras siguientes.
+   */
+  media: TicketMedia[];
   createdById: string;
   encargadoId: string | null;
   crewId: string | null;
@@ -145,8 +172,8 @@ export interface TicketChanges {
   scheduledTime?: string | null;
   rejectionReason?: string;
   categoryId?: string;
-  /** Fotos de terreno: se agregan a las existentes. */
-  photos?: TicketPhoto[];
+  /** Fotos y videos de terreno: se agregan a los existentes. */
+  media?: TicketMedia[];
 }
 
 export interface TicketStatusHistory {

@@ -15,7 +15,7 @@ import { useQuery } from "@/data/use-query";
 import { cn } from "@/lib/cn";
 import { unitLabel } from "@/lib/format";
 import { fieldErrors, ROLE_OPTIONS, userSchema } from "@/lib/schemas";
-import { ROLE_LABEL } from "@/lib/user-import";
+import { ROLE_LABEL, ROLE_LABEL_PLURAL } from "@/lib/user-import";
 import type { Role, User } from "@/types/domain";
 
 type RoleFilter = Role | "TODOS";
@@ -28,6 +28,7 @@ export default function UsuariosPage() {
   const { user: currentUser } = useSession();
   const { data: users } = useQuery(api.getUsers);
   const { data: zones } = useQuery(api.getZones);
+  const { data: projects } = useQuery(api.getProjects);
   const { data: units } = useQuery(api.getUnits);
   const [filter, setFilter] = useState<RoleFilter>("TODOS");
   const [search, setSearch] = useState("");
@@ -47,6 +48,9 @@ export default function UsuariosPage() {
 
   function detail(user: User): string {
     if (user.role === "ADMIN") return "Todas las zonas";
+    if (user.role === "ADMIN_OBRA") {
+      return projects?.filter((project) => user.projectIds.includes(project.id)).map((project) => project.name).join(", ") || "Sin obras";
+    }
     if (user.role === "ENCARGADO") {
       return zones?.filter((zone) => user.zoneIds.includes(zone.id)).map((zone) => zone.name).join(", ") || "Sin zonas";
     }
@@ -107,7 +111,7 @@ export default function UsuariosPage() {
                 )}
                 onClick={() => setFilter(item)}
               >
-                {item === "TODOS" ? "Todos" : `${ROLE_LABEL[item]}${item === "ADMIN" ? "es" : "s"}`}{" "}
+                {item === "TODOS" ? "Todos" : ROLE_LABEL_PLURAL[item]}{" "}
                 <span className="tabular-nums text-ink-meta">({count})</span>
               </button>
             );
@@ -280,11 +284,12 @@ interface UserFormProps {
 function UserForm({ user, currentUserId, ownerUnitCount = 0, onSaved, onCancel }: UserFormProps) {
   const api = useDataApi();
   const { data: zones } = useQuery(api.getZones);
+  const { data: projects } = useQuery(api.getProjects);
   const { data: users } = useQuery(api.getUsers);
   const [values, setValues] = useState(() =>
     user
-      ? { name: user.name, email: user.email, phone: user.phone, role: user.role, zoneIds: user.zoneIds }
-      : { name: "", email: "", phone: "", role: "PROPIETARIO" as Role, zoneIds: [] as string[] },
+      ? { name: user.name, email: user.email, phone: user.phone, role: user.role, zoneIds: user.zoneIds, projectIds: user.projectIds }
+      : { name: "", email: "", phone: "", role: "PROPIETARIO" as Role, zoneIds: [] as string[], projectIds: [] as string[] },
   );
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -304,6 +309,7 @@ function UserForm({ user, currentUserId, ownerUnitCount = 0, onSaved, onCancel }
       ...values,
       role: roleLocked && user ? user.role : values.role,
       zoneIds: values.role === "ENCARGADO" ? values.zoneIds : [],
+      projectIds: values.role === "ADMIN_OBRA" ? values.projectIds : [],
     };
     const result = userSchema.safeParse(candidate);
     if (!result.success) {
@@ -351,37 +357,25 @@ function UserForm({ user, currentUserId, ownerUnitCount = 0, onSaved, onCancel }
         )}
       </div>
       {values.role === "ENCARGADO" && (
-        <fieldset>
-          <legend className="mb-2 text-sm font-bold text-ink">Zonas a cargo</legend>
-          {zones === undefined ? (
-            <p className="text-sm text-ink-secondary" role="status">Cargando zonas…</p>
-          ) : zones.length === 0 ? (
-            <p className="text-sm text-ink-secondary">No hay zonas disponibles.</p>
-          ) : (
-            <div className="flex flex-wrap gap-2">
-              {zones.map((zone) => {
-                const checked = values.zoneIds.includes(zone.id);
-                return (
-                  <label
-                    key={zone.id}
-                    className={cn(
-                      "flex cursor-pointer items-center gap-2 rounded-md border px-3 py-2 text-sm transition-colors focus-within:ring-2 focus-within:ring-accent",
-                      checked ? "border-accent bg-accent-soft font-bold text-accent" : "border-line-soft text-ink hover:border-accent/40",
-                    )}
-                  >
-                    <input
-                      type="checkbox"
-                      checked={checked}
-                      onChange={() => set("zoneIds", checked ? values.zoneIds.filter((id) => id !== zone.id) : [...values.zoneIds, zone.id])}
-                    />
-                    {zone.name}
-                  </label>
-                );
-              })}
-            </div>
-          )}
-          {errors.zoneIds && <p className="mt-2 text-sm text-danger" role="alert">{errors.zoneIds}</p>}
-        </fieldset>
+        <ChipPicker
+          legend="Zonas a cargo"
+          options={zones?.map((zone) => ({ id: zone.id, label: zone.name }))}
+          selected={values.zoneIds}
+          error={errors.zoneIds}
+          emptyText="No hay zonas disponibles."
+          onChange={(ids) => set("zoneIds", ids)}
+        />
+      )}
+      {values.role === "ADMIN_OBRA" && (
+        <ChipPicker
+          legend="Obras que administra"
+          hint="Solo verá los indicadores de estas obras, incluidas las ya entregadas."
+          options={projects?.map((project) => ({ id: project.id, label: `${project.name} · ${project.code}` }))}
+          selected={values.projectIds}
+          error={errors.projectIds}
+          emptyText="No hay obras registradas."
+          onChange={(ids) => set("projectIds", ids)}
+        />
       )}
       {submitError && <Notice tone="danger">{submitError}</Notice>}
       <div className="mt-2 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
@@ -391,5 +385,53 @@ function UserForm({ user, currentUserId, ownerUnitCount = 0, onSaved, onCancel }
         </Button>
       </div>
     </div>
+  );
+}
+
+interface ChipPickerProps {
+  legend: string;
+  hint?: string;
+  options: { id: string; label: string }[] | undefined;
+  selected: string[];
+  error?: string;
+  emptyText: string;
+  onChange: (ids: string[]) => void;
+}
+
+/** Selección múltiple con casillas en forma de chip (zonas de un encargado, obras de un admin. de obra). */
+function ChipPicker({ legend, hint, options, selected, error, emptyText, onChange }: ChipPickerProps) {
+  return (
+    <fieldset>
+      <legend className="mb-2 text-sm font-bold text-ink">{legend}</legend>
+      {hint && <p className="-mt-1 mb-2 text-xs text-ink-meta">{hint}</p>}
+      {options === undefined ? (
+        <p className="text-sm text-ink-secondary" role="status">Cargando…</p>
+      ) : options.length === 0 ? (
+        <p className="text-sm text-ink-secondary">{emptyText}</p>
+      ) : (
+        <div className="flex flex-wrap gap-2">
+          {options.map((option) => {
+            const checked = selected.includes(option.id);
+            return (
+              <label
+                key={option.id}
+                className={cn(
+                  "flex cursor-pointer items-center gap-2 rounded-md border px-3 py-2 text-sm transition-colors focus-within:ring-2 focus-within:ring-accent",
+                  checked ? "border-accent bg-accent-soft font-bold text-accent" : "border-line-soft text-ink hover:border-accent/40",
+                )}
+              >
+                <input
+                  type="checkbox"
+                  checked={checked}
+                  onChange={() => onChange(checked ? selected.filter((id) => id !== option.id) : [...selected, option.id])}
+                />
+                {option.label}
+              </label>
+            );
+          })}
+        </div>
+      )}
+      {error && <p className="mt-2 text-sm text-danger" role="alert">{error}</p>}
+    </fieldset>
   );
 }

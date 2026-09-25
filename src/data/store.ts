@@ -109,11 +109,11 @@ export type DataAction =
 
 /** Ticket resultante de una transición; lo usan el reducer y `api.ts` para devolver la entidad resuelta. */
 export function applyTransition(ticket: Ticket, to: TicketStatus, changedAt: string, changes: TicketChanges = {}): Ticket {
-  const { photos, ...fields } = changes;
+  const { media, ...fields } = changes;
   return {
     ...ticket,
     ...fields,
-    photos: photos ? [...ticket.photos, ...photos] : ticket.photos,
+    media: media ? [...ticket.media, ...media] : ticket.media,
     status: to,
     updatedAt: changedAt,
   };

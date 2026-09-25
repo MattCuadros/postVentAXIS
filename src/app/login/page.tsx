@@ -15,10 +15,11 @@ import type { Role } from "@/types/domain";
 const ROLE_DETAILS: Record<Role, { label: string; home: string }> = {
   PROPIETARIO: { label: "Propietario", home: "/propietario" },
   ENCARGADO: { label: "Encargado", home: "/encargado" },
+  ADMIN_OBRA: { label: "Administrador de obra", home: "/admin-obra" },
   ADMIN: { label: "Administrador", home: "/admin" },
 };
 
-const ROLES: Role[] = ["PROPIETARIO", "ENCARGADO", "ADMIN"];
+const ROLES: Role[] = ["PROPIETARIO", "ENCARGADO", "ADMIN_OBRA", "ADMIN"];
 
 export default function LoginPage() {
   const router = useRouter();

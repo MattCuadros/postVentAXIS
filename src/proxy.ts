@@ -5,6 +5,7 @@ const ROLE_HOME: Record<Role, string> = {
   PROPIETARIO: "/propietario",
   ENCARGADO: "/encargado",
   ADMIN: "/admin",
+  ADMIN_OBRA: "/admin-obra",
 };
 
 function isRole(value: string | undefined): value is Role {

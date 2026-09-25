@@ -37,3 +37,4 @@ export const DownloadIcon = (p: IconProps) => <Icon {...p}><path d="M10 3v9m0 0 
 export const UploadIcon = (p: IconProps) => <Icon {...p}><path d="M10 17V8m0 0 3 3m-3-3L7 11M4 4h12" /></Icon>;
 export const SearchIcon = (p: IconProps) => <Icon {...p}><circle cx="9" cy="9" r="5" /><path d="m13 13 4 4" /></Icon>;
 export const UserIcon = (p: IconProps) => <Icon {...p}><circle cx="10" cy="7" r="3" /><path d="M4 17c.5-3 2.5-5 6-5s5.5 2 6 5" /></Icon>;
+export const PlayIcon = (p: IconProps) => <Icon {...p}><path d="M7 5v10l8-5Z" /></Icon>;

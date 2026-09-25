@@ -2,7 +2,7 @@
 
 import { useCallback, useState } from "react";
 import { z } from "zod";
-import { PhotoPicker, type PickedPhoto } from "@/components/tickets/photo-picker";
+import { MediaPicker, type PickedMedia } from "@/components/tickets/media-picker";
 import { Button } from "@/components/ui/button";
 import { Dialog } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -14,9 +14,9 @@ import { useQuery } from "@/data/use-query";
 import { cn } from "@/lib/cn";
 import { formatDateAndTime, isValidTime, todayIso } from "@/lib/format";
 import { availableTransitions, type Transition } from "@/lib/ticket-status";
-import type { Role, Ticket, TicketChanges, TicketStatus, WorkCrew, WorkCrewType } from "@/types/domain";
+import type { Role, Ticket, TicketChanges, TicketMediaStage, TicketStatus, WorkCrew, WorkCrewType } from "@/types/domain";
 
-const MAX_PHOTOS = 5;
+const MAX_MEDIA = 5;
 
 interface FormSpec {
   title: string;
@@ -35,7 +35,8 @@ interface FormSpec {
   /** Texto del historial que describe la fecha elegida, ej. "Visita agendada para el". */
   dateNote?: string;
   comment: { label: string; required: boolean; placeholder?: string };
-  photos?: boolean;
+  /** Etapa con que se guardan las fotos/videos de terreno; sin ella no se piden. */
+  media?: TicketMediaStage;
   category?: boolean;
   rejection?: boolean;
   submitLabel: string;
@@ -56,7 +57,7 @@ const FORMS: Partial<Record<TicketStatus, FormSpec>> = {
     date: { label: "Fecha de la visita", field: "visitDate", notAfterToday: true },
     time: "optional",
     comment: { label: "Diagnóstico", required: true, placeholder: "Qué encontraste y qué hay que hacer." },
-    photos: true,
+    media: "VISITA",
     category: true,
     submitLabel: "Registrar visita",
   },
@@ -73,7 +74,7 @@ const FORMS: Partial<Record<TicketStatus, FormSpec>> = {
     title: "Solicitar recepción",
     description: "El propietario verá el aviso para dar su conformidad.",
     comment: { label: "Trabajo realizado", required: true, placeholder: "Qué se hizo y con qué materiales." },
-    photos: true,
+    media: "SOLUCION",
     submitLabel: "Solicitar recepción",
   },
   NO_PROCEDE: {
@@ -326,7 +327,7 @@ function TransitionForm({
   const [date, setDate] = useState(initial.date);
   const [time, setTime] = useState(initial.time);
   const [comment, setComment] = useState("");
-  const [photos, setPhotos] = useState<PickedPhoto[]>([]);
+  const [media, setMedia] = useState<PickedMedia[]>([]);
   const [categoryId, setCategoryId] = useState(ticket.categoryId);
   const [errors, setErrors] = useState<
     Partial<Record<"crew" | "date" | "time" | "comment" | "category", string>>
@@ -392,13 +393,9 @@ function TransitionForm({
       else changes.scheduledTime = selectedTime;
       if (spec.dateNote) dateNote = spec.dateNote + " " + formatDateAndTime(result.data.date, selectedTime);
     }
-    if (spec.photos && photos.length > 0) {
-      changes.photos = photos.map((photo) => ({
-        id: photo.id,
-        url: photo.url,
-        uploadedById: userId,
-        createdAt: now,
-      }));
+    if (spec.media && media.length > 0) {
+      const stage = spec.media;
+      changes.media = media.map((item) => ({ ...item, stage, uploadedById: userId, createdAt: now }));
     }
 
     const previous = categories?.find((item) => item.id === ticket.categoryId)?.name;
@@ -525,14 +522,14 @@ function TransitionForm({
         }}
       />
 
-      {spec.photos && (
+      {spec.media && (
         <div>
-          <p className="mb-2 text-sm font-bold text-ink">Fotos de terreno (opcional)</p>
-          <PhotoPicker
-            photos={photos}
-            max={MAX_PHOTOS}
-            onAdd={(added) => setPhotos((current) => [...current, ...added])}
-            onRemove={(id) => setPhotos((current) => current.filter((photo) => photo.id !== id))}
+          <p className="mb-2 text-sm font-bold text-ink">Fotos o video de terreno (opcional)</p>
+          <MediaPicker
+            items={media}
+            max={MAX_MEDIA}
+            onAdd={(added) => setMedia((current) => [...current, ...added])}
+            onRemove={(id) => setMedia((current) => current.filter((item) => item.id !== id))}
           />
         </div>
       )}

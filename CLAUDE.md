@@ -32,8 +32,10 @@ Store en memoria por `Context + useReducer`, sembrado desde `src/mocks/data.ts`:
 
 ## Sesión y roles
 
-- `/login`: selector de usuario mock (propietario, encargado o admin) → guarda cookie de sesión → redirige a la home de su rol.
-- `src/proxy.ts` (el "middleware" de Next 16) redirige según la cookie: sin sesión → `/login`; con sesión, cada rol solo accede a su propio route group (`(propietario)`, `(encargado)`, `(admin)`).
+- `/login`: selector de usuario mock (propietario, encargado, administrador de obra o admin) → guarda cookie de sesión → redirige a la home de su rol.
+- `src/proxy.ts` (el "middleware" de Next 16) redirige según la cookie: sin sesión → `/login`; con sesión, cada rol solo accede a su propio route group (`(propietario)`, `(encargado)`, `(adminobra)`, `(admin)`).
+- Zonas: Postventa Centro (C), Postventa Sur (S) y Postventa Austral (A).
+- Administrador de obra (`ADMIN_OBRA`): solo lectura, acotado a `User.projectIds`. Ve `/admin-obra` con indicadores agregados (`src/lib/project-metrics.ts`): fallas por origen, torre/piso y desempeño de equipos internos vs subcontratos. Nunca datos personales de propietarios ni obras fuera de sus `projectIds`.
 - Conmutador de usuario visible solo en desarrollo (`process.env.NODE_ENV === "development"`), en el header de cada layout por rol.
 
 ## Convenciones de componentes
@@ -69,7 +71,13 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 - Los PDF se guardan en IndexedDB (`src/data/document-store.ts`); el ticket guarda solo la metadata.
 - Ejemplos reales de documentos en `examples/` (fuera del repo); textos anonimizados en `examples/textos/`. Nunca subir datos reales de clientes al repo.
 
+## Fotos y videos de tickets
+
+- `Ticket.media: TicketMedia[]` (IMAGE | VIDEO, `durationSeconds`, `stage` PROBLEMA/VISITA/SOLUCION). Se conserva siempre: es el historial del administrador de obra.
+- Límites en `src/types/domain.ts` (`MAX_VIDEO_SECONDS`, `MAX_IMAGE_MB`, `MAX_VIDEO_MB`), validados en `MediaPicker` antes de subir.
+- `src/data/media-upload.ts` es el único punto de subida: hoy fotos como data URL y videos en IndexedDB (`local-media:<id>`); ahí se conectará Cloudflare R2 con URL prefirmada.
+
 ## Persistencia local (sin backend)
 
-- `src/data/persistence.ts` guarda el estado completo en `localStorage` (`postventaxis:datos`, versionado; cada versión migra la anterior: v1→v2 folios por obra, v2→v3 horas de visita/trabajo, v3→v4 referencias y documentos de tickets). `DataProvider` lo carga al montar, guarda en cada cambio y sincroniza entre pestañas. "Restablecer datos de ejemplo" (menú de usuario) vuelve a `createSeedState()`.
+- `src/data/persistence.ts` guarda el estado completo en `localStorage` (`postventaxis:datos`, versionado; cada versión migra la anterior: v1→v2 folios por obra, v2→v3 horas de visita/trabajo, v3→v4 referencias y documentos de tickets, v4→v5 zonas Postventa y `projectIds`, v5→v6 `photos` → `media`). `DataProvider` lo carga al montar, guarda en cada cambio y sincroniza entre pestañas. "Restablecer datos de ejemplo" (menú de usuario) vuelve a `createSeedState()`.
 - La sesión usa dos cookies: `pv_user_id` y `pv_role`. `src/proxy.ts` rutea solo por rol; el cliente valida que el usuario exista y esté activo.

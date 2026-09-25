@@ -71,7 +71,7 @@ export function UnitImporter({ project, onDone, onCancel }: UnitImporterProps) {
           ownerId = row.owner.id;
         } else {
           const { email } = row.owner.create;
-          ownerId = createdIds.get(email) ?? (await api.createUser({ ...row.owner.create, role: "PROPIETARIO", zoneIds: [], active: true })).id;
+          ownerId = createdIds.get(email) ?? (await api.createUser({ ...row.owner.create, role: "PROPIETARIO", projectIds: [], zoneIds: [], active: true })).id;
           createdIds.set(email, ownerId);
         }
         await api.createUnit({ ...row.unit, projectId: project.id, ownerId });

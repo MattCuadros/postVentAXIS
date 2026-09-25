@@ -235,7 +235,7 @@ export function useDataApi() {
           if (known) {
             ownerId = known.id;
           } else {
-            const owner: User = { ...newOwner, id: crypto.randomUUID(), role: "PROPIETARIO", zoneIds: [], active: true };
+            const owner: User = { ...newOwner, id: crypto.randomUUID(), role: "PROPIETARIO", zoneIds: [], projectIds: [], active: true };
             newUsers.push(owner);
             ownerId = owner.id;
           }
@@ -282,7 +282,7 @@ export function useDataApi() {
           room: requirement.room,
           description: requirement.description,
           status: plan.status,
-          photos: [],
+          media: [],
           createdById: input.userId,
           encargadoId: input.userId,
           crewId: null,

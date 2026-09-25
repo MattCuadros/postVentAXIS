@@ -33,19 +33,23 @@ export const unitSchema = z
     }
   });
 
-export const ROLE_OPTIONS = ["PROPIETARIO", "ENCARGADO", "ADMIN"] as const;
+export const ROLE_OPTIONS = ["PROPIETARIO", "ENCARGADO", "ADMIN_OBRA", "ADMIN"] as const;
 
 export const userSchema = z
   .object({
     name: requiredText("El nombre"),
     email: z.string().trim().toLowerCase().email("Correo no válido."),
     phone: requiredText("El teléfono"),
-    role: z.enum(ROLE_OPTIONS, { message: "Rol no válido (Propietario, Encargado o Administrador)." }),
+    role: z.enum(ROLE_OPTIONS, { message: "Rol no válido (Propietario, Encargado, Administrador de obra o Administrador)." }),
     zoneIds: z.array(z.string()),
+    projectIds: z.array(z.string()).default([]),
   })
   .superRefine((user, context) => {
     if (user.role === "ENCARGADO" && user.zoneIds.length === 0) {
       context.addIssue({ code: "custom", path: ["zoneIds"], message: "Un encargado necesita al menos una zona." });
+    }
+    if (user.role === "ADMIN_OBRA" && user.projectIds.length === 0) {
+      context.addIssue({ code: "custom", path: ["projectIds"], message: "Un administrador de obra necesita al menos una obra." });
     }
   });
 

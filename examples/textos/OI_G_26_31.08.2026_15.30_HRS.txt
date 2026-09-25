@@ -1,0 +1,29 @@
+ORDEN DE INSPECCION
+ FOLIO:   OI-AB3C-000096/4466
+ EMISION: 31/08/2026
+ DATOS GENERALES
+ PROYECTO   : ALTO BULNES III C   ETAPA   : ETAPA III C - ETAPA III C
+PROPIEDAD   : AB3C - CASA. G26   MANZANA/LOTE   :
+FECHA R.M.   : 12/10/2023   FECHA ENTREGA   : 26/12/2025
+PROPIETARIO   : NOMBRE APELLIDO PROPIETARIO   E-MAIL   : persona@correo.cl
+TELEFONOS   : 912345678 / 912345678
+CONTACTO   :   FONO CONTACTO   :
+ DATOS SOLICITUD
+ FECHA SOLICITUD   : 28/08/2026   MEDIO SOLICITUD   : TELEFONO
+FECHA VISITA ACORD.   : 31/08/2026   HORA   : 15:30-15:45 hrs.
+VISITA EFECTUADA POR   : NOMBRE TECNICO   NOMBRE QUIEN RECIBE:
+ Simbología:   C: Corresponde   N/C: No corresponde   R:Re-inspección   SV: Solucionado en visita
+ OBSERVACIONES ASOCIADAS A LA VISITA
+ 31/08/2026- Nombre Persona- Inspección a cargo de Nombre Persona Post venta Axis Pta. Arenas.
+ REQUERIMIENTO: AB3C-000096/1
+ Recinto: BAÑO 1   Lugar:   RECEPTACULO   C/NC/R/SV:
+Item:   DESAGUE   Problema: FILTRACION   Inicio est. de trabajo:
+Descripción cliente : Se indica filtración de agua desde receptáculo de baño 1.
+Detalle específico:
+Nivel de conformidad Trabajo Solucionado en Visita:
+Muy Conforme   Conforme   Disconforme   Incierto
+FECHA DE REPARACION:
+PERSONA QUE RECIBE:
+NOMBRE   FIRMA
+SUPERVISOR POSTVENTA:
+

@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useState, type ReactNode } from "react";
 import { z } from "zod";
-import { PhotoPicker, type PickedPhoto } from "@/components/tickets/photo-picker";
+import { MediaPicker, type PickedMedia } from "@/components/tickets/media-picker";
 import { BottomBar } from "@/components/ui/bottom-bar";
 import { Button } from "@/components/ui/button";
 import { ChevronLeftIcon } from "@/components/ui/icons";
@@ -18,7 +18,17 @@ import { cn } from "@/lib/cn";
 import { unitLabel } from "@/lib/format";
 
 const STEPS = ["Vivienda", "Tipo de problema", "Descripción", "Confirmar"] as const;
-const MAX_PHOTOS = 5;
+const MAX_MEDIA = 5;
+
+function mediaSummary(media: PickedMedia[]): string {
+  if (media.length === 0) return "Sin fotos ni video";
+  const photos = media.filter((item) => item.type === "IMAGE").length;
+  const videos = media.length - photos;
+  return [
+    photos > 0 && `${photos} ${photos === 1 ? "foto" : "fotos"}`,
+    videos > 0 && `${videos} ${videos === 1 ? "video" : "videos"}`,
+  ].filter(Boolean).join(" y ");
+}
 
 const ROOMS = [
   "Baño principal",
@@ -57,7 +67,7 @@ interface FormState {
   categoryId: string;
   room: string;
   description: string;
-  photos: PickedPhoto[];
+  media: PickedMedia[];
 }
 
 type Errors = Partial<Record<keyof FormState, string>>;
@@ -80,7 +90,7 @@ export function NewTicketWizard() {
     categoryId: "",
     room: "",
     description: "",
-    photos: [],
+    media: [],
   });
   const [errors, setErrors] = useState<Errors>({});
   const [submitting, setSubmitting] = useState(false);
@@ -132,7 +142,7 @@ export function NewTicketWizard() {
         categoryId: form.categoryId,
         room: form.room,
         description: form.description.trim(),
-        photos: form.photos.map((photo) => ({ id: photo.id, url: photo.url, uploadedById: user.id, createdAt: now })),
+        media: form.media.map((item) => ({ ...item, stage: "PROBLEMA", uploadedById: user.id, createdAt: now })),
         createdById: user.id,
         encargadoId: null,
         crewId: null,
@@ -243,12 +253,12 @@ export function NewTicketWizard() {
             {!errors.description && (
               <p className="mt-1.5 text-xs text-ink-meta">Mientras más detalle, menos visitas necesitamos.</p>
             )}
-            <p className="mb-3 mt-6 text-sm font-bold text-ink">Fotos</p>
-            <PhotoPicker
-              photos={form.photos}
-              max={MAX_PHOTOS}
-              onAdd={(added) => update("photos", [...form.photos, ...added])}
-              onRemove={(id) => update("photos", form.photos.filter((photo) => photo.id !== id))}
+            <p className="mb-3 mt-6 text-sm font-bold text-ink">Fotos o video</p>
+            <MediaPicker
+              items={form.media}
+              max={MAX_MEDIA}
+              onAdd={(added) => update("media", [...form.media, ...added])}
+              onRemove={(id) => update("media", form.media.filter((item) => item.id !== id))}
             />
           </StepBody>
         )}
@@ -260,8 +270,8 @@ export function NewTicketWizard() {
               <SummaryRow label="Tipo de problema" value={`${category?.name ?? "—"} · ${form.room}`} onEdit={() => setStep(1)} />
               <SummaryRow label="Descripción" value={form.description.trim()} onEdit={() => setStep(2)} />
               <SummaryRow
-                label="Fotos"
-                value={form.photos.length === 0 ? "Sin fotos" : `${form.photos.length} ${form.photos.length === 1 ? "foto" : "fotos"}`}
+                label="Fotos o video"
+                value={mediaSummary(form.media)}
                 onEdit={() => setStep(2)}
               />
             </dl>

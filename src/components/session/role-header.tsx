@@ -12,6 +12,7 @@ const ROLE_HOME: Record<Role, string> = {
   PROPIETARIO: "/propietario",
   ENCARGADO: "/encargado",
   ADMIN: "/admin",
+  ADMIN_OBRA: "/admin-obra",
 };
 
 function initials(name: string): string {
@@ -84,6 +85,10 @@ export function RoleHeader() {
 
   function subtitle(current: User): string {
     if (current.role === "ADMIN") return "Superadministrador · Todas las zonas";
+    if (current.role === "ADMIN_OBRA") {
+      const names = state.projects.filter((project) => current.projectIds.includes(project.id)).map((project) => project.name);
+      return ["Administrador de obra", ...names].join(" · ");
+    }
     if (current.role === "ENCARGADO") {
       const names = state.zones.filter((zone) => current.zoneIds.includes(zone.id)).map((zone) => zone.name);
       return ["Encargado", ...names].join(" · ");

@@ -1,8 +1,8 @@
 import type { DataState } from "@/data/store";
-import type { Project, Ticket, Zone } from "@/types/domain";
+import type { Project, Ticket, TicketMedia, TicketMediaStage, Zone } from "@/types/domain";
 
 export const STORAGE_KEY = "postventaxis:datos";
-const VERSION = 4;
+const VERSION = 6;
 
 interface StoredData {
   version: number;
@@ -70,7 +70,7 @@ function migrateV1(state: DataState): DataState {
   }));
 
   if (!zones.some((zone) => zone.id === "z-austral")) {
-    zones.push({ id: "z-austral", name: "Zona Austral", code: "A" });
+    zones.push({ id: "z-austral", name: "Postventa Austral", code: "A" });
   }
 
   const taken = new Set<string>();
@@ -141,16 +141,83 @@ function migrateV3(state: DataState): DataState {
   };
 }
 
+/** Nombres reales de las zonas de postventa (ids estables). */
+const ZONE_NAMES: Record<string, string> = {
+  "z-centro": "Postventa Centro",
+  "z-sur": "Postventa Sur",
+  "z-austral": "Postventa Austral",
+};
+
+/**
+ * v4 → v5: las zonas pasan a llamarse "Postventa Centro/Sur/Austral" y Zona Norte desaparece:
+ * todo lo que apuntaba a z-norte (obras, encargados, equipos) pasa a Postventa Austral.
+ * Además los usuarios ganan `projectIds` (rol Administrador de obra).
+ */
+function migrateV4(state: DataState): DataState {
+  const remap = (zoneId: string) => (zoneId === "z-norte" ? "z-austral" : zoneId);
+  const zones = state.zones.filter((zone) => zone.id !== "z-norte");
+  if (!zones.some((zone) => zone.id === "z-austral")) zones.push({ id: "z-austral", name: "Postventa Austral", code: "A" });
+
+  return {
+    ...state,
+    zones: zones.map((zone) => ({ ...zone, name: ZONE_NAMES[zone.id] ?? zone.name })),
+    projects: state.projects.map((project) => ({ ...project, zoneId: remap(project.zoneId) })),
+    users: state.users.map((user) => ({
+      ...user,
+      zoneIds: [...new Set(user.zoneIds.map(remap))],
+      projectIds: user.projectIds ?? [],
+    })),
+    crews: state.crews.map((crew) => ({ ...crew, zoneId: remap(crew.zoneId) })),
+  };
+}
+
+type LegacyPhoto = { id: string; url: string; uploadedById: string; createdAt: string };
+
+/**
+ * v5 → v6: `Ticket.photos` pasa a `Ticket.media` (fotos y video corto). Las fotos existentes
+ * quedan como IMAGE; su etapa se deduce de quién la subió y del estado registrado en ese momento.
+ */
+function migrateV5(state: DataState): DataState {
+  return {
+    ...state,
+    tickets: state.tickets.map((ticket) => {
+      const { photos, ...rest } = ticket as Ticket & { photos?: LegacyPhoto[] };
+      if (ticket.media) return ticket;
+      const media: TicketMedia[] = (photos ?? []).map((photo) => {
+        const entry = state.statusHistory.find((item) => item.ticketId === ticket.id && item.createdAt === photo.createdAt);
+        const stage: TicketMediaStage =
+          entry?.to === "EN_RECEPCION" ? "SOLUCION"
+            : entry?.to === "VISITA_INSPECTIVA" ? "VISITA"
+              : photo.uploadedById === ticket.createdById ? "PROBLEMA" : "VISITA";
+        return { ...photo, type: "IMAGE", durationSeconds: null, stage };
+      });
+      return { ...rest, media };
+    }),
+  };
+}
+
+/** Migración de cada versión a la siguiente (clave = versión de origen). */
+const MIGRATIONS: Record<number, (state: DataState) => DataState> = {
+  1: migrateV1,
+  2: migrateV2,
+  3: migrateV3,
+  4: migrateV4,
+  5: migrateV5,
+};
+
 export function loadState(raw: string | null = readRaw()): DataState | null {
   if (!raw) return null;
 
   try {
     const stored = JSON.parse(raw) as Partial<StoredData>;
     if (!isDataState(stored.state)) return null;
-    if (stored.version === VERSION) return stored.state;
-    if (stored.version === 3) return migrateV3(stored.state);
-    if (stored.version === 2) return migrateV3(migrateV2(stored.state));
-    return stored.version === 1 ? migrateV3(migrateV2(migrateV1(stored.state))) : null;
+    if (typeof stored.version !== "number" || stored.version < 1 || stored.version > VERSION) return null;
+
+    let state = stored.state;
+    for (let version = stored.version; version < VERSION; version += 1) {
+      state = MIGRATIONS[version](state);
+    }
+    return state;
   } catch {
     return null;
   }

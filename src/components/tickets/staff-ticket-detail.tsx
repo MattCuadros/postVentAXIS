@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useState, type ReactNode } from "react";
+import { MediaThumb } from "@/components/tickets/media-thumb";
 import { StaffActions } from "@/components/tickets/staff-actions";
 import { TicketHistory } from "@/components/tickets/ticket-history";
 import { AlertIcon } from "@/components/ui/icons";
@@ -17,7 +18,7 @@ import { daysOpen, formatDateAndTime, formatLongDate, unitLabel } from "@/lib/fo
 import { mapsUrl } from "@/lib/geo";
 import { DOCUMENT_LABEL } from "@/lib/document-import/types";
 import { STATUS_LABEL, type Transition } from "@/lib/ticket-status";
-import type { Ticket, TicketDocument, TicketPhoto, TicketStatusHistory } from "@/types/domain";
+import type { Ticket, TicketDocument, TicketMedia, TicketMediaStage, TicketStatusHistory } from "@/types/domain";
 
 const DONE_MESSAGE: Partial<Record<Ticket["status"], string>> = {
   EN_REVISION: "Revisión iniciada.",
@@ -80,8 +81,6 @@ export function StaffTicketDetail({ ticketId, backHref }: StaffTicketDetailProps
   const crew = crews?.find((item) => item.id === ticket.crewId);
   const zone = zones?.find((item) => item.id === project.zoneId);
   const rejection = history ? ownerRejection(history) : undefined;
-  const ownerPhotos = ticket.photos.filter((photo) => photo.uploadedById === unit.ownerId);
-  const fieldPhotos = ticket.photos.filter((photo) => photo.uploadedById !== unit.ownerId);
   const days = daysOpen(ticket);
 
   function handleDone(transition: Transition) {
@@ -197,8 +196,9 @@ export function StaffTicketDetail({ ticketId, backHref }: StaffTicketDetailProps
                 <p className="mt-1 text-ink-secondary">{ticket.rejectionReason}</p>
               </div>
             )}
-            <PhotoStrip title="Fotos del propietario" photos={ownerPhotos} />
-            <PhotoStrip title="Fotos de terreno" photos={fieldPhotos} />
+            {MEDIA_STAGES.map(({ stage, title }) => (
+              <MediaStrip key={stage} title={title} items={ticket.media.filter((item) => item.stage === stage)} />
+            ))}
           </Panel>
 
           {ticket.documents.length > 0 && (
@@ -276,17 +276,27 @@ function InfoRow({ label, value }: { label: string; value: string }) {
   );
 }
 
-function PhotoStrip({ title, photos }: { title: string; photos: TicketPhoto[] }) {
-  if (photos.length === 0) return null;
+const MEDIA_STAGES: { stage: TicketMediaStage; title: string }[] = [
+  { stage: "PROBLEMA", title: "Problema reportado" },
+  { stage: "VISITA", title: "Visita inspectiva" },
+  { stage: "SOLUCION", title: "Solución" },
+];
+
+function MediaStrip({ title, items }: { title: string; items: TicketMedia[] }) {
+  if (items.length === 0) return null;
   return (
     <div className="mt-4">
       <p className="mb-2 text-xs font-bold text-ink-secondary">{title}</p>
       <div className="flex gap-3 overflow-x-auto">
-        {photos.map((photo, index) => (
-          <a key={photo.id} href={photo.url} target="_blank" rel="noopener noreferrer" className="shrink-0">
-            {/* eslint-disable-next-line @next/next/no-img-element -- fotos mock (object URLs), next/image no aplica */}
-            <img src={photo.url} alt={`${title}, ${index + 1}`} className="h-24 w-24 rounded-md object-cover" />
-          </a>
+        {items.map((item, index) => (
+          <MediaThumb
+            key={item.id}
+            url={item.url}
+            type={item.type}
+            durationSeconds={item.durationSeconds}
+            label={`${title}, ${item.type === "VIDEO" ? "video" : "foto"} ${index + 1}`}
+            linked
+          />
         ))}
       </div>
     </div>

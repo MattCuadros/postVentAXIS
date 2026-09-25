@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useState } from "react";
+import { MediaThumb } from "@/components/tickets/media-thumb";
 import { TransitionActions } from "@/components/tickets/transition-actions";
 import { BottomBar } from "@/components/ui/bottom-bar";
 import { StatusBadge } from "@/components/ui/status-badge";
@@ -97,11 +98,17 @@ export function OwnerTicketDetail({ ticketId, justCreated }: OwnerTicketDetailPr
 
         <ScheduleInfo ticket={ticket} crewName={crew?.name} />
 
-        {ticket.photos.length > 0 && (
+        {ticket.media.length > 0 && (
           <div className="mt-5 flex gap-3 overflow-x-auto">
-            {ticket.photos.map((photo, index) => (
-              // eslint-disable-next-line @next/next/no-img-element -- fotos mock (object URLs), next/image no aplica
-              <img key={photo.id} src={photo.url} alt={`Foto ${index + 1} del requerimiento`} className="h-24 w-24 shrink-0 rounded-md object-cover" />
+            {ticket.media.map((item, index) => (
+              <MediaThumb
+                key={item.id}
+                url={item.url}
+                type={item.type}
+                durationSeconds={item.durationSeconds}
+                label={`${item.type === "VIDEO" ? "Video" : "Foto"} ${index + 1} del requerimiento`}
+                linked={item.type === "VIDEO"}
+              />
             ))}
           </div>
         )}
