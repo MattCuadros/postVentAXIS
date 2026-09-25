@@ -113,6 +113,9 @@ export interface Ticket {
   scheduledTime: string | null;
   /** Motivo obligatorio cuando status = NO_PROCEDE. */
   rejectionReason: string | null;
+  /** Referencias de documentos externos (folios de OI/OT, n° de requerimiento) para enlazar cargas posteriores. */
+  externalRefs: string[];
+  documents: TicketDocument[];
   /** Atención excepcional fuera de garantía, visible solo para el equipo Axis. */
   specialCase: { reason: string; markedById: string; markedAt: string } | null;
   createdAt: string;
@@ -120,6 +123,19 @@ export interface Ticket {
 }
 
 /** Datos que una transición puede registrar además del cambio de estado. */
+/** Tipos de documento que el encargado puede cargar para registrar o avanzar un requerimiento. */
+export type DocumentKind = "EMAIL" | "OI" | "OI_FIRMADA" | "OT" | "INFORME_AXIS";
+
+/** PDF adjunto a un ticket. El archivo vive en IndexedDB del navegador (src/data/document-store.ts). */
+export interface TicketDocument {
+  id: string;
+  kind: DocumentKind;
+  fileName: string;
+  size: number;
+  uploadedById: string;
+  uploadedAt: string;
+}
+
 export interface TicketChanges {
   encargadoId?: string;
   crewId?: string;

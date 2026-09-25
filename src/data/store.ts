@@ -1,4 +1,4 @@
-import { canTransition } from "@/lib/ticket-status";
+import { canTransition, MAIN_FLOW } from "@/lib/ticket-status";
 import {
   categories,
   crews,
@@ -65,6 +65,19 @@ export function createSeedState(): DataState {
 export type DataAction =
   | { type: "CREATE_TICKET"; ticket: Ticket; historyId: string }
   | { type: "MARK_SPECIAL_CASE"; ticketId: string; markedById: string; reason: string; markedAt: string; historyId: string }
+  | {
+      /**
+       * Registro desde un documento cargado (correo, OI, OT, informe): crea o avanza tickets en un
+       * solo paso, junto con los propietarios y unidades nuevas que el encargado confirmó. Valida
+       * que ningún ticket existente retroceda en el flujo (el documento firmado reemplaza el clic
+       * del propietario, por eso no se usa la validación por rol de canTransition).
+       */
+      type: "IMPORT_DOCUMENT";
+      users: User[];
+      units: Unit[];
+      tickets: Ticket[];
+      history: TicketStatusHistory[];
+    }
   | {
       /** Agenda o reagenda la visita inspectiva sin cambiar el estado (solo mientras está ASIGNADO). */
       type: "SCHEDULE_VISIT";
@@ -176,6 +189,28 @@ export function reducer(state: DataState, action: DataAction): DataState {
           ? { ...item, specialCase: { reason: action.reason, markedById: user.id, markedAt: action.markedAt }, updatedAt: action.markedAt }
           : item),
         statusHistory: [...state.statusHistory, historyEntry],
+      };
+    }
+
+    case "IMPORT_DOCUMENT": {
+      for (const ticket of action.tickets) {
+        const existing = state.tickets.find(({ id }) => id === ticket.id);
+        if (!existing) continue;
+        const backwards = MAIN_FLOW.indexOf(ticket.status) < MAIN_FLOW.indexOf(existing.status);
+        if (existing.status === "NO_PROCEDE" || backwards) {
+          throw new Error(`Invalid document import for ticket ${ticket.id}`);
+        }
+      }
+
+      const updated = new Map(action.tickets.map((ticket) => [ticket.id, ticket]));
+      const newTickets = action.tickets.filter((ticket) => !state.tickets.some(({ id }) => id === ticket.id));
+
+      return {
+        ...state,
+        users: [...state.users, ...action.users],
+        units: [...state.units, ...action.units],
+        tickets: [...state.tickets.map((ticket) => updated.get(ticket.id) ?? ticket), ...newTickets],
+        statusHistory: [...state.statusHistory, ...action.history],
       };
     }
 

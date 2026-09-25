@@ -10,12 +10,14 @@ import { PageHeader } from "@/components/ui/page-header";
 import { ContentSkeleton } from "@/components/ui/skeleton";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { useDataApi } from "@/data/api";
+import { loadDocumentFile } from "@/data/document-store";
 import { useSession } from "@/data/session-context";
 import { useQuery } from "@/data/use-query";
 import { daysOpen, formatDateAndTime, formatLongDate, unitLabel } from "@/lib/format";
 import { mapsUrl } from "@/lib/geo";
+import { DOCUMENT_LABEL } from "@/lib/document-import/types";
 import { STATUS_LABEL, type Transition } from "@/lib/ticket-status";
-import type { Ticket, TicketPhoto, TicketStatusHistory } from "@/types/domain";
+import type { Ticket, TicketDocument, TicketPhoto, TicketStatusHistory } from "@/types/domain";
 
 const DONE_MESSAGE: Partial<Record<Ticket["status"], string>> = {
   EN_REVISION: "Revisión iniciada.",
@@ -199,6 +201,12 @@ export function StaffTicketDetail({ ticketId, backHref }: StaffTicketDetailProps
             <PhotoStrip title="Fotos de terreno" photos={fieldPhotos} />
           </Panel>
 
+          {ticket.documents.length > 0 && (
+            <Panel title="Documentos">
+              <DocumentList documents={ticket.documents} />
+            </Panel>
+          )}
+
           <Panel title="Historial">
             {history === undefined || users === undefined ? (
               <ContentSkeleton label="Cargando historial…" lines={2} />
@@ -209,6 +217,44 @@ export function StaffTicketDetail({ ticketId, backHref }: StaffTicketDetailProps
         </div>
       </div>
     </div>
+  );
+}
+
+/** PDFs cargados para el ticket; el archivo se abre desde IndexedDB de este navegador. */
+function DocumentList({ documents }: { documents: TicketDocument[] }) {
+  const [missing, setMissing] = useState<string | null>(null);
+
+  async function open(document: TicketDocument) {
+    setMissing(null);
+    const file = await loadDocumentFile(document.id);
+    if (!file) {
+      setMissing(document.id);
+      return;
+    }
+    const url = URL.createObjectURL(file);
+    window.open(url, "_blank", "noopener,noreferrer");
+    setTimeout(() => URL.revokeObjectURL(url), 60_000);
+  }
+
+  return (
+    <ul className="flex flex-col divide-y divide-line-soft">
+      {documents.map((document) => (
+        <li key={document.id} className="flex flex-wrap items-center justify-between gap-3 py-2.5 first:pt-0 last:pb-0">
+          <div className="min-w-0">
+            <p className="break-all text-sm font-bold text-ink">{document.fileName}</p>
+            <p className="text-xs text-ink-meta">
+              {DOCUMENT_LABEL[document.kind]} · {formatLongDate(document.uploadedAt)} · {Math.max(1, Math.round(document.size / 1024))} KB
+            </p>
+            {missing === document.id && (
+              <p className="text-xs text-warning">El archivo no está disponible en este navegador (se cargó desde otro equipo).</p>
+            )}
+          </div>
+          <button type="button" className="text-sm font-bold text-accent hover:underline" onClick={() => open(document)}>
+            Abrir
+          </button>
+        </li>
+      ))}
+    </ul>
   );
 }
 

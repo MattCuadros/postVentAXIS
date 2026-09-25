@@ -61,7 +61,15 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 - **Codex (OpenAI) implementa; Claude planifica y revisa.** Claude arma el encargo (contexto, archivos, criterios de aceptación), lo delega a Codex, revisa el diff, corre `tsc`/`lint`/`build`, prueba en el navegador y reporta. Claude no implementa las fases directamente.
 - Excepción vigente (desde 2026-09-25): sin cupo de Codex, Claude implementa hasta que haya un plan pagado.
 
+## Carga de documentos (encargados)
+
+- `/encargado/documentos`: PDF de correo, OI, OI firmada, OT o informe AXIS → revisión → crea o avanza tickets (`importDocument` en `api.ts`, acción `IMPORT_DOCUMENT`).
+- Lectura en el navegador (`src/lib/document-import/`): `extract.ts` (pdfjs; OCR con tesseract.js si es escaneo), `parsers.ts` y `match.ts` (puros), `plan.ts` (estados e historial por tipo de documento).
+- El worker de pdfjs se sirve desde `public/pdf.worker.min.mjs`: al actualizar `pdfjs-dist`, volver a copiarlo desde `node_modules/pdfjs-dist/build/`.
+- Los PDF se guardan en IndexedDB (`src/data/document-store.ts`); el ticket guarda solo la metadata.
+- Ejemplos reales de documentos en `examples/` (fuera del repo); textos anonimizados en `examples/textos/`. Nunca subir datos reales de clientes al repo.
+
 ## Persistencia local (sin backend)
 
-- `src/data/persistence.ts` guarda el estado completo en `localStorage` (`postventaxis:datos`, versionado; cada versión migra la anterior: v1→v2 folios por obra, v2→v3 horas de visita/trabajo). `DataProvider` lo carga al montar, guarda en cada cambio y sincroniza entre pestañas. "Restablecer datos de ejemplo" (menú de usuario) vuelve a `createSeedState()`.
+- `src/data/persistence.ts` guarda el estado completo en `localStorage` (`postventaxis:datos`, versionado; cada versión migra la anterior: v1→v2 folios por obra, v2→v3 horas de visita/trabajo, v3→v4 referencias y documentos de tickets). `DataProvider` lo carga al montar, guarda en cada cambio y sincroniza entre pestañas. "Restablecer datos de ejemplo" (menú de usuario) vuelve a `createSeedState()`.
 - La sesión usa dos cookies: `pv_user_id` y `pv_role`. `src/proxy.ts` rutea solo por rol; el cliente valida que el usuario exista y esté activo.
