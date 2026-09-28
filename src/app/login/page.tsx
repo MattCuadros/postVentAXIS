@@ -10,13 +10,15 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { useSession } from "@/data/session-context";
 import { useDataContext } from "@/data/store-context";
+import { ROLE_LABEL } from "@/lib/user-import";
 import type { Role } from "@/types/domain";
 
-const ROLE_DETAILS: Record<Role, { label: string; home: string }> = {
-  PROPIETARIO: { label: "Propietario", home: "/propietario" },
-  ENCARGADO: { label: "Encargado", home: "/encargado" },
-  ADMIN_OBRA: { label: "Administrador de obra", home: "/admin-obra" },
-  ADMIN: { label: "Administrador", home: "/admin" },
+/** Home de cada rol tras iniciar sesión (el nombre visible viene de ROLE_LABEL, la fuente única). */
+const ROLE_HOME: Record<Role, string> = {
+  PROPIETARIO: "/propietario",
+  ENCARGADO: "/encargado",
+  ADMIN_OBRA: "/admin-obra",
+  ADMIN: "/admin",
 };
 
 const ROLES: Role[] = ["PROPIETARIO", "ENCARGADO", "ADMIN_OBRA", "ADMIN"];
@@ -33,7 +35,7 @@ export default function LoginPage() {
 
   function handleUserSelect(userId: string, role: Role) {
     setUser(userId);
-    router.replace(ROLE_DETAILS[role].home);
+    router.replace(ROLE_HOME[role]);
   }
 
   return (
@@ -60,7 +62,7 @@ export default function LoginPage() {
               return (
                 <section key={role} aria-labelledby={`role-${role}`}>
                   <h3 id={`role-${role}`} className="text-sm font-bold text-ink-secondary">
-                    {ROLE_DETAILS[role].label}
+                    {ROLE_LABEL[role]}
                   </h3>
                   <div className="mt-2 space-y-2">
                     {roleUsers.map((user) => (

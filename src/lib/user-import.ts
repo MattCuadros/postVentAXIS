@@ -2,11 +2,12 @@ import { fieldErrors, userSchema } from "@/lib/schemas";
 import { normalize, pick, type SheetRow } from "@/lib/sheet";
 import type { Project, Role, Zone } from "@/types/domain";
 
+/** Nombre visible del rol. Único lugar donde cambiar "Superadministrador" si vuelve a pedirse. */
 export const ROLE_LABEL: Record<Role, string> = {
   PROPIETARIO: "Propietario",
   ENCARGADO: "Encargado",
   ADMIN_OBRA: "Administrador de obra",
-  ADMIN: "Administrador",
+  ADMIN: "Superadministrador",
 };
 
 /** Plural para los filtros por rol ("Encargados", "Administradores de obra"). */
@@ -14,7 +15,7 @@ export const ROLE_LABEL_PLURAL: Record<Role, string> = {
   PROPIETARIO: "Propietarios",
   ENCARGADO: "Encargados",
   ADMIN_OBRA: "Administradores de obra",
-  ADMIN: "Administradores",
+  ADMIN: "Superadministradores",
 };
 
 /** Columnas de la plantilla, en orden. */

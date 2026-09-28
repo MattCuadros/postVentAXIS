@@ -40,7 +40,7 @@ export const userSchema = z
     name: requiredText("El nombre"),
     email: z.string().trim().toLowerCase().email("Correo no válido."),
     phone: requiredText("El teléfono"),
-    role: z.enum(ROLE_OPTIONS, { message: "Rol no válido (Propietario, Encargado, Administrador de obra o Administrador)." }),
+    role: z.enum(ROLE_OPTIONS, { message: "Rol no válido (Propietario, Encargado, Administrador de obra o Superadministrador)." }),
     zoneIds: z.array(z.string()),
     projectIds: z.array(z.string()).default([]),
   })
