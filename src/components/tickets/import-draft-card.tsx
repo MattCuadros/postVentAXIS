@@ -247,6 +247,9 @@ function OwnerPicker({ draft, owners, error, allowNone, onChange }: OwnerPickerP
         ))}
         <option value="__new">+ Crear propietario con los datos leídos</option>
       </Select>
+      {draft.ownerMode === "new" && draft.parsed.ownerFromSender && (
+        <p className="mt-2 text-xs text-ink-meta">Leído del remitente del correo. Revisa que sea el propietario.</p>
+      )}
       {draft.ownerMode === "new" && (
         <div className="mt-3 grid gap-3 sm:grid-cols-3">
           <Input
