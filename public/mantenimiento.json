@@ -1,4 +1,11 @@
 {
-  "programado": [],
+  "programado": [
+    {
+      "rama": "feat/superadministrador",
+      "titulo": "El rol Administrador se llama ahora Superadministrador",
+      "inicio": "2026-09-29T07:00:00.000Z",
+      "duracionMinutos": 30
+    }
+  ],
   "ultimo": null
 }
