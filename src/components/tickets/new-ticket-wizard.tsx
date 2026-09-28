@@ -287,7 +287,7 @@ export function NewTicketWizard() {
           </Button>
         )}
         {step < STEPS.length - 1 ? (
-          <Button size="lg" className="flex-1" onClick={handleContinue} disabled={step === 0 && units?.length === 0}>
+          <Button size="lg" className="flex-1" onClick={handleContinue} disabled={(step === 0 && !units?.length) || (step === 1 && !categories)}>
             Continuar
           </Button>
         ) : (

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { MaintenanceBanner } from "@/components/session/maintenance-banner";
 import { SessionProvider } from "@/data/session-context";
 import { DataProvider } from "@/data/store-context";
 import "./globals.css";
@@ -13,6 +14,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     <html lang="es-CL" className="h-full antialiased">
       <body className="min-h-full flex flex-col">
         <DataProvider>
+          <MaintenanceBanner />
           <SessionProvider>{children}</SessionProvider>
         </DataProvider>
       </body>

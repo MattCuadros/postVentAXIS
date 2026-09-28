@@ -42,3 +42,7 @@ postventa-etapa-0.zip
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Resultados de Playwright
+/test-results/
+/playwright-report/
