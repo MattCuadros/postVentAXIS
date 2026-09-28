@@ -30,7 +30,7 @@ export async function exportTicketsToExcel(sources: ExportSources): Promise<void
       "Categoría confirmada": categories.find((item) => item.id === ticket.categoryId)?.name ?? "",
       Recinto: ticket.room,
       Descripción: ticket.description,
-      Propietario: users.find((item) => item.id === unit?.ownerId)?.name ?? "",
+      Propietario: users.find((item) => item.id === unit?.ownerId)?.name ?? "Sin propietario",
       Encargado: users.find((item) => item.id === ticket.encargadoId)?.name ?? "",
       Equipo: crews.find((item) => item.id === ticket.crewId)?.name ?? "",
       Ingresado: ticket.createdAt.slice(0, 10),

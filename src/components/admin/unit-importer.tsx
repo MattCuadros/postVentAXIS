@@ -2,6 +2,7 @@
 
 import { useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { ContentSkeleton } from "@/components/ui/skeleton";
 import { useDataApi } from "@/data/api";
 import { useQuery } from "@/data/use-query";
 import { cn } from "@/lib/cn";
@@ -11,11 +12,15 @@ import type { Project } from "@/types/domain";
 
 interface UnitImporterProps {
   project: Project;
-  onDone: (result: { units: number; newOwners: number; skipped: number }) => void;
+  onDone: (result: { created: number; assigned: number; withoutOwner: number; newOwners: number; skipped: number }) => void;
   onCancel: () => void;
 }
 
-/** Carga masiva de las unidades de una obra desde CSV (o Excel), creando los propietarios nuevos. */
+/**
+ * Carga masiva de las unidades de una obra desde CSV (o Excel). El propietario es opcional: una
+ * fila sin datos de propietario se importa igual, para completarlo después. Si la fila coincide
+ * con una unidad ya existente sin propietario y trae uno válido, se le asigna en vez de rechazarla.
+ */
 export function UnitImporter({ project, onDone, onCancel }: UnitImporterProps) {
   const api = useDataApi();
   const { data: units } = useQuery(api.getUnits);
@@ -26,8 +31,11 @@ export function UnitImporter({ project, onDone, onCancel }: UnitImporterProps) {
   const [readError, setReadError] = useState<string | null>(null);
   const [importing, setImporting] = useState(false);
 
-  const valid = rows?.filter((row) => row.unit !== null && row.owner !== null) ?? [];
+  const valid = rows?.filter((row) => row.errors.length === 0) ?? [];
   const invalid = (rows?.length ?? 0) - valid.length;
+  const withOwner = valid.filter((row) => row.owner !== null && !("none" in row.owner));
+  const withoutOwner = valid.length - withOwner.length;
+  const toAssign = valid.filter((row) => row.assignToUnitId !== null).length;
   const newOwnerEmails = new Set(valid.flatMap((row) => (row.owner && "create" in row.owner ? [row.owner.create.email] : [])));
 
   function handleTemplate() {
@@ -59,24 +67,36 @@ export function UnitImporter({ project, onDone, onCancel }: UnitImporterProps) {
     }
   }
 
+  /** ownerId a usar para la fila: existente, recién creado (una sola vez por correo), o null. */
+  async function resolveOwnerId(owner: UnitImportRow["owner"], createdIds: Map<string, string>): Promise<string | null> {
+    if (owner === null || "none" in owner) return null;
+    if ("id" in owner) return owner.id;
+    const { email } = owner.create;
+    const cached = createdIds.get(email);
+    if (cached) return cached;
+    const created = await api.createUser({ ...owner.create, role: "PROPIETARIO", projectIds: [], zoneIds: [], active: true });
+    createdIds.set(email, created.id);
+    return created.id;
+  }
+
   async function handleImport() {
     setImporting(true);
     try {
       // Un mismo propietario nuevo puede aparecer en varias filas: se crea una sola vez.
       const createdIds = new Map<string, string>();
+      let created = 0;
+      let assigned = 0;
       for (const row of valid) {
-        if (!row.unit || !row.owner) continue;
-        let ownerId: string;
-        if ("id" in row.owner) {
-          ownerId = row.owner.id;
-        } else {
-          const { email } = row.owner.create;
-          ownerId = createdIds.get(email) ?? (await api.createUser({ ...row.owner.create, role: "PROPIETARIO", projectIds: [], zoneIds: [], active: true })).id;
-          createdIds.set(email, ownerId);
+        const ownerId = await resolveOwnerId(row.owner, createdIds);
+        if (row.assignToUnitId) {
+          await api.updateUnit(row.assignToUnitId, { ownerId });
+          assigned += 1;
+        } else if (row.unit) {
+          await api.createUnit({ ...row.unit, projectId: project.id, ownerId });
+          created += 1;
         }
-        await api.createUnit({ ...row.unit, projectId: project.id, ownerId });
       }
-      onDone({ units: valid.length, newOwners: createdIds.size, skipped: invalid });
+      onDone({ created, assigned, withoutOwner, newOwners: createdIds.size, skipped: invalid });
     } finally {
       setImporting(false);
     }
@@ -94,34 +114,43 @@ export function UnitImporter({ project, onDone, onCancel }: UnitImporterProps) {
           <strong className="text-ink">Fecha entrega</strong> en formato DD-MM-AAAA.
         </li>
         <li>
-          3. El propietario se identifica por su <strong className="text-ink">correo</strong>. Si aún no está registrado, completa
-          también su nombre y teléfono (solo la primera vez que aparece) y se creará automáticamente.
+          3. El propietario es opcional. Si lo dejas vacío, la unidad se importa sin propietario y podrás completarlo después
+          (con este mismo archivo: vuelve a importarlo agregando el correo a las filas que falten). Si lo completas, se
+          identifica por su <strong className="text-ink">correo</strong>; si aún no está registrado, agrega también su
+          nombre y teléfono (solo la primera vez que aparece) y se creará automáticamente.
         </li>
       </ol>
 
-      <div>
-        <input
-          ref={inputRef}
-          type="file"
-          accept=".csv,.xlsx,.xls"
-          className="sr-only"
-          id="unit-import-file"
-          onChange={(event) => handleFile(event.target.files?.[0])}
-        />
-        <label
-          htmlFor="unit-import-file"
-          className="flex cursor-pointer flex-col items-center justify-center gap-1 rounded-md border border-dashed border-line p-6 text-center transition-colors hover:border-accent hover:bg-accent-soft"
-        >
-          <span className="font-bold text-accent">{fileName ? "Subir otro archivo" : "Elegir archivo CSV"}</span>
-          <span className="text-xs text-ink-meta">{fileName ?? ".csv (también .xlsx)"}</span>
-        </label>
-        {readError && <p className="mt-2 text-sm text-danger" role="alert">{readError}</p>}
-      </div>
+      {!units || !users ? (
+        <ContentSkeleton label="Cargando unidades y usuarios…" lines={1} />
+      ) : (
+        <div>
+          <input
+            ref={inputRef}
+            type="file"
+            accept=".csv,.xlsx,.xls"
+            className="sr-only"
+            id="unit-import-file"
+            onChange={(event) => handleFile(event.target.files?.[0])}
+          />
+          <label
+            htmlFor="unit-import-file"
+            className="flex cursor-pointer flex-col items-center justify-center gap-1 rounded-md border border-dashed border-line p-6 text-center transition-colors hover:border-accent hover:bg-accent-soft"
+          >
+            <span className="font-bold text-accent">{fileName ? "Subir otro archivo" : "Elegir archivo CSV"}</span>
+            <span className="text-xs text-ink-meta">{fileName ?? ".csv (también .xlsx)"}</span>
+          </label>
+          {readError && <p className="mt-2 text-sm text-danger" role="alert">{readError}</p>}
+        </div>
+      )}
 
       {rows && (
         <div>
           <p className="text-sm text-ink" aria-live="polite">
             <strong>{valid.length}</strong> {valid.length === 1 ? "unidad lista" : "unidades listas"}
+            {" · "}{withOwner.length} con propietario
+            {" · "}{withoutOwner} sin propietario (se {withoutOwner === 1 ? "importa" : "importan"} igual)
+            {toAssign > 0 && <> · {toAssign} {toAssign === 1 ? "asignación a unidad existente" : "asignaciones a unidades existentes"}</>}
             {newOwnerEmails.size > 0 && <> · {newOwnerEmails.size} {newOwnerEmails.size === 1 ? "propietario nuevo" : "propietarios nuevos"}</>}
             {invalid > 0 && <> · <strong className="text-danger">{invalid}</strong> con errores (no se importan)</>}
           </p>
@@ -141,8 +170,14 @@ export function UnitImporter({ project, onDone, onCancel }: UnitImporterProps) {
                     <td className="px-3 py-2 tabular-nums text-ink-meta">{row.line}</td>
                     <td className="px-3 py-2 text-ink">{row.label}</td>
                     <td className="px-3 py-2 text-ink">{row.ownerLabel}</td>
-                    <td className={cn("px-3 py-2", row.errors.length === 0 ? "text-success" : "text-danger")}>
-                      {row.errors.length === 0 ? "Lista" : row.errors.map((error) => <span key={error} className="block">{error}</span>)}
+                    <td className={cn("px-3 py-2", row.errors.length > 0 ? "text-danger" : row.warnings.length > 0 ? "text-warning" : "text-success")}>
+                      {row.errors.length > 0
+                        ? row.errors.map((error) => <span key={error} className="block">{error}</span>)
+                        : row.warnings.length > 0
+                          ? row.warnings.map((warning) => <span key={warning} className="block">{warning}</span>)
+                          : row.assignToUnitId
+                            ? "Se asignará propietario"
+                            : "Lista"}
                     </td>
                   </tr>
                 ))}

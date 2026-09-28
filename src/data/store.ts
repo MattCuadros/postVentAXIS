@@ -101,6 +101,7 @@ export type DataAction =
     }
   | { type: "CREATE_PROJECT"; project: Project }
   | { type: "CREATE_UNIT"; unit: Unit }
+  | { type: "UPDATE_UNIT"; unitId: string; changes: Partial<Omit<Unit, "id">> }
   | { type: "CREATE_CREW"; crew: WorkCrew }
   | { type: "CREATE_USER"; user: User }
   | { type: "UPDATE_USER"; userId: string; changes: Partial<Omit<User, "id">> }
@@ -205,10 +206,15 @@ export function reducer(state: DataState, action: DataAction): DataState {
       const updated = new Map(action.tickets.map((ticket) => [ticket.id, ticket]));
       const newTickets = action.tickets.filter((ticket) => !state.tickets.some(({ id }) => id === ticket.id));
 
+      // action.units puede traer unidades nuevas y unidades ya existentes que ganaron propietario
+      // (ver Tarea 2): se actualizan por id en vez de duplicarlas.
+      const updatedUnits = new Map(action.units.map((unit) => [unit.id, unit]));
+      const newUnits = action.units.filter((unit) => !state.units.some(({ id }) => id === unit.id));
+
       return {
         ...state,
         users: [...state.users, ...action.users],
-        units: [...state.units, ...action.units],
+        units: [...state.units.map((unit) => updatedUnits.get(unit.id) ?? unit), ...newUnits],
         tickets: [...state.tickets.map((ticket) => updated.get(ticket.id) ?? ticket), ...newTickets],
         statusHistory: [...state.statusHistory, ...action.history],
       };
@@ -246,6 +252,11 @@ export function reducer(state: DataState, action: DataAction): DataState {
       return { ...state, projects: [...state.projects, action.project] };
     case "CREATE_UNIT":
       return { ...state, units: [...state.units, action.unit] };
+    case "UPDATE_UNIT":
+      return {
+        ...state,
+        units: state.units.map((unit) => (unit.id === action.unitId ? { ...unit, ...action.changes, id: unit.id } : unit)),
+      };
     case "CREATE_CREW":
       return { ...state, crews: [...state.crews, action.crew] };
     case "CREATE_USER":

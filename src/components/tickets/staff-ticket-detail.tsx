@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useState, type ReactNode } from "react";
+import { AssignOwnerDialog } from "@/components/tickets/assign-owner-dialog";
 import { MediaThumb } from "@/components/tickets/media-thumb";
 import { StaffActions } from "@/components/tickets/staff-actions";
 import { TicketHistory } from "@/components/tickets/ticket-history";
@@ -46,6 +47,7 @@ export function StaffTicketDetail({ ticketId, backHref }: StaffTicketDetailProps
   const { user } = useSession();
   const api = useDataApi();
   const [notice, setNotice] = useState<string | null>(null);
+  const [assigningOwner, setAssigningOwner] = useState(false);
 
   const { data: ticket, loading } = useQuery(useCallback(() => api.getTicket(ticketId), [api, ticketId]));
   const { data: history } = useQuery(useCallback(() => api.getTicketHistory(ticketId), [api, ticketId]));
@@ -136,6 +138,16 @@ export function StaffTicketDetail({ ticketId, backHref }: StaffTicketDetailProps
                 onDone={handleDone}
                 onSpecialCase={handleSpecialCase}
                 onVisitScheduled={setNotice}
+                transitionBlock={
+                  unit.ownerId === null
+                    ? {
+                        to: "EN_RECEPCION",
+                        message: "Asigna un propietario a la unidad para solicitar la recepción.",
+                        actionLabel: "Asignar propietario",
+                        onAction: () => setAssigningOwner(true),
+                      }
+                    : undefined
+                }
               />
             </div>
           </Panel>
@@ -151,7 +163,12 @@ export function StaffTicketDetail({ ticketId, backHref }: StaffTicketDetailProps
                 <dd><a href={`mailto:${owner.email}`} className="break-all text-accent hover:underline">{owner.email}</a></dd>
               </dl>
             ) : (
-              <p className="text-sm text-ink-secondary">Sin datos del propietario.</p>
+              <>
+                <p className="text-sm text-ink-secondary">Sin propietario.</p>
+                <button type="button" className="mt-2 text-sm font-bold text-accent hover:underline" onClick={() => setAssigningOwner(true)}>
+                  Asignar propietario
+                </button>
+              </>
             )}
           </Panel>
 
@@ -216,6 +233,16 @@ export function StaffTicketDetail({ ticketId, backHref }: StaffTicketDetailProps
           </Panel>
         </div>
       </div>
+
+      <AssignOwnerDialog
+        open={assigningOwner}
+        unit={unit}
+        onClose={() => setAssigningOwner(false)}
+        onAssigned={(ownerName) => {
+          setAssigningOwner(false);
+          setNotice(`${ownerName} asignado como propietario de ${unitLabel(unit)}.`);
+        }}
+      />
     </div>
   );
 }

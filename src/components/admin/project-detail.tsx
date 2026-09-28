@@ -23,6 +23,7 @@ export function ProjectDetail({ projectId }: { projectId: string }) {
   const { data: users } = useQuery(api.getUsers);
   const { data: tickets } = useQuery(api.getTickets);
   const [dialog, setDialog] = useState<"add" | "import" | null>(null);
+  const [editingUnitId, setEditingUnitId] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
 
   if (projects === undefined) return <ContentSkeleton label="Cargando obra…" />;
@@ -85,7 +86,10 @@ export function ProjectDetail({ projectId }: { projectId: string }) {
                 <th scope="col" className="py-4 pr-4 font-bold text-ink">Tipo</th>
                 <th scope="col" className="py-4 pr-4 font-bold text-ink">Propietario</th>
                 <th scope="col" className="py-4 pr-4 font-bold text-ink">Entrega</th>
-                <th scope="col" className="py-4 text-right font-bold text-ink">Requerimientos abiertos</th>
+                <th scope="col" className="py-4 pr-4 text-right font-bold text-ink">Requerimientos abiertos</th>
+                <th scope="col" className="py-4 text-right font-bold text-ink">
+                  <span className="sr-only">Acciones</span>
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -97,10 +101,15 @@ export function ProjectDetail({ projectId }: { projectId: string }) {
                     <td className="py-4 pr-4 font-bold text-ink">{unitLabel(unit)}</td>
                     <td className="py-4 pr-4 text-ink">{unit.type === "CASA" ? "Casa" : `Departamento${unit.floor === null ? "" : ` · piso ${unit.floor}`}`}</td>
                     <td className="py-4 pr-4 text-ink">
-                      {owner ? <>{owner.name}<span className="block text-xs text-ink-meta">{owner.email}</span></> : "—"}
+                      {owner ? <>{owner.name}<span className="block text-xs text-ink-meta">{owner.email}</span></> : <span className="text-ink-meta">Sin propietario</span>}
                     </td>
                     <td className="py-4 pr-4 text-ink">{formatLongDate(unit.deliveryDate)}</td>
-                    <td className="py-4 text-right tabular-nums text-ink">{open}</td>
+                    <td className="py-4 pr-4 text-right tabular-nums text-ink">{open}</td>
+                    <td className="py-4 text-right">
+                      <button type="button" className="text-sm font-bold text-accent hover:underline" onClick={() => setEditingUnitId(unit.id)}>
+                        Editar
+                      </button>
+                    </td>
                   </tr>
                 );
               })}
@@ -122,16 +131,36 @@ export function ProjectDetail({ projectId }: { projectId: string }) {
         )}
       </Dialog>
 
+      <Dialog open={editingUnitId !== null} title="Editar unidad" onClose={() => setEditingUnitId(null)}>
+        {editingUnitId !== null && (() => {
+          const editing = projectUnits.find((item) => item.id === editingUnitId);
+          return editing ? (
+            <UnitForm
+              projectId={project.id}
+              unit={editing}
+              onCancel={() => setEditingUnitId(null)}
+              onCreated={(saved) => {
+                setEditingUnitId(null);
+                setNotice(`${unitLabel(saved)} actualizada.`);
+              }}
+            />
+          ) : null;
+        })()}
+      </Dialog>
+
       <Dialog open={dialog === "import"} title={`Importar unidades · ${project.name}`} onClose={() => setDialog(null)}>
         {dialog === "import" && (
           <UnitImporter
             project={project}
             onCancel={() => setDialog(null)}
-            onDone={({ units: imported, newOwners, skipped }) => {
+            onDone={({ created, assigned, withoutOwner, newOwners, skipped }) => {
               setDialog(null);
+              const imported = created + assigned;
               setNotice(
-                `${imported} ${imported === 1 ? "unidad importada" : "unidades importadas"}` +
-                  (newOwners > 0 ? ` y ${newOwners} ${newOwners === 1 ? "propietario creado" : "propietarios creados"}` : "") +
+                `${imported} ${imported === 1 ? "unidad procesada" : "unidades procesadas"}` +
+                  (assigned > 0 ? ` (${assigned} ${assigned === 1 ? "asignación a unidad existente" : "asignaciones a unidades existentes"})` : "") +
+                  (newOwners > 0 ? ` · ${newOwners} ${newOwners === 1 ? "propietario creado" : "propietarios creados"}` : "") +
+                  (withoutOwner > 0 ? ` · ${withoutOwner} sin propietario (se pueden completar reimportando el mismo archivo)` : "") +
                   (skipped > 0 ? `. ${skipped} ${skipped === 1 ? "fila con errores no se importó" : "filas con errores no se importaron"}.` : "."),
               );
             }}

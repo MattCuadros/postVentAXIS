@@ -11,23 +11,25 @@ import type { Unit, UnitType } from "@/types/domain";
 
 interface UnitFormProps {
   projectId: string;
+  /** En modo edición, se precarga con esta unidad y se guarda con updateUnit en vez de crear. */
+  unit?: Unit;
   onCreated: (unit: Unit) => void;
   onCancel: () => void;
 }
 
-/** Alta de una vivienda dentro de una obra, asociada a su propietario. */
-export function UnitForm({ projectId, onCreated, onCancel }: UnitFormProps) {
+/** Alta o edición de una vivienda dentro de una obra. El propietario es opcional: se puede completar después. */
+export function UnitForm({ projectId, unit, onCreated, onCancel }: UnitFormProps) {
   const api = useDataApi();
   const { data: users } = useQuery(api.getUsers);
   const owners = users?.filter((user) => user.role === "PROPIETARIO" && user.active) ?? [];
 
   const [values, setValues] = useState({
-    type: "DEPARTAMENTO" as UnitType,
-    tower: "",
-    floor: "",
-    number: "",
-    ownerId: "",
-    deliveryDate: "",
+    type: unit?.type ?? ("DEPARTAMENTO" as UnitType),
+    tower: unit?.tower ?? "",
+    floor: unit?.floor?.toString() ?? "",
+    number: unit?.number ?? "",
+    ownerId: unit?.ownerId ?? "",
+    deliveryDate: unit?.deliveryDate ?? "",
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
@@ -44,18 +46,18 @@ export function UnitForm({ projectId, onCreated, onCancel }: UnitFormProps) {
       return;
     }
     const isHouse = result.data.type === "CASA";
+    const fields = {
+      type: result.data.type,
+      tower: isHouse || result.data.tower === "" ? null : result.data.tower,
+      floor: isHouse || result.data.floor === "" ? null : Number(result.data.floor),
+      number: result.data.number,
+      ownerId: result.data.ownerId || null,
+      deliveryDate: result.data.deliveryDate,
+    };
     setSaving(true);
     try {
-      const unit = await api.createUnit({
-        projectId,
-        type: result.data.type,
-        tower: isHouse || result.data.tower === "" ? null : result.data.tower,
-        floor: isHouse || result.data.floor === "" ? null : Number(result.data.floor),
-        number: result.data.number,
-        ownerId: result.data.ownerId,
-        deliveryDate: result.data.deliveryDate,
-      });
-      onCreated(unit);
+      const saved = unit ? await api.updateUnit(unit.id, fields) : await api.createUnit({ projectId, ...fields });
+      onCreated(saved);
     } finally {
       setSaving(false);
     }
@@ -77,7 +79,7 @@ export function UnitForm({ projectId, onCreated, onCancel }: UnitFormProps) {
         <Input label="Número" name="unit-number" value={values.number} error={errors.number} onChange={(event) => set("number", event.target.value)} />
       </div>
       <Select label="Propietario" name="unit-owner" value={values.ownerId} error={errors.ownerId} onChange={(event) => set("ownerId", event.target.value)}>
-        <option value="" disabled>Selecciona el propietario</option>
+        <option value="">Sin propietario (se completa después)</option>
         {owners.map((owner) => <option key={owner.id} value={owner.id}>{owner.name} · {owner.email}</option>)}
       </Select>
       <p className="-mt-2 text-xs text-ink-meta">¿No aparece? Créalo primero en Usuarios.</p>
@@ -85,7 +87,7 @@ export function UnitForm({ projectId, onCreated, onCancel }: UnitFormProps) {
 
       <div className="mt-2 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
         <Button variant="secondary" disabled={saving} onClick={onCancel}>Cancelar</Button>
-        <Button disabled={saving} onClick={handleSubmit}>{saving ? "Guardando…" : "Agregar unidad"}</Button>
+        <Button disabled={saving} onClick={handleSubmit}>{saving ? "Guardando…" : unit ? "Guardar cambios" : "Agregar unidad"}</Button>
       </div>
     </div>
   );

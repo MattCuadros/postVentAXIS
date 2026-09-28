@@ -101,6 +101,8 @@ interface StaffActionsProps {
   onSpecialCase?: () => void;
   /** Se llama tras agendar o reagendar la visita, con el texto a mostrar. */
   onVisitScheduled?: (message: string) => void;
+  /** Reemplaza el botón de esa transición por un aviso con una acción para resolver el bloqueo. */
+  transitionBlock?: { to: TicketStatus; message: string; actionLabel: string; onAction: () => void };
 }
 
 export function StaffActions({
@@ -112,6 +114,7 @@ export function StaffActions({
   onDone,
   onSpecialCase,
   onVisitScheduled,
+  transitionBlock,
 }: StaffActionsProps) {
   const { transitionTicket, markSpecialCase } = useDataApi();
   const transitions = availableTransitions(ticket.status, role);
@@ -176,18 +179,27 @@ export function StaffActions({
   return (
     <>
       <div className="flex flex-col gap-3">
-        {transitions.map((transition, index) => (
-          <Button
-            key={transition.to}
-            fullWidth
-            size="lg"
-            variant={transition.to === "NO_PROCEDE" ? "danger" : index === 0 ? "primary" : "secondary"}
-            disabled={busy}
-            onClick={() => (FORMS[transition.to] ? setOpen(transition) : void run(transition))}
-          >
-            {running === transition && !open ? "Guardando…" : transition.action}
-          </Button>
-        ))}
+        {transitions.map((transition, index) =>
+          transitionBlock && transitionBlock.to === transition.to ? (
+            <div key={transition.to} className="rounded-md bg-warning/10 p-3 text-sm">
+              <p className="text-warning">{transitionBlock.message}</p>
+              <button type="button" className="mt-1.5 font-bold text-accent hover:underline" onClick={transitionBlock.onAction}>
+                {transitionBlock.actionLabel}
+              </button>
+            </div>
+          ) : (
+            <Button
+              key={transition.to}
+              fullWidth
+              size="lg"
+              variant={transition.to === "NO_PROCEDE" ? "danger" : index === 0 ? "primary" : "secondary"}
+              disabled={busy}
+              onClick={() => (FORMS[transition.to] ? setOpen(transition) : void run(transition))}
+            >
+              {running === transition && !open ? "Guardando…" : transition.action}
+            </Button>
+          ),
+        )}
         {canScheduleVisit && (
           <Button
             fullWidth
