@@ -63,6 +63,19 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 - **Codex (OpenAI) implementa; Claude planifica y revisa.** Claude arma el encargo (contexto, archivos, criterios de aceptación), lo delega a Codex, revisa el diff, corre `tsc`/`lint`/`build`, prueba en el navegador y reporta. Claude no implementa las fases directamente.
 - Excepción vigente (desde 2026-09-25): sin cupo de Codex, Claude implementa hasta que haya un plan pagado.
 
+## Ramas, pruebas y despliegue (vigente desde 2026-09-25)
+
+- **Cada funcionalidad en su propia rama** (`feat/…`), nunca directo a `master`. `master` es la rama de producción; Vercel despliega automáticamente cada push a `master`.
+- **Merge a las 04:00 (hora de Chile)**, salvo que Matías pida desplegar al instante. Antes de que llegue la hora, la app muestra un banner de mantenimiento programado (`MaintenanceBanner`, lee `public/mantenimiento.json`) para no sacar a nadie de su sesión.
+- **Antes de cualquier merge corren todas las pruebas**: `npm run verify` (tsc, lint, `vitest`, `next build`, Playwright e2e). Si fallan, no hay merge.
+- Automatizado en `.github/workflows/`:
+  - `verify.yml`: corre en cada push a `feat/**`/`fix/**`/`programado/**` y en cada Pull Request a `master`.
+  - `merge-programado.yml`: agenda el banner y fusiona a `master`. `workflow_dispatch` con `instant: false` agenda (publica el banner ya, fusiona el código más tarde); con `instant: true` corre las pruebas y fusiona de inmediato (para "despliega ahora"). Un cron cada 15 min revisa `node scripts/mantenimiento.mjs pendientes`, corre las pruebas sobre cada rama agendada cuya hora ya llegó y solo fusiona las que pasan; las que fallan quedan agendadas para el siguiente ciclo.
+  - Requiere `permissions: contents: write` (ya configurado) y que Actions esté habilitado en el repo; si `master` tiene reglas de protección de rama, deben permitir el push del token de Actions.
+- `scripts/mantenimiento.mjs` (probado en `tests/unit/maintenance.test.ts`) calcula las 04:00 de Chile correctamente en horario de verano e invierno y lee/escribe `public/mantenimiento.json` (`programado`, `ultimo`). `src/lib/maintenance.ts` decide qué muestra el banner (`none` | `scheduled` | `running` | `updated`); nunca recarga la página por su cuenta.
+- Pruebas: unitarias con Vitest en `tests/unit/` (`npm run test`), end-to-end con Playwright en `tests/e2e/` (`npm run test:e2e`, corre sobre `npm run build` + `next start`). `playwright.config.ts` usa **un solo worker**: el picker de fotos/video graba video en el navegador y varias grabaciones a la vez lo vuelven poco fiable.
+- Excepción de arranque: este propio flujo (rama `feat/mantenimiento-programado`) se fusionó directo, porque el workflow que hace el merge a las 04:00 no puede correr desde `master` antes de existir en `master`. Desde ahí en adelante, toda funcionalidad nueva pasa por el flujo completo.
+
 ## Carga de documentos (encargados)
 
 - `/encargado/documentos`: PDF de correo, OI, OI firmada, OT o informe AXIS → revisión → crea o avanza tickets (`importDocument` en `api.ts`, acción `IMPORT_DOCUMENT`).

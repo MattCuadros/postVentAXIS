@@ -1,0 +1,154 @@
+name: Merge programado (04:00 Chile)
+
+# Regla del proyecto: cada funcionalidad vive en su propia rama y se fusiona a master a las
+# 04:00 (hora de Chile), avisando antes con un banner en la app (public/mantenimiento.json),
+# para no interrumpir a quien esté usando PostventAXIS durante el día. Antes de cada merge se
+# corren todas las pruebas (verify.yml); si fallan, esa rama no se fusiona.
+#
+# - "Anunciar" (workflow_dispatch, instant=false): agenda la rama para las próximas 04:00 y
+#   publica el aviso en el banner de inmediato (el código de la rama se fusiona más tarde).
+# - "Instantáneo" (workflow_dispatch, instant=true): corre las pruebas y, si pasan, fusiona de
+#   inmediato. Para cuando Matías pide desplegar al instante.
+# - Cada 15 minutos (cron) revisa qué ramas agendadas ya llegaron a su hora, corre las pruebas
+#   sobre cada una y fusiona solo las que pasan; las que fallan quedan agendadas para reintentar.
+on:
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: "Rama a fusionar (ej. feat/mi-funcionalidad)"
+        required: true
+      titulo:
+        description: "Descripción breve para el banner (ej. Estadísticas del encargado)"
+        required: true
+      instant:
+        description: "Fusionar de inmediato en vez de agendar para las 04:00"
+        type: boolean
+        default: false
+  schedule:
+    - cron: "*/15 * * * *"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: merge-programado
+  cancel-in-progress: false
+
+env:
+  GIT_AUTHOR_NAME: postventaxis-bot
+  GIT_AUTHOR_EMAIL: postventaxis-bot@users.noreply.github.com
+  GIT_COMMITTER_NAME: postventaxis-bot
+  GIT_COMMITTER_EMAIL: postventaxis-bot@users.noreply.github.com
+
+jobs:
+  # --- Solo cuando se dispara a mano ---
+  anunciar:
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.instant == 'false'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: master
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Agendar y publicar el banner
+        run: |
+          node scripts/mantenimiento.mjs anunciar "${{ github.event.inputs.branch }}" "${{ github.event.inputs.titulo }}"
+          git add public/mantenimiento.json
+          git diff --cached --quiet && echo "Sin cambios (ya estaba agendada para la misma hora)." || {
+            git commit -m "Anuncia mantenimiento programado: ${{ github.event.inputs.titulo }}"
+            git push origin master
+          }
+
+  instantaneo:
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.instant == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.branch }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run lint
+      - run: npm run test
+      - run: npm run build
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:e2e
+      - name: Fusionar a master y registrar la novedad
+        run: |
+          git fetch origin master "${{ github.event.inputs.branch }}"
+          git checkout master
+          git merge --no-ff "origin/${{ github.event.inputs.branch }}" -m "Merge ${{ github.event.inputs.branch }} (despliegue inmediato solicitado)"
+          node scripts/mantenimiento.mjs quitar "${{ github.event.inputs.branch }}"
+          node scripts/mantenimiento.mjs registrar "${{ github.event.inputs.titulo }}"
+          git add public/mantenimiento.json
+          git commit -m "Registra despliegue inmediato: ${{ github.event.inputs.titulo }}" --allow-empty
+          git push origin master
+
+  # --- Cada 15 minutos: fusiona lo que ya llegó a su hora ---
+  merge-programado:
+    if: github.event_name == 'schedule'
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: master
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Buscar ramas cuya hora ya llegó
+        id: pendientes
+        run: |
+          mapfile -t ramas < <(node scripts/mantenimiento.mjs pendientes)
+          if [ ${#ramas[@]} -eq 0 ]; then
+            echo "Sin mantenimientos pendientes."
+            echo "hay=false" >> "$GITHUB_OUTPUT"
+          else
+            printf '%s\n' "${ramas[@]}"
+            echo "hay=true" >> "$GITHUB_OUTPUT"
+            printf 'ramas<<EOF\n%s\nEOF\n' "${ramas[*]}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Verificar y fusionar cada rama pendiente
+        if: steps.pendientes.outputs.hay == 'true'
+        run: |
+          set -e
+          FUSIONADAS=()
+          for rama in ${{ steps.pendientes.outputs.ramas }}; do
+            echo "::group::$rama"
+            git fetch origin "$rama"
+            git checkout -B "ci-verify" "origin/$rama"
+            npm ci
+            if npm run typecheck && npm run lint && npm run test && npm run build \
+              && npx playwright install --with-deps chromium && npm run test:e2e; then
+              git checkout master
+              git merge --no-ff "origin/$rama" -m "Merge $rama (mantenimiento programado 04:00)"
+              FUSIONADAS+=("$rama")
+              echo "✅ $rama fusionada."
+            else
+              git checkout master
+              git branch -D ci-verify
+              echo "⚠️ $rama no pasó las pruebas; queda agendada para reintentar."
+            fi
+            echo "::endgroup::"
+          done
+
+          if [ ${#FUSIONADAS[@]} -gt 0 ]; then
+            node scripts/mantenimiento.mjs completar "${FUSIONADAS[@]}"
+            git add public/mantenimiento.json
+            git commit -m "Registra mantenimiento completado: ${FUSIONADAS[*]}"
+          fi
+
+      - name: Publicar
+        if: steps.pendientes.outputs.hay == 'true'
+        run: git push origin master

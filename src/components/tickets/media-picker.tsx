@@ -73,25 +73,49 @@ async function compressPhoto(file: File): Promise<string> {
   }
 }
 
-/** Duración en segundos leída de los metadatos del video, o null si el navegador no la informa. */
-function videoDuration(file: File): Promise<number | null> {
+/**
+ * Duración en segundos leída de los metadatos del video, o null si el navegador no la informa.
+ *
+ * Algunos videos grabados en el navegador (MediaRecorder, sin índice de duración) reportan
+ * `duration: Infinity` al cargar los metadatos: saltar al final fuerza a calcularla. El elemento
+ * se agrega oculto al documento mientras se lee: uno separado del documento puede quedar con
+ * prioridad de decodificación baja y demorar mucho más en resolver el salto.
+ */
+async function videoDuration(file: File): Promise<number | null> {
+  // Un intento aislado a veces se queda esperando (dispositivo lento, video muy corto): un
+  // segundo intento con un elemento nuevo suele resolverlo.
+  return (await readVideoDuration(file)) ?? (await readVideoDuration(file));
+}
+
+function readVideoDuration(file: File): Promise<number | null> {
   return new Promise((resolve) => {
     const url = URL.createObjectURL(file);
     const video = document.createElement("video");
     video.preload = "metadata";
+    video.muted = true;
+    video.style.cssText = "position:fixed;width:1px;height:1px;opacity:0;pointer-events:none;left:-9999px;";
+    document.body.appendChild(video);
     const done = (value: number | null) => {
+      video.remove();
+      video.removeAttribute("src");
+      video.load();
       URL.revokeObjectURL(url);
       resolve(value);
     };
     video.onloadedmetadata = () => {
       if (Number.isFinite(video.duration)) return done(video.duration);
-      // WebM grabados en el navegador no traen duración: saltar al final obliga a calcularla.
-      const timeout = window.setTimeout(() => done(null), 4000);
-      video.ondurationchange = () => {
-        if (!Number.isFinite(video.duration)) return;
+      let settled = false;
+      const finish = (value: number | null) => {
+        if (settled) return;
+        settled = true;
         window.clearTimeout(timeout);
-        done(video.duration);
+        done(value);
       };
+      const timeout = window.setTimeout(() => finish(null), 20_000);
+      const fromCurrentTime = () => (Number.isFinite(video.duration) ? video.duration : video.currentTime > 0 ? video.currentTime : null);
+      video.ondurationchange = () => Number.isFinite(video.duration) && finish(video.duration);
+      video.ontimeupdate = () => video.currentTime > 0 && finish(fromCurrentTime());
+      video.onseeked = () => finish(fromCurrentTime());
       video.currentTime = Number.MAX_SAFE_INTEGER;
     };
     video.onerror = () => done(null);
