@@ -46,7 +46,7 @@ Store en memoria por `Context + useReducer`, sembrado desde `src/mocks/data.ts`:
 
 ## Verificación
 
-Tras cada fase: `npx tsc --noEmit` y `npm run lint`. Antes de dar una fase por cerrada, correr `npm run build`.
+Tras cada fase: `npm run typecheck` (no `npx tsc --noEmit` solo — Next.js 16 genera `PageProps`/`LayoutProps` en `.next/types/` bajo demanda, así que `typecheck` corre `next typegen` primero; sin eso, tsc falla en un checkout nuevo aunque funcione en local con un `.next/` ya generado por un build previo) y `npm run lint`. Antes de dar una fase por cerrada, correr `npm run build`. `npm run verify` corre todo (tsc, lint, vitest, build, Playwright e2e); es lo que corren los workflows antes de cualquier merge.
 
 <!-- BEGIN:nextjs-agent-rules -->
 
