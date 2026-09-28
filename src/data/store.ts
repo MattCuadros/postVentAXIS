@@ -1,3 +1,4 @@
+import { actorCapacityFor, canManageResponsibles } from "@/lib/unit-access";
 import { canTransition, MAIN_FLOW } from "@/lib/ticket-status";
 import {
   categories,
@@ -6,6 +7,7 @@ import {
   statusHistory,
   tickets,
   units,
+  unitResponsibles,
   users,
   zones,
 } from "@/mocks/data";
@@ -16,6 +18,7 @@ import type {
   TicketStatus,
   TicketStatusHistory,
   Unit,
+  UnitResponsible,
   User,
   WorkCrew,
   Zone,
@@ -28,6 +31,7 @@ export interface DataState {
   users: User[];
   projects: Project[];
   units: Unit[];
+  unitResponsibles: UnitResponsible[];
   crews: WorkCrew[];
   tickets: Ticket[];
   statusHistory: TicketStatusHistory[];
@@ -58,7 +62,7 @@ function withUpcomingAgenda(seedTickets: Ticket[]): Ticket[] {
 
 /** Estado inicial con los datos de ejemplo (copia nueva cada vez: se usa también al restablecer). */
 export function createSeedState(): DataState {
-  const seed = structuredClone({ zones, categories, users, projects, units, crews, tickets, statusHistory });
+  const seed = structuredClone({ zones, categories, users, projects, units, unitResponsibles, crews, tickets, statusHistory });
   return { ...seed, tickets: withUpcomingAgenda(seed.tickets) };
 }
 
@@ -102,6 +106,14 @@ export type DataAction =
   | { type: "CREATE_PROJECT"; project: Project }
   | { type: "CREATE_UNIT"; unit: Unit }
   | { type: "UPDATE_UNIT"; unitId: string; changes: Partial<Omit<Unit, "id">> }
+  | { type: "CREATE_RESPONSIBLE"; responsible: UnitResponsible; actingUserId: string }
+  | {
+      type: "UPDATE_RESPONSIBLE";
+      responsibleId: string;
+      changes: Partial<Pick<UnitResponsible, "relation" | "relationNote" | "canSignConformity">>;
+      actingUserId: string;
+    }
+  | { type: "DELETE_RESPONSIBLE"; responsibleId: string; actingUserId: string }
   | { type: "CREATE_CREW"; crew: WorkCrew }
   | { type: "CREATE_USER"; user: User }
   | { type: "UPDATE_USER"; userId: string; changes: Partial<Omit<User, "id">> }
@@ -123,6 +135,8 @@ export function applyTransition(ticket: Ticket, to: TicketStatus, changedAt: str
 export function reducer(state: DataState, action: DataAction): DataState {
   switch (action.type) {
     case "CREATE_TICKET": {
+      const creator = state.users.find(({ id }) => id === action.ticket.createdById);
+      const createdUnit = state.units.find(({ id }) => id === action.ticket.unitId);
       const historyEntry: TicketStatusHistory = {
         id: action.historyId,
         ticketId: action.ticket.id,
@@ -130,6 +144,7 @@ export function reducer(state: DataState, action: DataAction): DataState {
         to: action.ticket.status,
         changedById: action.ticket.createdById,
         comment: null,
+        actorCapacity: creator && createdUnit ? actorCapacityFor(creator, createdUnit, state.unitResponsibles) : null,
         createdAt: action.ticket.createdAt,
       };
 
@@ -155,6 +170,7 @@ export function reducer(state: DataState, action: DataAction): DataState {
         throw new Error(`Invalid ticket transition: ${ticket.status} -> ${action.to}`);
       }
 
+      const transitionedUnit = state.units.find(({ id }) => id === ticket.unitId);
       const historyEntry: TicketStatusHistory = {
         id: action.historyId,
         ticketId: ticket.id,
@@ -162,6 +178,7 @@ export function reducer(state: DataState, action: DataAction): DataState {
         to: action.to,
         changedById: action.changedById,
         comment: action.comment ?? null,
+        actorCapacity: transitionedUnit ? actorCapacityFor(changedBy, transitionedUnit, state.unitResponsibles) : null,
         createdAt: action.changedAt,
       };
 
@@ -182,7 +199,7 @@ export function reducer(state: DataState, action: DataAction): DataState {
       }
       const historyEntry: TicketStatusHistory = {
         id: action.historyId, ticketId: ticket.id, from: ticket.status, to: ticket.status,
-        changedById: user.id, comment: `Caso especial: ${action.reason}`, createdAt: action.markedAt,
+        changedById: user.id, comment: `Caso especial: ${action.reason}`, actorCapacity: null, createdAt: action.markedAt,
       };
       return {
         ...state,
@@ -234,6 +251,7 @@ export function reducer(state: DataState, action: DataAction): DataState {
         to: ticket.status,
         changedById: user.id,
         comment: action.comment,
+        actorCapacity: null,
         createdAt: action.changedAt,
       };
 
@@ -257,6 +275,41 @@ export function reducer(state: DataState, action: DataAction): DataState {
         ...state,
         units: state.units.map((unit) => (unit.id === action.unitId ? { ...unit, ...action.changes, id: unit.id } : unit)),
       };
+
+    case "CREATE_RESPONSIBLE": {
+      const actor = state.users.find(({ id }) => id === action.actingUserId);
+      const unit = state.units.find(({ id }) => id === action.responsible.unitId);
+      if (!actor || !unit || !canManageResponsibles(actor, unit, state.projects)) {
+        throw new Error("Not authorized to manage unit responsibles");
+      }
+      return { ...state, unitResponsibles: [...state.unitResponsibles, action.responsible] };
+    }
+
+    case "UPDATE_RESPONSIBLE": {
+      const actor = state.users.find(({ id }) => id === action.actingUserId);
+      const responsible = state.unitResponsibles.find(({ id }) => id === action.responsibleId);
+      const unit = responsible && state.units.find(({ id }) => id === responsible.unitId);
+      if (!actor || !responsible || !unit || !canManageResponsibles(actor, unit, state.projects)) {
+        throw new Error("Not authorized to manage unit responsibles");
+      }
+      return {
+        ...state,
+        unitResponsibles: state.unitResponsibles.map((item) =>
+          item.id === action.responsibleId ? { ...item, ...action.changes, id: item.id } : item,
+        ),
+      };
+    }
+
+    case "DELETE_RESPONSIBLE": {
+      const actor = state.users.find(({ id }) => id === action.actingUserId);
+      const responsible = state.unitResponsibles.find(({ id }) => id === action.responsibleId);
+      const unit = responsible && state.units.find(({ id }) => id === responsible.unitId);
+      if (!actor || !responsible || !unit || !canManageResponsibles(actor, unit, state.projects)) {
+        throw new Error("Not authorized to manage unit responsibles");
+      }
+      return { ...state, unitResponsibles: state.unitResponsibles.filter((item) => item.id !== action.responsibleId) };
+    }
+
     case "CREATE_CREW":
       return { ...state, crews: [...state.crews, action.crew] };
     case "CREATE_USER":

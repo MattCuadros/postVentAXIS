@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { loginAs, patchRecord, savedState } from "./helpers";
+import { loginAs, patchRecord, removeRecords, savedState } from "./helpers";
 
 const CSV = [
   "Tipo;Torre;Piso;Número;Fecha entrega;Correo propietario;Nombre propietario;Teléfono propietario",
@@ -78,10 +78,13 @@ test("un ticket no puede pasar a recepción si su unidad no tiene propietario, h
   await page.goto("/encargado");
   await patchRecord(page, "units", "un-1", { ownerId: null });
   await patchRecord(page, "tickets", "t-2", { status: "EN_EJECUCION" });
+  // un-1 trae responsables de ejemplo (Tarea 3) que sí pueden firmar: para probar el bloqueo sin
+  // nadie que firme, se quitan aquí (no afecta a otras pruebas: cada una tiene su propio contexto).
+  await removeRecords(page, "unitResponsibles", "unitId", "un-1");
   await page.reload();
 
   await page.goto("/encargado/tickets/t-2");
-  await expect(page.getByText("Asigna un propietario a la unidad para solicitar la recepción.")).toBeVisible();
+  await expect(page.getByText("Agrega un titular o un responsable con permiso de firma para solicitar la recepción.")).toBeVisible();
   await expect(page.getByRole("button", { name: "Solicitar recepción" })).toHaveCount(0);
   await expect(page.getByText("Sin propietario.")).toBeVisible();
 
@@ -93,7 +96,7 @@ test("un ticket no puede pasar a recepción si su unidad no tiene propietario, h
 
   await expect(page.getByText(/asignado como propietario/)).toBeVisible();
   await expect(page.getByRole("button", { name: "Solicitar recepción" })).toBeVisible();
-  await expect(page.getByText("Asigna un propietario a la unidad para solicitar la recepción.")).toHaveCount(0);
+  await expect(page.getByText("Agrega un titular o un responsable con permiso de firma para solicitar la recepción.")).toHaveCount(0);
 
   const state = (await savedState(page)).state;
   expect(state.units.find((unit: { id: string }) => unit.id === "un-1").ownerId).toBe("u-prop-1");

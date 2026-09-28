@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useState, type ReactNode } from "react";
+import { UnitResponsibles } from "@/components/admin/unit-responsibles";
 import { AssignOwnerDialog } from "@/components/tickets/assign-owner-dialog";
 import { MediaThumb } from "@/components/tickets/media-thumb";
 import { StaffActions } from "@/components/tickets/staff-actions";
@@ -19,6 +20,7 @@ import { daysOpen, formatDateAndTime, formatLongDate, unitLabel } from "@/lib/fo
 import { mapsUrl } from "@/lib/geo";
 import { DOCUMENT_LABEL } from "@/lib/document-import/types";
 import { STATUS_LABEL, type Transition } from "@/lib/ticket-status";
+import { someoneCanSign } from "@/lib/unit-access";
 import type { Ticket, TicketDocument, TicketMedia, TicketMediaStage, TicketStatusHistory } from "@/types/domain";
 
 const DONE_MESSAGE: Partial<Record<Ticket["status"], string>> = {
@@ -57,6 +59,7 @@ export function StaffTicketDetail({ ticketId, backHref }: StaffTicketDetailProps
   const { data: crews } = useQuery(api.getCrews);
   const { data: users } = useQuery(api.getUsers);
   const { data: zones } = useQuery(api.getZones);
+  const { data: responsibles } = useQuery(api.getUnitResponsibles);
 
   const unit = units?.find((item) => item.id === ticket?.unitId);
   const project = projects?.find((item) => item.id === unit?.projectId);
@@ -139,10 +142,10 @@ export function StaffTicketDetail({ ticketId, backHref }: StaffTicketDetailProps
                 onSpecialCase={handleSpecialCase}
                 onVisitScheduled={setNotice}
                 transitionBlock={
-                  unit.ownerId === null
+                  responsibles && !someoneCanSign(unit, responsibles)
                     ? {
                         to: "EN_RECEPCION",
-                        message: "Asigna un propietario a la unidad para solicitar la recepción.",
+                        message: "Agrega un titular o un responsable con permiso de firma para solicitar la recepción.",
                         actionLabel: "Asignar propietario",
                         onAction: () => setAssigningOwner(true),
                       }
@@ -170,6 +173,10 @@ export function StaffTicketDetail({ ticketId, backHref }: StaffTicketDetailProps
                 </button>
               </>
             )}
+          </Panel>
+
+          <Panel title="Responsables">
+            <UnitResponsibles unit={unit} actingUser={user} />
           </Panel>
 
           <Panel title="Vivienda">

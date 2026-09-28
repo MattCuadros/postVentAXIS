@@ -32,6 +32,19 @@ export async function patchRecord(page: Page, collection: string, id: string, ch
   );
 }
 
+/** Saca de una colección los registros cuyo campo `field` valga `value` (ej. limpiar los responsables de una unidad). */
+export async function removeRecords(page: Page, collection: string, field: string, value: string) {
+  await savedState(page);
+  await page.evaluate(
+    ({ collection, field, value }) => {
+      const raw = JSON.parse(localStorage.getItem("postventaxis:datos")!);
+      raw.state[collection] = raw.state[collection].filter((item: Record<string, unknown>) => item[field] !== value);
+      localStorage.setItem("postventaxis:datos", JSON.stringify(raw));
+    },
+    { collection, field, value },
+  );
+}
+
 /** Graba en el navegador un video WebM de `seconds` segundos (como uno capturado desde el teléfono). */
 export async function recordVideo(page: Page, seconds: number): Promise<Buffer> {
   const bytes = await page.evaluate(async (ms) => {

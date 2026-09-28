@@ -17,10 +17,10 @@ import type { Ticket } from "@/types/domain";
 
 export default function MisRequerimientosPage() {
   const { user } = useSession();
-  const { getTicketsByOwner } = useDataApi();
-  const ownerId = user?.id;
+  const { getTicketsForUser } = useDataApi();
+  const userId = user?.id;
   const { data: tickets } = useQuery(
-    useCallback(async (): Promise<Ticket[]> => (ownerId ? getTicketsByOwner(ownerId) : []), [getTicketsByOwner, ownerId]),
+    useCallback(async (): Promise<Ticket[]> => (userId ? getTicketsForUser(userId) : []), [getTicketsForUser, userId]),
   );
 
   const pending = tickets?.filter((ticket) => requiresOwnerAction(ticket.status)) ?? [];

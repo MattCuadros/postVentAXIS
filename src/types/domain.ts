@@ -184,5 +184,31 @@ export interface TicketStatusHistory {
   to: TicketStatus;
   changedById: string;
   comment: string | null;
+  /**
+   * Calidad en que actuó la persona en ese momento ("Titular", "Familiar (hijo)", etc.), como
+   * texto fijo: la relación puede cambiar después y el historial no. null si quien actuó no es
+   * propietario ni responsable de la unidad (ej. personal Axis).
+   */
+  actorCapacity: string | null;
   createdAt: string;
+}
+
+/** Cómo se relaciona un responsable con el titular de la unidad. */
+export type ResponsibleRelation = "FAMILIAR" | "REPRESENTANTE" | "ADMIN_COMITE" | "OTRO";
+
+/**
+ * Persona (con rol PROPIETARIO) que, además del titular (`Unit.ownerId`), puede ver y reportar
+ * requerimientos de una unidad, y opcionalmente firmar la conformidad. Una misma persona puede
+ * ser responsable de varias unidades, incluso de obras distintas.
+ */
+export interface UnitResponsible {
+  id: string;
+  unitId: string;
+  userId: string;
+  relation: ResponsibleRelation;
+  /** Parentesco u otro detalle libre ("hijo", "sobrina"); obligatorio si relation es FAMILIAR u OTRO. */
+  relationNote: string | null;
+  canSignConformity: boolean;
+  createdAt: string;
+  createdById: string;
 }

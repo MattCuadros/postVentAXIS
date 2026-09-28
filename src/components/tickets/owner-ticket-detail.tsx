@@ -15,6 +15,7 @@ import { useSession } from "@/data/session-context";
 import { useQuery } from "@/data/use-query";
 import { formatDateAndTime, formatLongDate, todayIso, unitLabel } from "@/lib/format";
 import { OWNER_STATUS_LABEL, type Transition } from "@/lib/ticket-status";
+import { canSignForUnit, capacityOf, hasAccessToUnit } from "@/lib/unit-access";
 import type { Ticket } from "@/types/domain";
 
 const DONE_MESSAGE: Partial<Record<Ticket["status"], string>> = {
@@ -47,15 +48,16 @@ export function OwnerTicketDetail({ ticketId, justCreated }: OwnerTicketDetailPr
   const { data: projects } = useQuery(api.getProjects);
   const { data: categories } = useQuery(api.getCategories);
   const { data: crews } = useQuery(api.getCrews);
+  const { data: responsibles } = useQuery(api.getUnitResponsibles);
 
   const unit = units?.find((item) => item.id === ticket?.unitId);
 
-  if (user === null || (ticket === undefined && loading) || units === undefined) {
+  if (user === null || (ticket === undefined && loading) || units === undefined || responsibles === undefined) {
     return <ContentSkeleton label="Cargando requerimiento…" />;
   }
 
-  // Un propietario solo ve los tickets de sus viviendas.
-  if (ticket === undefined || unit?.ownerId !== user.id) {
+  // El propietario y sus responsables ven los tickets de esa vivienda; nadie más.
+  if (ticket === undefined || unit === undefined || !hasAccessToUnit(user, unit, responsibles)) {
     return (
       <div className="rounded-lg border border-line-soft bg-surface p-6 text-center shadow-card">
         <p className="font-bold text-ink">No encontramos este requerimiento</p>
@@ -69,7 +71,9 @@ export function OwnerTicketDetail({ ticketId, justCreated }: OwnerTicketDetailPr
   const project = projects?.find((item) => item.id === unit.projectId);
   const category = categories?.find((item) => item.id === ticket.categoryId);
   const crew = crews?.find((item) => item.id === ticket.crewId);
-  const meta = [category?.name, ticket.room, unitLabel(unit), `Ingresado el ${formatLongDate(ticket.createdAt)}`]
+  // Solo se aclara la calidad cuando no es el titular: la mayoría de las veces no aporta nada nuevo.
+  const capacity = capacityOf(user, unit, responsibles);
+  const meta = [category?.name, ticket.room, unitLabel(unit), capacity !== "Titular" ? capacity : null, `Ingresado el ${formatLongDate(ticket.createdAt)}`]
     .filter(Boolean)
     .join(" · ");
 
@@ -119,7 +123,7 @@ export function OwnerTicketDetail({ ticketId, justCreated }: OwnerTicketDetailPr
         <StatusTimeline status={ticket.status} history={history ?? []} labels={OWNER_STATUS_LABEL} />
       </section>
 
-      {ticket.status === "EN_RECEPCION" ? (
+      {ticket.status === "EN_RECEPCION" && canSignForUnit(user, unit, responsibles) ? (
         <BottomBar>
           <TransitionActions
             ticket={ticket}
@@ -128,6 +132,12 @@ export function OwnerTicketDetail({ ticketId, justCreated }: OwnerTicketDetailPr
             onDone={handleDone}
             commentCopy={COMMENT_COPY}
           />
+        </BottomBar>
+      ) : ticket.status === "EN_RECEPCION" ? (
+        <BottomBar>
+          <p className="text-center text-sm text-ink-secondary">
+            Esperando que {unit.ownerId ? "el titular u otro responsable con permiso" : "un responsable con permiso"} confirme la conformidad.
+          </p>
         </BottomBar>
       ) : (
         <div className="pb-8" />

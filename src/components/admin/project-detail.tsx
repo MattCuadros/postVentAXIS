@@ -4,18 +4,21 @@ import Link from "next/link";
 import { useState } from "react";
 import { UnitForm } from "@/components/admin/unit-form";
 import { UnitImporter } from "@/components/admin/unit-importer";
+import { UnitResponsibles } from "@/components/admin/unit-responsibles";
 import { Button } from "@/components/ui/button";
 import { Dialog } from "@/components/ui/dialog";
 import { Notice } from "@/components/ui/notice";
 import { PageHeader } from "@/components/ui/page-header";
 import { ContentSkeleton } from "@/components/ui/skeleton";
 import { useDataApi } from "@/data/api";
+import { useSession } from "@/data/session-context";
 import { useQuery } from "@/data/use-query";
 import { formatLongDate, unitLabel } from "@/lib/format";
 import { formatCoordinates, mapsUrl } from "@/lib/geo";
 import { isClosed } from "@/lib/ticket-status";
 
 export function ProjectDetail({ projectId }: { projectId: string }) {
+  const { user } = useSession();
   const api = useDataApi();
   const { data: projects } = useQuery(api.getProjects);
   const { data: zones } = useQuery(api.getZones);
@@ -24,9 +27,10 @@ export function ProjectDetail({ projectId }: { projectId: string }) {
   const { data: tickets } = useQuery(api.getTickets);
   const [dialog, setDialog] = useState<"add" | "import" | null>(null);
   const [editingUnitId, setEditingUnitId] = useState<string | null>(null);
+  const [responsiblesUnitId, setResponsiblesUnitId] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
 
-  if (projects === undefined) return <ContentSkeleton label="Cargando obra…" />;
+  if (projects === undefined || user === null) return <ContentSkeleton label="Cargando obra…" />;
 
   const project = projects.find((item) => item.id === projectId);
   if (project === undefined) {
@@ -109,6 +113,9 @@ export function ProjectDetail({ projectId }: { projectId: string }) {
                       <button type="button" className="text-sm font-bold text-accent hover:underline" onClick={() => setEditingUnitId(unit.id)}>
                         Editar
                       </button>
+                      <button type="button" className="ml-3 text-sm font-bold text-accent hover:underline" onClick={() => setResponsiblesUnitId(unit.id)}>
+                        Responsables
+                      </button>
                     </td>
                   </tr>
                 );
@@ -145,6 +152,13 @@ export function ProjectDetail({ projectId }: { projectId: string }) {
               }}
             />
           ) : null;
+        })()}
+      </Dialog>
+
+      <Dialog open={responsiblesUnitId !== null} title="Responsables" onClose={() => setResponsiblesUnitId(null)}>
+        {responsiblesUnitId !== null && (() => {
+          const target = projectUnits.find((item) => item.id === responsiblesUnitId);
+          return target ? <UnitResponsibles unit={target} actingUser={user} /> : null;
         })()}
       </Dialog>
 

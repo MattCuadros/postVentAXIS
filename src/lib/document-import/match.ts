@@ -91,6 +91,12 @@ export function matchUnit(hint: string | null, units: Unit[]): Unit | null {
 }
 
 /** Propietario por correo; si no, el dueño registrado de la unidad. */
+/**
+ * Propietario por correo, o si no hay correo, el titular registrado de la unidad. La búsqueda
+ * por correo ya alcanza a los responsables de la unidad (Tarea 3): son usuarios con rol
+ * PROPIETARIO igual que el titular, así que un remitente que sea un responsable existente se
+ * vincula a esa persona en vez de crear un propietario duplicado.
+ */
 export function matchOwner(email: string | null, users: User[], unit: Unit | null): User | null {
   if (email) {
     const byEmail = users.find((user) => user.role === "PROPIETARIO" && user.email.toLowerCase() === email.toLowerCase());

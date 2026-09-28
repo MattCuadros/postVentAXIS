@@ -16,6 +16,8 @@ import { useSession } from "@/data/session-context";
 import { useQuery } from "@/data/use-query";
 import { cn } from "@/lib/cn";
 import { unitLabel } from "@/lib/format";
+import { capacityOf } from "@/lib/unit-access";
+import type { Unit } from "@/types/domain";
 
 const STEPS = ["Vivienda", "Tipo de problema", "Descripción", "Confirmar"] as const;
 const MAX_MEDIA = 5;
@@ -76,13 +78,14 @@ export function NewTicketWizard() {
   const router = useRouter();
   const { user } = useSession();
   const api = useDataApi();
-  const ownerId = user?.id;
+  const userId = user?.id;
 
   const { data: units } = useQuery(
-    useCallback(async () => (ownerId ? api.getUnitsByOwner(ownerId) : []), [api, ownerId]),
+    useCallback(async (): Promise<Unit[]> => (userId ? api.getUnitsForUser(userId) : []), [api, userId]),
   );
   const { data: projects } = useQuery(api.getProjects);
   const { data: categories } = useQuery(api.getCategories);
+  const { data: responsibles } = useQuery(api.getUnitResponsibles);
 
   const [step, setStep] = useState(0);
   const [form, setForm] = useState<FormState>({
@@ -203,6 +206,7 @@ export function NewTicketWizard() {
                       <span className="block font-bold text-ink">{unitLabel(item)}</span>
                       <span className="block text-sm text-ink-secondary">
                         {projects?.find((p) => p.id === item.projectId)?.name}
+                        {user && responsibles && units.length > 1 && ` · ${capacityOf(user, item, responsibles)}`}
                       </span>
                     </ChoiceCard>
                   ))}

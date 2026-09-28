@@ -7,14 +7,17 @@ import { delay } from "@/lib/delay";
 import { findTicketByRefs, planImport, type ImportPlan, type ImportRowData } from "@/lib/document-import/plan";
 import { nextFolio } from "@/lib/folio";
 import { todayIso } from "@/lib/format";
+import { unitsForUser } from "@/lib/unit-access";
 import type {
   DocumentKind,
   Project,
+  ResponsibleRelation,
   Ticket,
   TicketChanges,
   TicketStatus,
   TicketStatusHistory,
   Unit,
+  UnitResponsible,
   User,
   WorkCrew,
 } from "@/types/domain";
@@ -76,13 +79,16 @@ export function useDataApi() {
     return state.tickets.find((ticket) => ticket.id === id);
   }, [state.tickets]);
 
-  const getTicketsByOwner = useCallback(async (ownerId: string): Promise<Ticket[]> => {
+  /** Tickets de las unidades donde la persona es titular o responsable. */
+  const getTicketsForUser = useCallback(async (userId: string): Promise<Ticket[]> => {
     await simulatedLatency();
-    const unitIds = new Set(state.units.filter((unit) => unit.ownerId === ownerId).map((unit) => unit.id));
+    const user = state.users.find((item) => item.id === userId);
+    if (!user) return [];
+    const unitIds = new Set(unitsForUser(user, state.units, state.unitResponsibles).map((unit) => unit.id));
     return state.tickets
       .filter((ticket) => unitIds.has(ticket.unitId))
       .toSorted((a, b) => b.createdAt.localeCompare(a.createdAt));
-  }, [state.tickets, state.units]);
+  }, [state.tickets, state.units, state.users, state.unitResponsibles]);
 
   /** Tickets de las obras ubicadas en las zonas indicadas (bandeja del encargado). */
   const getTicketsByZones = useCallback(async (zoneIds: string[]): Promise<Ticket[]> => {
@@ -332,6 +338,7 @@ export function useDataApi() {
           to: step.to,
           changedById: input.userId,
           comment: step.comment,
+          actorCapacity: null,
           createdAt: step.at,
         });
         from = step.to;
@@ -344,10 +351,55 @@ export function useDataApi() {
     return results;
   }, [dispatch, state.projects, state.tickets, state.units, state.users, state.zones]);
 
-  const getUnitsByOwner = useCallback(async (ownerId: string): Promise<Unit[]> => {
+  /** Unidades donde la persona es titular o responsable. */
+  const getUnitsForUser = useCallback(async (userId: string): Promise<Unit[]> => {
     await simulatedLatency();
-    return state.units.filter((unit) => unit.ownerId === ownerId);
-  }, [state.units]);
+    const user = state.users.find((item) => item.id === userId);
+    return user ? unitsForUser(user, state.units, state.unitResponsibles) : [];
+  }, [state.units, state.users, state.unitResponsibles]);
+
+  /** Todos los responsables de todas las unidades; se filtra por unidad en quien la use. */
+  const getUnitResponsibles = useCallback(async (): Promise<UnitResponsible[]> => {
+    await simulatedLatency();
+    return state.unitResponsibles;
+  }, [state.unitResponsibles]);
+
+  const createResponsible = useCallback(
+    async (
+      unitId: string,
+      input: { userId: string; relation: ResponsibleRelation; relationNote: string | null; canSignConformity: boolean },
+      actingUserId: string,
+    ): Promise<UnitResponsible> => {
+      await simulatedLatency();
+      const responsible: UnitResponsible = {
+        id: crypto.randomUUID(),
+        unitId,
+        ...input,
+        createdAt: new Date().toISOString(),
+        createdById: actingUserId,
+      };
+      dispatch({ type: "CREATE_RESPONSIBLE", responsible, actingUserId });
+      return responsible;
+    },
+    [dispatch],
+  );
+
+  const updateResponsible = useCallback(
+    async (
+      responsibleId: string,
+      changes: Partial<Pick<UnitResponsible, "relation" | "relationNote" | "canSignConformity">>,
+      actingUserId: string,
+    ): Promise<void> => {
+      await simulatedLatency();
+      dispatch({ type: "UPDATE_RESPONSIBLE", responsibleId, changes, actingUserId });
+    },
+    [dispatch],
+  );
+
+  const deleteResponsible = useCallback(async (responsibleId: string, actingUserId: string): Promise<void> => {
+    await simulatedLatency();
+    dispatch({ type: "DELETE_RESPONSIBLE", responsibleId, actingUserId });
+  }, [dispatch]);
 
   const getUnits = useCallback(async (): Promise<Unit[]> => {
     await simulatedLatency();
@@ -440,7 +492,7 @@ export function useDataApi() {
   return useMemo(() => ({
     getTickets,
     getTicket,
-    getTicketsByOwner,
+    getTicketsForUser,
     getTicketsByZones,
     getTicketHistory,
     getStatusHistory,
@@ -449,8 +501,12 @@ export function useDataApi() {
     markSpecialCase,
     scheduleVisit,
     importDocument,
-    getUnitsByOwner,
+    getUnitsForUser,
     getUnits,
+    getUnitResponsibles,
+    createResponsible,
+    updateResponsible,
+    deleteResponsible,
     getProjects,
     getUsers,
     getCrewsByZone,
@@ -478,10 +534,14 @@ export function useDataApi() {
     getTicket,
     getTicketHistory,
     getTickets,
-    getTicketsByOwner,
+    getTicketsForUser,
     getTicketsByZones,
     getUnits,
-    getUnitsByOwner,
+    getUnitsForUser,
+    getUnitResponsibles,
+    createResponsible,
+    updateResponsible,
+    deleteResponsible,
     getUsers,
     getZones,
     transitionTicket,
