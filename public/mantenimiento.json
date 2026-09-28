@@ -17,6 +17,12 @@
       "titulo": "Varios responsables por unidad (familiares, representante, comite)",
       "inicio": "2026-09-29T07:00:00.000Z",
       "duracionMinutos": 30
+    },
+    {
+      "rama": "feat/propietario-desde-correo",
+      "titulo": "Propietario nuevo completado desde el remitente del correo",
+      "inicio": "2026-09-29T07:00:00.000Z",
+      "duracionMinutos": 30
     }
   ],
   "ultimo": null
