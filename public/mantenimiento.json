@@ -1,4 +1,11 @@
 {
-  "programado": [],
+  "programado": [
+    {
+      "rama": "diagnostico/prueba-permisos",
+      "titulo": "Prueba de permisos de Actions (se revierte enseguida)",
+      "inicio": "2026-09-29T07:00:00.000Z",
+      "duracionMinutos": 30
+    }
+  ],
   "ultimo": null
 }
