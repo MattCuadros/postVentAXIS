@@ -67,7 +67,8 @@ export interface Unit {
   tower: string | null;
   floor: number | null;
   number: string;
-  ownerId: string;
+  /** null: sin propietario cargado aún (se completa después, o al firmar un documento con sus datos). */
+  ownerId: string | null;
   deliveryDate: string; // ISO date
 }
 

@@ -10,7 +10,7 @@ import { cn } from "@/lib/cn";
 import { DOCUMENT_PATH } from "@/lib/document-import/plan";
 import { formatDateAndTime, formatLongDate, unitLabel } from "@/lib/format";
 import { STATUS_LABEL } from "@/lib/ticket-status";
-import type { DocumentKind, Project, UnitType } from "@/types/domain";
+import type { DocumentKind, Project, UnitType, User } from "@/types/domain";
 
 interface ImportDraftCardProps {
   index: number;
@@ -157,48 +157,15 @@ export function ImportDraftCard({ index, draft, kind, projects, sources, errors,
                     />
                   </div>
                   <div className="mt-3">
-                    <Select
-                      label="Propietario"
-                      name={`owner-${draft.key}`}
-                      value={draft.ownerMode === "new" ? "__new" : draft.ownerId}
-                      error={errors.owner}
-                      onChange={(event) =>
-                        event.target.value === "__new"
-                          ? update({ ownerMode: "new", ownerId: "" })
-                          : update({ ownerMode: "existing", ownerId: event.target.value })
-                      }
-                    >
-                      <option value="">Elige el propietario</option>
-                      {owners.map((owner) => (
-                        <option key={owner.id} value={owner.id}>{owner.name} · {owner.email}</option>
-                      ))}
-                      <option value="__new">+ Crear propietario con los datos leídos</option>
-                    </Select>
+                    <OwnerPicker draft={draft} owners={owners} error={errors.owner} allowNone={false} onChange={update} />
                   </div>
-                  {draft.ownerMode === "new" && (
-                    <div className="mt-3 grid gap-3 sm:grid-cols-3">
-                      <Input
-                        label="Nombre"
-                        name={`owner-name-${draft.key}`}
-                        value={draft.newOwner.name}
-                        onChange={(event) => update({ newOwner: { ...draft.newOwner, name: event.target.value } })}
-                      />
-                      <Input
-                        label="Correo"
-                        name={`owner-email-${draft.key}`}
-                        type="email"
-                        value={draft.newOwner.email}
-                        onChange={(event) => update({ newOwner: { ...draft.newOwner, email: event.target.value } })}
-                      />
-                      <Input
-                        label="Teléfono"
-                        name={`owner-phone-${draft.key}`}
-                        type="tel"
-                        value={draft.newOwner.phone}
-                        onChange={(event) => update({ newOwner: { ...draft.newOwner, phone: event.target.value } })}
-                      />
-                    </div>
-                  )}
+                </div>
+              )}
+
+              {draft.unitMode === "existing" && unit && !unitOwner && (
+                <div className="rounded-md bg-warning/10 p-4">
+                  <p className="mb-3 text-xs font-bold text-warning">Esta unidad no tiene propietario registrado</p>
+                  <OwnerPicker draft={draft} owners={owners} error={errors.owner} allowNone onChange={update} />
                 </div>
               )}
 
@@ -245,5 +212,65 @@ export function ImportDraftCard({ index, draft, kind, projects, sources, errors,
         </div>
       )}
     </section>
+  );
+}
+
+interface OwnerPickerProps {
+  draft: ImportDraft;
+  owners: User[];
+  error?: string;
+  /** true: la unidad ya existe y el propietario es opcional (ofrece "No asignar por ahora"). */
+  allowNone: boolean;
+  onChange: (changes: Partial<ImportDraft>) => void;
+}
+
+/** Select de propietario (existente, nuevo o, para unidades existentes, ninguno) con sus datos si es nuevo. */
+function OwnerPicker({ draft, owners, error, allowNone, onChange }: OwnerPickerProps) {
+  const value = draft.ownerMode === "new" ? "__new" : draft.ownerMode === "none" ? "" : draft.ownerId;
+
+  return (
+    <>
+      <Select
+        label="Propietario"
+        name={`owner-${draft.key}`}
+        value={value}
+        error={error}
+        onChange={(event) => {
+          if (event.target.value === "__new") onChange({ ownerMode: "new", ownerId: "" });
+          else if (event.target.value === "") onChange({ ownerMode: allowNone ? "none" : "existing", ownerId: "" });
+          else onChange({ ownerMode: "existing", ownerId: event.target.value });
+        }}
+      >
+        <option value="">{allowNone ? "No asignar por ahora" : "Elige el propietario"}</option>
+        {owners.map((owner) => (
+          <option key={owner.id} value={owner.id}>{owner.name} · {owner.email}</option>
+        ))}
+        <option value="__new">+ Crear propietario con los datos leídos</option>
+      </Select>
+      {draft.ownerMode === "new" && (
+        <div className="mt-3 grid gap-3 sm:grid-cols-3">
+          <Input
+            label="Nombre"
+            name={`owner-name-${draft.key}`}
+            value={draft.newOwner.name}
+            onChange={(event) => onChange({ newOwner: { ...draft.newOwner, name: event.target.value } })}
+          />
+          <Input
+            label="Correo"
+            name={`owner-email-${draft.key}`}
+            type="email"
+            value={draft.newOwner.email}
+            onChange={(event) => onChange({ newOwner: { ...draft.newOwner, email: event.target.value } })}
+          />
+          <Input
+            label="Teléfono"
+            name={`owner-phone-${draft.key}`}
+            type="tel"
+            value={draft.newOwner.phone}
+            onChange={(event) => onChange({ newOwner: { ...draft.newOwner, phone: event.target.value } })}
+          />
+        </div>
+      )}
+    </>
   );
 }

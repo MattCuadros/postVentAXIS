@@ -15,6 +15,23 @@ export async function savedState(page: Page) {
   return page.evaluate(() => JSON.parse(localStorage.getItem("postventaxis:datos")!));
 }
 
+/**
+ * Modifica a mano un registro guardado en localStorage (unidades, tickets, etc.), para dejar el
+ * estado en un escenario puntual antes de recargar la página. `collection` es la clave del array
+ * en el estado (ej. "units", "tickets"); `changes` se combina con el registro que tenga ese id.
+ */
+export async function patchRecord(page: Page, collection: string, id: string, changes: Record<string, unknown>) {
+  await savedState(page);
+  await page.evaluate(
+    ({ collection, id, changes }) => {
+      const raw = JSON.parse(localStorage.getItem("postventaxis:datos")!);
+      raw.state[collection] = raw.state[collection].map((item: { id: string }) => (item.id === id ? { ...item, ...changes } : item));
+      localStorage.setItem("postventaxis:datos", JSON.stringify(raw));
+    },
+    { collection, id, changes },
+  );
+}
+
 /** Graba en el navegador un video WebM de `seconds` segundos (como uno capturado desde el teléfono). */
 export async function recordVideo(page: Page, seconds: number): Promise<Buffer> {
   const bytes = await page.evaluate(async (ms) => {

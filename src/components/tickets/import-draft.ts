@@ -15,7 +15,11 @@ export interface ImportDraft {
   unitMode: "existing" | "new";
   unitId: string;
   newUnit: { type: UnitType; tower: string; number: string };
-  ownerMode: "existing" | "new";
+  /**
+   * "none": la unidad existe y no tiene propietario, y por ahora se deja así (opcional). Solo
+   * puede darse con unitMode "existing"; al crear una unidad nueva el propietario es obligatorio.
+   */
+  ownerMode: "existing" | "new" | "none";
   ownerId: string;
   newOwner: { name: string; email: string; phone: string };
   categoryId: string;
@@ -64,7 +68,9 @@ export function buildDrafts(document: ParsedDocument, sources: DraftSources): Im
       unitMode: unit || !project ? "existing" : "new",
       unitId: unit?.id ?? "",
       newUnit: { type: hint?.type ?? "CASA", tower: hint?.tower ?? "", number: hint?.number ?? "" },
-      ownerMode: owner ? "existing" : "new",
+      // Unidad existente sin propietario: se deja "sin asignar" por defecto (es opcional); una
+      // unidad nueva siempre necesita uno.
+      ownerMode: owner ? "existing" : unit ? "none" : "new",
       ownerId: owner?.id ?? "",
       newOwner: {
         name: titleCaseName(parsed.ownerName),
@@ -85,8 +91,10 @@ export function draftErrors(draft: ImportDraft): Record<string, string> {
   const errors: Record<string, string> = {};
   if (!draft.projectId) errors.project = "Elige la obra.";
   if (draft.unitMode === "existing" && !draft.unitId) errors.unit = "Elige la unidad o crea una nueva.";
-  if (draft.unitMode === "new") {
-    if (!draft.newUnit.number.trim()) errors.unit = "Indica el número de la unidad nueva.";
+  if (draft.unitMode === "new" && !draft.newUnit.number.trim()) errors.unit = "Indica el número de la unidad nueva.";
+  // El propietario es obligatorio al crear una unidad; opcional al completar una existente sin
+  // propietario ("none" = se deja así). Si se eligió asignar uno, tiene que quedar completo.
+  if (draft.ownerMode !== "none") {
     if (draft.ownerMode === "existing" && !draft.ownerId) errors.owner = "Elige el propietario o crea uno nuevo.";
     if (draft.ownerMode === "new") {
       if (!draft.newOwner.name.trim()) errors.owner = "Indica el nombre del propietario.";

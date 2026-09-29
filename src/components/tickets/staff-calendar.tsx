@@ -265,7 +265,7 @@ function EventDetail({ item, unit, projects, users, crews }: EventDetailProps) {
         <DetailRow label="Falla" value={`${ticket.room} · ${ticket.description}`} />
         <DetailRow
           label="Propietario"
-          value={owner?.name ?? "—"}
+          value={owner?.name ?? "Sin propietario"}
           hint={
             owner && (
               <a href={`tel:${owner.phone.replace(/\s/g, "")}`} className="text-accent hover:underline">{owner.phone}</a>

@@ -18,6 +18,7 @@ Antes de tocar cualquier UI, lee `public/brand/formato-axis/SKILL.md` y `public/
 ## Dominio
 
 - Tipos: `src/types/domain.ts` (espejo del futuro `schema.prisma`). Zonas tienen código y las obras un código único para folios `<OBRA>-<NNNN>-<ZONA>`; los tickets conservan origen reportado/confirmado y pueden marcarse como caso especial por personal.
+- `Unit.ownerId: string | null`: una unidad puede no tener propietario todavía (carga masiva sin correo, o pendiente). Mostrar siempre "Sin propietario" en gris, nunca vacío. Se completa después: `UnitForm` en modo edición (`api.updateUnit`), `AssignOwnerDialog` desde el detalle del ticket, o reimportando el mismo CSV con el correo agregado (`src/lib/unit-import.ts`: dato faltante no bloquea, dato equivocado sí). Un ticket no puede pasar a "En recepción" si su unidad no tiene propietario (`StaffActions.transitionBlock`).
 - Máquina de estados de tickets: `src/lib/ticket-status.ts` (`TRANSITIONS`, `availableTransitions`, `canTransition`, `STATUS_LABEL`, `STATUS_TONE`, `MAIN_FLOW`).
 - Datos semilla: `src/mocks/data.ts` (zones, categories, users, projects, units, crews, tickets, statusHistory).
 
@@ -83,6 +84,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 - El worker de pdfjs se sirve desde `public/pdf.worker.min.mjs`: al actualizar `pdfjs-dist`, volver a copiarlo desde `node_modules/pdfjs-dist/build/`.
 - Los PDF se guardan en IndexedDB (`src/data/document-store.ts`); el ticket guarda solo la metadata.
 - Ejemplos reales de documentos en `examples/` (fuera del repo); textos anonimizados en `examples/textos/`. Nunca subir datos reales de clientes al repo.
+- Si el documento apunta a una unidad existente sin propietario y trae datos de uno, `ImportDraftCard` ofrece asignarlo (opcional, no bloquea el registro); `api.importDocument` lo actualiza en la misma unidad en vez de crear una nueva (`IMPORT_DOCUMENT` mezcla `units` por id, no solo agrega).
 
 ## Fotos y videos de tickets
 

@@ -165,7 +165,7 @@ export function DocumentImport() {
               }
             : null,
           ownerId: draft.ownerMode === "existing" ? draft.ownerId || null : null,
-          newOwner: draft.unitMode === "new" && draft.ownerMode === "new"
+          newOwner: draft.ownerMode === "new"
             ? { name: draft.newOwner.name.trim(), email: draft.newOwner.email.trim().toLowerCase(), phone: draft.newOwner.phone.trim() }
             : null,
           categoryId: draft.categoryId,

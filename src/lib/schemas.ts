@@ -24,7 +24,8 @@ export const unitSchema = z
     tower: z.string().trim(),
     floor: z.string().trim(),
     number: requiredText("El número"),
-    ownerId: z.string().min(1, "Elige el propietario."),
+    /** "" = sin propietario (se puede completar después). */
+    ownerId: z.string(),
     deliveryDate: z.string().min(1, "Indica la fecha de entrega."),
   })
   .superRefine((unit, context) => {

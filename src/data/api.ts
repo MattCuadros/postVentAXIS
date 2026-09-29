@@ -22,6 +22,7 @@ import type {
 export type CreateTicketInput = Omit<Ticket, "id" | "folio" | "status" | "createdAt" | "updatedAt" | "reportedCategoryId" | "specialCase" | "visitTime" | "scheduledTime" | "externalRefs" | "documents">;
 export type CreateProjectInput = Omit<Project, "id">;
 export type CreateUnitInput = Omit<Unit, "id">;
+export type UpdateUnitInput = Partial<Omit<Unit, "id" | "projectId">>;
 export type CreateCrewInput = Omit<WorkCrew, "id">;
 export type CreateUserInput = Omit<User, "id">;
 export type UpdateUserInput = Partial<Omit<User, "id">>;
@@ -33,7 +34,10 @@ export interface ImportRequirementInput {
   /** Unidad existente; o bien `newUnit` para crearla. */
   unitId: string | null;
   newUnit: Pick<Unit, "type" | "tower" | "floor" | "number" | "deliveryDate"> | null;
-  /** Propietario de la unidad nueva: uno existente o `newOwner` para crearlo. */
+  /**
+   * Propietario para la unidad nueva, o para una existente que aún no tenga uno: uno ya
+   * registrado, o `newOwner` para crearlo. Ambos null si no hay datos de propietario.
+   */
   ownerId: string | null;
   newOwner: Pick<User, "name" | "email" | "phone"> | null;
   categoryId: string;
@@ -197,7 +201,10 @@ export function useDataApi() {
     await simulatedLatency();
     const today = todayIso();
     const newUsers: User[] = [];
-    const newUnits: Unit[] = [];
+    // Unidades nuevas y unidades existentes que ganan propietario en esta carga (Tarea 2): se
+    // acumulan aquí para que las siguientes filas del mismo documento vean la versión al día.
+    const unitsById = new Map<string, Unit>(state.units.map((item) => [item.id, item]));
+    const changedUnitIds = new Set<string>();
     const tickets: Ticket[] = [];
     const history: TicketStatusHistory[] = [];
     const results: ImportResult[] = [];
@@ -215,11 +222,24 @@ export function useDataApi() {
       const zone = state.zones.find((item) => item.id === project?.zoneId);
       if (!project || !zone) throw new Error("Obra no encontrada");
 
-      let unit = [...state.units, ...newUnits].find((item) => item.id === requirement.unitId);
+      // El correo/documento puede traer un propietario existente (ownerId) o datos para crear uno
+      // nuevo (newOwner); null si no trae ninguno (la unidad queda, o sigue, sin propietario).
+      const resolveOwnerId = (): string | null => {
+        if (requirement.ownerId) return requirement.ownerId;
+        if (!requirement.newOwner) return null;
+        const email = requirement.newOwner.email.toLowerCase();
+        const known = [...state.users, ...newUsers].find((user) => user.email.toLowerCase() === email);
+        if (known) return known.id;
+        const owner: User = { ...requirement.newOwner, id: crypto.randomUUID(), role: "PROPIETARIO", zoneIds: [], projectIds: [], active: true };
+        newUsers.push(owner);
+        return owner.id;
+      };
+
+      let unit = requirement.unitId ? unitsById.get(requirement.unitId) : undefined;
       const wanted = requirement.newUnit;
       if (!unit && wanted) {
         // Varias filas del mismo documento pueden traer la misma unidad nueva: se crea una sola vez.
-        unit = [...state.units, ...newUnits].find((item) =>
+        unit = [...unitsById.values()].find((item) =>
           item.projectId === project.id &&
           item.type === wanted.type &&
           (item.tower ?? "") === (wanted.tower ?? "") &&
@@ -227,24 +247,23 @@ export function useDataApi() {
         );
       }
       if (!unit && wanted) {
-        let ownerId = requirement.ownerId;
-        const newOwner = requirement.newOwner;
-        if (!ownerId && newOwner) {
-          const email = newOwner.email.toLowerCase();
-          const known = [...state.users, ...newUsers].find((user) => user.email.toLowerCase() === email);
-          if (known) {
-            ownerId = known.id;
-          } else {
-            const owner: User = { ...newOwner, id: crypto.randomUUID(), role: "PROPIETARIO", zoneIds: [], projectIds: [], active: true };
-            newUsers.push(owner);
-            ownerId = owner.id;
-          }
-        }
-        if (!ownerId) throw new Error("Falta el propietario de la unidad nueva");
-        unit = { ...wanted, id: crypto.randomUUID(), projectId: project.id, ownerId };
-        newUnits.push(unit);
+        unit = { ...wanted, id: crypto.randomUUID(), projectId: project.id, ownerId: resolveOwnerId() };
+        unitsById.set(unit.id, unit);
+        changedUnitIds.add(unit.id);
       }
       if (!unit) throw new Error("Unidad no encontrada");
+
+      // Unidad ya existente (o recién creada en esta misma carga) sin propietario: si esta fila
+      // trae datos de propietario, se le asigna (Tarea 2.5; el origen de esos datos se amplía en
+      // la Tarea 4 con el remitente del correo).
+      if (unit.ownerId === null) {
+        const ownerId = resolveOwnerId();
+        if (ownerId) {
+          unit = { ...unit, ownerId };
+          unitsById.set(unit.id, unit);
+          changedUnitIds.add(unit.id);
+        }
+      }
 
       // Tickets vigentes: los del store con los cambios de esta carga, más los creados en ella.
       const allTickets = [
@@ -275,7 +294,7 @@ export function useDataApi() {
         const createdAt = plan.steps[0]?.at ?? new Date().toISOString();
         ticket = {
           id: crypto.randomUUID(),
-          folio: nextFolio(allTickets, [...state.units, ...newUnits], project, zone),
+          folio: nextFolio(allTickets, [...unitsById.values()], project, zone),
           unitId: unit.id,
           categoryId: requirement.categoryId,
           reportedCategoryId: requirement.categoryId,
@@ -320,7 +339,8 @@ export function useDataApi() {
       results.push({ ticket, mode: plan.mode });
     }
 
-    dispatch({ type: "IMPORT_DOCUMENT", users: newUsers, units: newUnits, tickets, history });
+    const units = [...changedUnitIds].map((id) => unitsById.get(id)!);
+    dispatch({ type: "IMPORT_DOCUMENT", users: newUsers, units, tickets, history });
     return results;
   }, [dispatch, state.projects, state.tickets, state.units, state.users, state.zones]);
 
@@ -379,6 +399,18 @@ export function useDataApi() {
     return unit;
   }, [dispatch]);
 
+  const updateUnit = useCallback(async (unitId: string, changes: UpdateUnitInput): Promise<Unit> => {
+    await simulatedLatency();
+    const existingUnit = state.units.find((unit) => unit.id === unitId);
+    if (existingUnit === undefined) {
+      throw new Error(`Unit not found: ${unitId}`);
+    }
+
+    const unit: Unit = { ...existingUnit, ...changes, id: existingUnit.id };
+    dispatch({ type: "UPDATE_UNIT", unitId, changes });
+    return unit;
+  }, [dispatch, state.units]);
+
   const createCrew = useCallback(async (input: CreateCrewInput): Promise<WorkCrew> => {
     await simulatedLatency();
     const crew: WorkCrew = { ...input, id: crypto.randomUUID() };
@@ -427,6 +459,7 @@ export function useDataApi() {
     getZones,
     createProject,
     createUnit,
+    updateUnit,
     createCrew,
     createUser,
     updateUser,
@@ -435,6 +468,7 @@ export function useDataApi() {
     createProject,
     createTicket,
     createUnit,
+    updateUnit,
     createUser,
     getCategories,
     getCrews,
