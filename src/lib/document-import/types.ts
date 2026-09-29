@@ -23,6 +23,8 @@ export interface ParsedRequirement {
   ownerName: string | null;
   ownerEmail: string | null;
   ownerPhone: string | null;
+  /** true si los datos de propietario vienen del remitente del correo, no del cuerpo del documento. */
+  ownerFromSender?: boolean;
   room: string | null;
   item: string | null;
   problem: string | null;

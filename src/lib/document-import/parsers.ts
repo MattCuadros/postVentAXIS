@@ -248,7 +248,40 @@ const EMAIL_NOISE = [
 interface EmailMessage {
   subject: string | null;
   sent: { date: string; time: string | null } | null;
+  from: { name: string | null; email: string | null } | null;
   body: string[];
+}
+
+/** Dominios de Axis: un remitente de estos dominios nunca es el propietario que reporta. */
+const INTERNAL_EMAIL_DOMAINS = ["axisdc.cl"];
+
+function isExternalOwnerEmail(email: string | null): boolean {
+  if (!email || /no-?reply/i.test(email)) return false;
+  const domain = email.split("@")[1]?.toLowerCase();
+  return !!domain && !INTERNAL_EMAIL_DOMAINS.includes(domain);
+}
+
+/**
+ * Remitente de un encabezado "De: …": admite "Nombre Apellido <correo@dominio.cl>",
+ * '"Nombre Apellido" <correo@dominio.cl>' y solo "correo@dominio.cl" (ahí el nombre no se inventa).
+ */
+function parseSender(line: string): { name: string | null; email: string | null } | null {
+  const rest = line.replace(/^De\s*:\s*/i, "").trim();
+  if (!rest) return null;
+  const angled = /^"?([^"<]*?)"?\s*<([^>]+)>\s*$/.exec(rest);
+  if (angled) {
+    const email = firstEmail(angled[2]);
+    return email ? { name: angled[1].trim() || null, email } : null;
+  }
+  const email = firstEmail(rest);
+  return email ? { name: null, email } : null;
+}
+
+/** Teléfono en las últimas líneas del mensaje (la firma), priorizando las que lo rotulan. */
+function phoneFromSignature(body: string[]): string | null {
+  const tail = body.slice(-8);
+  const labeled = tail.find((line) => /\b(tel[eé]fono|fono|cel(ular)?|m[oó]vil)\b/i.test(line));
+  return firstPhone(labeled ?? null) ?? tail.map((line) => firstPhone(line)).find((phone) => phone !== null) ?? null;
 }
 
 function cleanSubject(value: string): string {
@@ -264,7 +297,7 @@ function splitMessages(allLines: string[]): EmailMessage[] {
     const line = raw.trim();
     if (EMAIL_NOISE.some((pattern) => pattern.test(line))) continue;
     if (/^De\s*:/i.test(line)) {
-      current = { subject: null, sent: null, body: [] };
+      current = { subject: null, sent: null, from: parseSender(line), body: [] };
       messages.push(current);
       inHeaders = true;
       continue;
@@ -437,14 +470,31 @@ function parseEmail(text: string): ParsedDocument {
 
   // Busca requerimientos del más antiguo al más reciente: normalmente el reporte original está al final del hilo.
   let requirements: ParsedRequirement[] = [];
+  let fromTable = false;
   for (const message of [...messages].reverse()) {
     requirements = parseTableRows(message.body);
-    if (requirements.length === 0) requirements = parseNumberedItems(message.body);
+    if (requirements.length > 0) {
+      fromTable = true;
+      break;
+    }
+    requirements = parseNumberedItems(message.body);
     if (requirements.length > 0) break;
   }
   if (requirements.length === 0) {
     const description = plainBody(oldest?.body ?? []) ?? subject;
     requirements = [{ ...emptyRequirement(), description, room: roomFromText(description) }];
+  }
+
+  // Un solo requerimiento (no la tabla, donde cada fila ya trae su propio propietario): se
+  // completa con el remitente del mensaje más antiguo, si es externo (nunca alguien de Axis).
+  if (!fromTable && oldest?.from && isExternalOwnerEmail(oldest.from.email)) {
+    const phone = phoneFromSignature(oldest.body);
+    for (const requirement of requirements) {
+      requirement.ownerName ??= oldest.from.name;
+      requirement.ownerEmail ??= oldest.from.email;
+      requirement.ownerPhone ??= phone;
+      requirement.ownerFromSender = true;
+    }
   }
 
   // Unidades distintas mencionadas en el hilo: el encargado debe confirmar cuál es.
