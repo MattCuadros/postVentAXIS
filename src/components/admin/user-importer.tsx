@@ -77,7 +77,7 @@ export function UserImporter({ onDone, onCancel }: UserImporterProps) {
           1. Descarga la plantilla y completa una fila por persona.{" "}
           <button type="button" className="font-bold text-accent hover:underline" onClick={handleTemplate}>Descargar plantilla</button>
         </li>
-        <li>2. En <strong className="text-ink">Rol</strong> escribe Propietario, Encargado o Administrador. Los encargados necesitan sus <strong className="text-ink">Zonas</strong>, separadas por coma.</li>
+        <li>2. En <strong className="text-ink">Rol</strong> escribe Propietario, Encargado, Administrador de obra o Superadministrador. Los encargados necesitan sus <strong className="text-ink">Zonas</strong>, separadas por coma.</li>
         <li>3. Sube el archivo, revisa el resultado e importa las filas válidas.</li>
       </ol>
 
