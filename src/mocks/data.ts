@@ -3,7 +3,7 @@
  * Nombres y obras son ficticios. Se reemplazan por Server Actions en la Etapa 3.
  */
 import type {
-  Project, Ticket, TicketCategory, TicketStatusHistory, Unit, User, WorkCrew, Zone,
+  Project, Ticket, TicketCategory, TicketStatusHistory, Unit, UnitResponsible, User, WorkCrew, Zone,
 } from "@/types/domain";
 
 export const zones: Zone[] = [
@@ -38,6 +38,8 @@ export const users: User[] = [
   { id: "u-prop-5", name: "Ignacio Vera", email: "ivera@correo.cl", phone: "+56 9 6161 6161", role: "PROPIETARIO", zoneIds: [], projectIds: [], active: true },
   { id: "u-prop-6", name: "Paula Contreras", email: "pcontreras@correo.cl", phone: "+56 9 6262 6262", role: "PROPIETARIO", zoneIds: [], projectIds: [], active: true },
   { id: "u-prop-7", name: "Martín Olivares", email: "molivares@correo.cl", phone: "+56 9 6363 6363", role: "PROPIETARIO", zoneIds: [], projectIds: [], active: true },
+  { id: "u-prop-8", name: "Diego Muñoz", email: "dmunoz@correo.cl", phone: "+56 9 6464 6464", role: "PROPIETARIO", zoneIds: [], projectIds: [], active: true },
+  { id: "u-prop-9", name: "Marcela Díaz", email: "mdiaz@correo.cl", phone: "+56 9 6565 6565", role: "PROPIETARIO", zoneIds: [], projectIds: [], active: true },
 ];
 
 export const projects: Project[] = [
@@ -54,6 +56,13 @@ export const units: Unit[] = [
   { id: "un-ab-f3", projectId: "p-altobulnes", type: "CASA", tower: null, floor: null, number: "F3", ownerId: "u-prop-6", deliveryDate: "2022-12-01" },
   { id: "un-ab-f35", projectId: "p-altobulnes", type: "CASA", tower: null, floor: null, number: "F35", ownerId: "u-prop-7", deliveryDate: "2023-07-14" },
   { id: "un-4", projectId: "p-mirador", type: "DEPARTAMENTO", tower: "C", floor: 1, number: "105", ownerId: "u-prop-4", deliveryDate: "2026-04-10" },
+];
+
+/** Además del titular: un hijo (puede firmar) y la administradora del comité (responsable de dos obras). */
+export const unitResponsibles: UnitResponsible[] = [
+  { id: "ur-1", unitId: "un-1", userId: "u-prop-8", relation: "FAMILIAR", relationNote: "hijo", canSignConformity: true, createdAt: "2026-01-10T09:00:00Z", createdById: "u-enc-centro" },
+  { id: "ur-2", unitId: "un-1", userId: "u-prop-9", relation: "ADMIN_COMITE", relationNote: null, canSignConformity: true, createdAt: "2026-01-10T09:05:00Z", createdById: "u-enc-centro" },
+  { id: "ur-3", unitId: "un-2", userId: "u-prop-9", relation: "ADMIN_COMITE", relationNote: null, canSignConformity: true, createdAt: "2026-01-12T11:00:00Z", createdById: "u-enc-sur" },
 ];
 
 export const crews: WorkCrew[] = [
@@ -109,30 +118,30 @@ export const tickets: Ticket[] = [
 ];
 
 export const statusHistory: TicketStatusHistory[] = [
-  { id: "h-1", ticketId: "t-1", from: null, to: "INGRESADO", changedById: "u-prop-1", comment: null, createdAt: "2026-09-02T10:15:00Z" },
-  { id: "h-2", ticketId: "t-1", from: "INGRESADO", to: "EN_REVISION", changedById: "u-enc-centro", comment: null, createdAt: "2026-09-03T08:30:00Z" },
-  { id: "h-3", ticketId: "t-1", from: "EN_REVISION", to: "ASIGNADO", changedById: "u-enc-centro", comment: "Cuadrilla interna.", createdAt: "2026-09-03T09:00:00Z" },
-  { id: "h-4", ticketId: "t-1", from: "ASIGNADO", to: "VISITA_INSPECTIVA", changedById: "u-enc-centro", comment: "Sifón mal sellado.", createdAt: "2026-09-10T11:20:00Z" },
-  { id: "h-5", ticketId: "t-1", from: "VISITA_INSPECTIVA", to: "PROGRAMADO", changedById: "u-enc-centro", comment: "Coordinado con propietario.", createdAt: "2026-09-12T16:40:00Z" },
-  { id: "h-6", ticketId: "t-2", from: null, to: "INGRESADO", changedById: "u-prop-1", comment: null, createdAt: "2026-08-14T09:00:00Z" },
-  { id: "h-7", ticketId: "t-2", from: "INGRESADO", to: "EN_REVISION", changedById: "u-enc-centro", comment: null, createdAt: "2026-08-16T10:00:00Z" },
-  { id: "h-8", ticketId: "t-2", from: "EN_REVISION", to: "ASIGNADO", changedById: "u-enc-centro", comment: "Subcontrato de ventanas.", createdAt: "2026-08-18T11:30:00Z" },
-  { id: "h-9", ticketId: "t-2", from: "ASIGNADO", to: "VISITA_INSPECTIVA", changedById: "u-enc-centro", comment: "Riel desalineado.", createdAt: "2026-08-20T15:00:00Z" },
-  { id: "h-10", ticketId: "t-2", from: "VISITA_INSPECTIVA", to: "PROGRAMADO", changedById: "u-enc-centro", comment: null, createdAt: "2026-09-02T09:00:00Z" },
-  { id: "h-11", ticketId: "t-2", from: "PROGRAMADO", to: "EN_EJECUCION", changedById: "u-enc-centro", comment: null, createdAt: "2026-09-05T08:30:00Z" },
-  { id: "h-12", ticketId: "t-2", from: "EN_EJECUCION", to: "EN_RECEPCION", changedById: "u-enc-centro", comment: "Riel cambiado y regulado.", createdAt: "2026-09-18T12:00:00Z" },
-  { id: "h-13", ticketId: "t-3", from: null, to: "INGRESADO", changedById: "u-prop-2", comment: null, createdAt: "2026-09-21T18:30:00Z" },
-  { id: "h-14", ticketId: "t-4", from: null, to: "INGRESADO", changedById: "u-prop-3", comment: null, createdAt: "2026-09-21T13:10:00Z" },
-  { id: "h-15", ticketId: "t-4", from: "INGRESADO", to: "EN_REVISION", changedById: "u-enc-centro", comment: null, createdAt: "2026-09-22T09:00:00Z" },
-  { id: "h-16", ticketId: "t-5", from: null, to: "INGRESADO", changedById: "u-prop-4", comment: null, createdAt: "2026-09-17T20:45:00Z" },
-  { id: "h-17", ticketId: "t-5", from: "INGRESADO", to: "EN_REVISION", changedById: "u-enc-centro", comment: null, createdAt: "2026-09-18T08:40:00Z" },
-  { id: "h-18", ticketId: "t-5", from: "EN_REVISION", to: "ASIGNADO", changedById: "u-enc-centro", comment: null, createdAt: "2026-09-19T10:00:00Z" },
-  { id: "h-19", ticketId: "t-6", from: null, to: "INGRESADO", changedById: "u-prop-3", comment: null, createdAt: "2026-08-20T11:00:00Z" },
-  { id: "h-20", ticketId: "t-6", from: "INGRESADO", to: "EN_REVISION", changedById: "u-enc-centro", comment: null, createdAt: "2026-08-21T09:00:00Z" },
-  { id: "h-21", ticketId: "t-6", from: "EN_REVISION", to: "ASIGNADO", changedById: "u-enc-centro", comment: null, createdAt: "2026-08-21T09:30:00Z" },
-  { id: "h-22", ticketId: "t-6", from: "ASIGNADO", to: "VISITA_INSPECTIVA", changedById: "u-enc-centro", comment: "Bisagras descolgadas, requiere cepillar la hoja.", createdAt: "2026-08-25T15:00:00Z" },
-  { id: "h-23", ticketId: "t-6", from: "VISITA_INSPECTIVA", to: "PROGRAMADO", changedById: "u-enc-centro", comment: null, createdAt: "2026-08-26T10:00:00Z" },
-  { id: "h-24", ticketId: "t-6", from: "PROGRAMADO", to: "EN_EJECUCION", changedById: "u-enc-centro", comment: null, createdAt: "2026-09-01T09:00:00Z" },
-  { id: "h-25", ticketId: "t-6", from: "EN_EJECUCION", to: "EN_RECEPCION", changedById: "u-enc-centro", comment: "Puerta cepillada y bisagras reguladas.", createdAt: "2026-09-01T16:00:00Z" },
-  { id: "h-26", ticketId: "t-6", from: "EN_RECEPCION", to: "CERRADO", changedById: "u-prop-3", comment: null, createdAt: "2026-09-08T17:00:00Z" },
+  { id: "h-1", ticketId: "t-1", from: null, to: "INGRESADO", changedById: "u-prop-1", comment: null, actorCapacity: "Titular", createdAt: "2026-09-02T10:15:00Z" },
+  { id: "h-2", ticketId: "t-1", from: "INGRESADO", to: "EN_REVISION", changedById: "u-enc-centro", comment: null, actorCapacity: null, createdAt: "2026-09-03T08:30:00Z" },
+  { id: "h-3", ticketId: "t-1", from: "EN_REVISION", to: "ASIGNADO", changedById: "u-enc-centro", comment: "Cuadrilla interna.", actorCapacity: null, createdAt: "2026-09-03T09:00:00Z" },
+  { id: "h-4", ticketId: "t-1", from: "ASIGNADO", to: "VISITA_INSPECTIVA", changedById: "u-enc-centro", comment: "Sifón mal sellado.", actorCapacity: null, createdAt: "2026-09-10T11:20:00Z" },
+  { id: "h-5", ticketId: "t-1", from: "VISITA_INSPECTIVA", to: "PROGRAMADO", changedById: "u-enc-centro", comment: "Coordinado con propietario.", actorCapacity: null, createdAt: "2026-09-12T16:40:00Z" },
+  { id: "h-6", ticketId: "t-2", from: null, to: "INGRESADO", changedById: "u-prop-1", comment: null, actorCapacity: "Titular", createdAt: "2026-08-14T09:00:00Z" },
+  { id: "h-7", ticketId: "t-2", from: "INGRESADO", to: "EN_REVISION", changedById: "u-enc-centro", comment: null, actorCapacity: null, createdAt: "2026-08-16T10:00:00Z" },
+  { id: "h-8", ticketId: "t-2", from: "EN_REVISION", to: "ASIGNADO", changedById: "u-enc-centro", comment: "Subcontrato de ventanas.", actorCapacity: null, createdAt: "2026-08-18T11:30:00Z" },
+  { id: "h-9", ticketId: "t-2", from: "ASIGNADO", to: "VISITA_INSPECTIVA", changedById: "u-enc-centro", comment: "Riel desalineado.", actorCapacity: null, createdAt: "2026-08-20T15:00:00Z" },
+  { id: "h-10", ticketId: "t-2", from: "VISITA_INSPECTIVA", to: "PROGRAMADO", changedById: "u-enc-centro", comment: null, actorCapacity: null, createdAt: "2026-09-02T09:00:00Z" },
+  { id: "h-11", ticketId: "t-2", from: "PROGRAMADO", to: "EN_EJECUCION", changedById: "u-enc-centro", comment: null, actorCapacity: null, createdAt: "2026-09-05T08:30:00Z" },
+  { id: "h-12", ticketId: "t-2", from: "EN_EJECUCION", to: "EN_RECEPCION", changedById: "u-enc-centro", comment: "Riel cambiado y regulado.", actorCapacity: null, createdAt: "2026-09-18T12:00:00Z" },
+  { id: "h-13", ticketId: "t-3", from: null, to: "INGRESADO", changedById: "u-prop-2", comment: null, actorCapacity: "Titular", createdAt: "2026-09-21T18:30:00Z" },
+  { id: "h-14", ticketId: "t-4", from: null, to: "INGRESADO", changedById: "u-prop-3", comment: null, actorCapacity: "Titular", createdAt: "2026-09-21T13:10:00Z" },
+  { id: "h-15", ticketId: "t-4", from: "INGRESADO", to: "EN_REVISION", changedById: "u-enc-centro", comment: null, actorCapacity: null, createdAt: "2026-09-22T09:00:00Z" },
+  { id: "h-16", ticketId: "t-5", from: null, to: "INGRESADO", changedById: "u-prop-4", comment: null, actorCapacity: "Titular", createdAt: "2026-09-17T20:45:00Z" },
+  { id: "h-17", ticketId: "t-5", from: "INGRESADO", to: "EN_REVISION", changedById: "u-enc-centro", comment: null, actorCapacity: null, createdAt: "2026-09-18T08:40:00Z" },
+  { id: "h-18", ticketId: "t-5", from: "EN_REVISION", to: "ASIGNADO", changedById: "u-enc-centro", comment: null, actorCapacity: null, createdAt: "2026-09-19T10:00:00Z" },
+  { id: "h-19", ticketId: "t-6", from: null, to: "INGRESADO", changedById: "u-prop-3", comment: null, actorCapacity: "Titular", createdAt: "2026-08-20T11:00:00Z" },
+  { id: "h-20", ticketId: "t-6", from: "INGRESADO", to: "EN_REVISION", changedById: "u-enc-centro", comment: null, actorCapacity: null, createdAt: "2026-08-21T09:00:00Z" },
+  { id: "h-21", ticketId: "t-6", from: "EN_REVISION", to: "ASIGNADO", changedById: "u-enc-centro", comment: null, actorCapacity: null, createdAt: "2026-08-21T09:30:00Z" },
+  { id: "h-22", ticketId: "t-6", from: "ASIGNADO", to: "VISITA_INSPECTIVA", changedById: "u-enc-centro", comment: "Bisagras descolgadas, requiere cepillar la hoja.", actorCapacity: null, createdAt: "2026-08-25T15:00:00Z" },
+  { id: "h-23", ticketId: "t-6", from: "VISITA_INSPECTIVA", to: "PROGRAMADO", changedById: "u-enc-centro", comment: null, actorCapacity: null, createdAt: "2026-08-26T10:00:00Z" },
+  { id: "h-24", ticketId: "t-6", from: "PROGRAMADO", to: "EN_EJECUCION", changedById: "u-enc-centro", comment: null, actorCapacity: null, createdAt: "2026-09-01T09:00:00Z" },
+  { id: "h-25", ticketId: "t-6", from: "EN_EJECUCION", to: "EN_RECEPCION", changedById: "u-enc-centro", comment: "Puerta cepillada y bisagras reguladas.", actorCapacity: null, createdAt: "2026-09-01T16:00:00Z" },
+  { id: "h-26", ticketId: "t-6", from: "EN_RECEPCION", to: "CERRADO", changedById: "u-prop-3", comment: null, actorCapacity: "Titular", createdAt: "2026-09-08T17:00:00Z" },
 ];
