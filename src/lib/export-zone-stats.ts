@@ -40,7 +40,7 @@ export async function exportZoneStatsToExcel({ stats, filters, filterNames, enca
     [
       ["Estadísticas de postventa · PostventAXIS"],
       [],
-      ["Encargado", encargado],
+      ["Encargado", encargado || "—"],
       ["Período", `${STATS_PERIOD_LABEL[filters.period]} (${range})`],
       ["Zona", filterNames.zone],
       ["Obra", filterNames.project],
