@@ -5,6 +5,12 @@
       "titulo": "Ubicacion de la obra por direccion o enlace de Google Maps",
       "inicio": "2026-10-01T07:00:00.000Z",
       "duracionMinutos": 30
+    },
+    {
+      "rama": "fix/workflow-instantaneo",
+      "titulo": "Correccion interna del despliegue inmediato (sin cambios visibles)",
+      "inicio": "2026-10-01T07:00:00.000Z",
+      "duracionMinutos": 30
     }
   ],
   "ultimo": {
