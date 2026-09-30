@@ -1,5 +1,12 @@
 {
-  "programado": [],
+  "programado": [
+    {
+      "rama": "feat/ubicacion-obra",
+      "titulo": "Ubicacion de la obra por direccion o enlace de Google Maps",
+      "inicio": "2026-10-01T07:00:00.000Z",
+      "duracionMinutos": 30
+    }
+  ],
   "ultimo": {
     "completadoEn": "2026-09-29T07:23:46.844Z",
     "novedades": [
