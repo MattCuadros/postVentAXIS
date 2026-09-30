@@ -2,7 +2,7 @@ import type { DataState } from "@/data/store";
 import type { Project, Ticket, TicketMedia, TicketMediaStage, Zone } from "@/types/domain";
 
 export const STORAGE_KEY = "postventaxis:datos";
-const VERSION = 6;
+const VERSION = 7;
 
 interface StoredData {
   version: number;
@@ -196,6 +196,19 @@ function migrateV5(state: DataState): DataState {
   };
 }
 
+/**
+ * v6 → v7: aparece la colección `unitResponsibles` (varios responsables por unidad) y cada
+ * entrada del historial guarda `actorCapacity`. Sin esto, quien tenía datos guardados antes de esa
+ * función rompía al abrir "Nuevo requerimiento" (`state.unitResponsibles` era undefined).
+ */
+function migrateV6(state: DataState): DataState {
+  return {
+    ...state,
+    unitResponsibles: state.unitResponsibles ?? [],
+    statusHistory: state.statusHistory.map((entry) => ({ ...entry, actorCapacity: entry.actorCapacity ?? null })),
+  };
+}
+
 /** Migración de cada versión a la siguiente (clave = versión de origen). */
 const MIGRATIONS: Record<number, (state: DataState) => DataState> = {
   1: migrateV1,
@@ -203,6 +216,7 @@ const MIGRATIONS: Record<number, (state: DataState) => DataState> = {
   3: migrateV3,
   4: migrateV4,
   5: migrateV5,
+  6: migrateV6,
 };
 
 export function loadState(raw: string | null = readRaw()): DataState | null {
