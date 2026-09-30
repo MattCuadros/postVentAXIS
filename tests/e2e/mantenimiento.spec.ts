@@ -10,6 +10,8 @@ test.beforeEach(async ({ context }) => {
 });
 
 test("sin mantenimiento programado no hay aviso", async ({ page }) => {
+  // Archivo propio y vacío: el real (public/mantenimiento.json) cambia cada vez que se agenda algo.
+  await serveMaintenance(page, { programado: [], ultimo: null });
   await page.goto("/encargado");
   await expect(page.getByRole("heading", { name: "Requerimientos" })).toBeVisible();
   await expect(page.getByTestId("maintenance-banner")).toHaveCount(0);
