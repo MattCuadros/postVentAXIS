@@ -1,7 +1,7 @@
 import type { BrowserContext, Page } from "@playwright/test";
 import type { Role } from "@/types/domain";
 
-/** Sesión simulada: las mismas cookies que deja /login. */
+/** Sesión simulada: las mismas cookies que deja la pantalla de pruebas (/pruebas). */
 export async function loginAs(context: BrowserContext, userId: string, role: Role, baseURL = "http://localhost:3100") {
   await context.addCookies([
     { name: "pv_user_id", value: userId, url: baseURL },
