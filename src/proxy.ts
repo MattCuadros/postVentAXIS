@@ -39,5 +39,6 @@ export function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/((?!_next|.*\\..*|favicon.ico).*)"],
+  // /api queda fuera: son proxies sin sesión (geocodificación y enlaces de Maps), no páginas por rol.
+  matcher: ["/((?!api/|_next|.*\\..*|favicon.ico).*)"],
 };

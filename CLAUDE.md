@@ -106,3 +106,9 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 - `/encargado/estadisticas`: tablero de sus zonas con ventana móvil (última semana, 2 semanas, mes, 3 meses, todo), filtros (zona, obra, origen, equipo, estado) y descarga Excel.
 - Cálculos puros en `src/lib/zone-stats.ts` (la pantalla y el Excel usan los mismos); Excel en `src/lib/export-zone-stats.ts`.
+
+## Ubicación de la obra
+
+- `project-form.tsx`: un solo campo "Ubicación" (coordenadas, enlace de Google Maps largo o corto, o vacío para buscar desde Dirección + Comuna). `parseCoordinates` (`src/lib/geo.ts`) lee coordenadas, `@`, `!3d!4d`, `q=`/`query=`.
+- Primer código de servidor del proyecto: Route Handlers `POST /api/resolve-maps-link` (`src/lib/maps-link.ts`: solo https y hosts de `ALLOWED_MAPS_HOSTS`, redirecciones revalidadas una a una, máximo 5, timeout 5 s; no debe volverse un proxy abierto) y `POST /api/geocode` (`src/lib/geocode.ts`, hoy Nominatim: 1 solicitud/seg, User-Agent identificable, sin autocompletado; cambiar de proveedor = tocar solo `geocodeAddress`). Son stateless, sin sesión.
+- `src/proxy.ts` excluye `/api/` del matcher: las rutas por rol no deben interceptarlas.

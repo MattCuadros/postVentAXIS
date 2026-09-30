@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { useDataApi } from "@/data/api";
 import { useQuery } from "@/data/use-query";
-import { formatCoordinates, mapsUrl, parseCoordinates } from "@/lib/geo";
+import { formatCoordinates, looksLikeMapsShortLink, mapsUrl, parseCoordinates } from "@/lib/geo";
 import { fieldErrors, projectSchema } from "@/lib/schemas";
 import type { Project } from "@/types/domain";
 
@@ -18,6 +18,9 @@ export function ProjectForm({ onCreated, onCancel }: { onCreated: (project: Proj
   const [values, setValues] = useState({ name: "", code: "", zoneId: "", address: "", commune: "", coordinates: "" });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
+  const [locating, setLocating] = useState(false);
+  /** Nombre que devolvió el geocodificador, para confirmar que cayó en el lugar correcto. */
+  const [foundLabel, setFoundLabel] = useState<string | null>(null);
 
   const point = parseCoordinates(values.coordinates);
 
@@ -26,8 +29,54 @@ export function ProjectForm({ onCreated, onCancel }: { onCreated: (project: Proj
     setErrors((current) => ({ ...current, [key]: "" }));
   }
 
+  async function callApi(path: string, body: Record<string, string>): Promise<{ lat: number; lng: number; label?: string } | null> {
+    const response = await fetch(path, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+    return response.ok ? ((await response.json()) as { lat: number; lng: number; label?: string }) : null;
+  }
+
+  /**
+   * Un solo flujo para Ubicación: coordenadas o enlace largo se leen al instante; un enlace corto
+   * se sigue en el servidor; y si está vacía, se busca desde Dirección + Comuna. Devuelve el
+   * texto final del campo (o el mismo si no se pudo resolver, con un aviso amable).
+   */
+  async function resolveLocation(current: typeof values): Promise<typeof values> {
+    const text = current.coordinates.trim();
+    if (text && parseCoordinates(text)) return current;
+    const canSearchAddress = !text && current.address.trim() && current.commune.trim();
+    if (!text && !canSearchAddress) return current;
+    if (text && !looksLikeMapsShortLink(text)) return current;
+
+    setLocating(true);
+    setFoundLabel(null);
+    try {
+      const found = text
+        ? await callApi("/api/resolve-maps-link", { url: text })
+        : await callApi("/api/geocode", { address: current.address, commune: current.commune });
+      if (!found) {
+        setErrors((errs) => ({
+          ...errs,
+          coordinates: text
+            ? "No pudimos leer ese enlace. Prueba pegar las coordenadas o el enlace largo de Google Maps."
+            : "No encontramos esa dirección. Prueba agregando la comuna o pega un enlace de Google Maps.",
+        }));
+        return current;
+      }
+      setFoundLabel(found.label ?? null);
+      const next = { ...current, coordinates: formatCoordinates(found) };
+      setValues(next);
+      setErrors((errs) => ({ ...errs, coordinates: "" }));
+      return next;
+    } catch {
+      setErrors((errs) => ({ ...errs, coordinates: "No pudimos buscar la ubicación ahora. Pégala a mano (coordenadas o enlace de Google Maps)." }));
+      return current;
+    } finally {
+      setLocating(false);
+    }
+  }
+
   async function handleSubmit() {
-    const result = projectSchema.safeParse(values);
+    const resolved = await resolveLocation(values);
+    const result = projectSchema.safeParse(resolved);
     if (!result.success) {
       setErrors(fieldErrors(result.error));
       return;
@@ -66,28 +115,40 @@ export function ProjectForm({ onCreated, onCancel }: { onCreated: (project: Proj
       </Select>
       <div className="grid gap-4 sm:grid-cols-[2fr_1fr]">
         <Input label="Dirección" name="project-address" value={values.address} error={errors.address} onChange={(event) => set("address", event.target.value)} />
-        <Input label="Comuna" name="project-commune" value={values.commune} error={errors.commune} onChange={(event) => set("commune", event.target.value)} />
+        <Input label="Comuna" name="project-commune" value={values.commune} error={errors.commune} onChange={(event) => set("commune", event.target.value)} onBlur={() => void resolveLocation(values)} />
       </div>
       <div>
         <Input
           label="Ubicación"
           name="project-coordinates"
-          placeholder="-33.4489, -70.6693 o enlace de Google Maps"
+          placeholder="Dirección o enlace de Google Maps"
           value={values.coordinates}
           error={errors.coordinates}
-          onChange={(event) => set("coordinates", event.target.value)}
+          onChange={(event) => {
+            setFoundLabel(null);
+            set("coordinates", event.target.value);
+          }}
+          onBlur={() => void resolveLocation(values)}
         />
+        {locating && <p className="mt-1.5 text-xs text-ink-meta" role="status">Buscando ubicación…</p>}
         {!errors.coordinates && (
           <p className="mt-1.5 text-xs text-ink-meta">
             {point ? (
               <>
+                {foundLabel && <>Encontramos: {foundLabel}. </>}
                 Coordenadas: {formatCoordinates(point)} ·{" "}
                 <a href={mapsUrl(point)} target="_blank" rel="noopener noreferrer" className="font-bold text-accent hover:underline">
                   Revisar en el mapa
                 </a>
               </>
             ) : (
-              "En Google Maps, haz clic derecho sobre la obra y copia las coordenadas (o pega el enlace)."
+              <>
+                Escribe la dirección y la comuna y pulsa{" "}
+                <button type="button" className="font-bold text-accent hover:underline" disabled={locating} onClick={() => void resolveLocation({ ...values, coordinates: "" })}>
+                  Buscar ubicación
+                </button>
+                , o pega un enlace de Google Maps (también el corto de «Compartir»).
+              </>
             )}
           </p>
         )}
