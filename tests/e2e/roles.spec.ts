@@ -29,7 +29,7 @@ for (const { userId, role, home } of HOMES) {
 }
 
 test("el rol ADMIN se muestra como \"Superadministrador\" en login y encabezado, nunca \"Administrador\" a secas", async ({ page, context }) => {
-  await page.goto("/login");
+  await page.goto("/pruebas");
   await expect(page.getByRole("heading", { name: "Superadministrador", level: 3 })).toBeVisible();
   await expect(page.getByText(/^Administrador$/)).toHaveCount(0);
 
