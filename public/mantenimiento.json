@@ -1,31 +1,11 @@
 {
-  "programado": [
-    {
-      "rama": "feat/ubicacion-obra",
-      "titulo": "Ubicacion de la obra por direccion o enlace de Google Maps",
-      "inicio": "2026-10-01T07:00:00.000Z",
-      "duracionMinutos": 30
-    },
-    {
-      "rama": "fix/workflow-instantaneo",
-      "titulo": "Correccion interna del despliegue inmediato (sin cambios visibles)",
-      "inicio": "2026-10-01T07:00:00.000Z",
-      "duracionMinutos": 30
-    },
-    {
-      "rama": "feat/login-correo",
-      "titulo": "Nuevo ingreso con correo y contrasena; la seleccion de usuarios pasa a la pantalla de pruebas",
-      "inicio": "2026-10-01T07:00:00.000Z",
-      "duracionMinutos": 30
-    }
-  ],
+  "programado": [],
   "ultimo": {
-    "completadoEn": "2026-09-29T07:23:46.844Z",
+    "completadoEn": "2026-10-01T11:16:58.515Z",
     "novedades": [
-      "El rol Administrador se llama ahora Superadministrador",
-      "Unidades sin propietario en la carga masiva, y completarlo despues",
-      "Varios responsables por unidad (familiares, representante, comite)",
-      "Propietario nuevo completado desde el remitente del correo"
+      "Ubicacion de la obra por direccion o enlace de Google Maps",
+      "Correccion interna del despliegue inmediato (sin cambios visibles)",
+      "Nuevo ingreso con correo y contrasena; la seleccion de usuarios pasa a la pantalla de pruebas"
     ]
   }
 }
