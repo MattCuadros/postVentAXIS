@@ -97,7 +97,7 @@ export function ImportDraftCard({ index, draft, kind, projects, sources, errors,
                   name={`project-${draft.key}`}
                   value={draft.projectId}
                   error={errors.project}
-                  onChange={(event) => update({ projectId: event.target.value, unitId: "", unitMode: "existing" })}
+                  onChange={(event) => update({ projectId: event.target.value, unitId: "", unitMode: "existing", ownerMode: "none", ownerId: "" })}
                 >
                   <option value="">{parsed.projectHint ? `Leído: "${parsed.projectHint}" · elige la obra` : "Elige la obra"}</option>
                   {projects.map((project) => (
@@ -110,11 +110,19 @@ export function ImportDraftCard({ index, draft, kind, projects, sources, errors,
                   value={draft.unitMode === "new" ? "__new" : draft.unitId}
                   error={errors.unit}
                   disabled={!draft.projectId}
-                  onChange={(event) =>
-                    event.target.value === "__new"
-                      ? update({ unitMode: "new", unitId: "" })
-                      : update({ unitMode: "existing", unitId: event.target.value })
-                  }
+                  onChange={(event) => {
+                    if (event.target.value === "__new") {
+                      update({ unitMode: "new", unitId: "", ownerMode: "new", ownerId: "" });
+                      return;
+                    }
+                    const chosen = projectUnits.find((item) => item.id === event.target.value);
+                    update({
+                      unitMode: "existing",
+                      unitId: event.target.value,
+                      ownerMode: chosen?.ownerId ? "existing" : "none",
+                      ownerId: chosen?.ownerId ?? "",
+                    });
+                  }}
                 >
                   <option value="">{parsed.unitHint ? `Leído: "${parsed.unitHint}" · elige la unidad` : "Elige la unidad"}</option>
                   {projectUnits.map((item) => (

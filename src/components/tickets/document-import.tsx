@@ -16,7 +16,7 @@ import { saveDocumentFile } from "@/data/document-store";
 import { useSession } from "@/data/session-context";
 import { useQuery } from "@/data/use-query";
 import { cn } from "@/lib/cn";
-import { extractPdf, previewFirstPage, type ExtractProgress } from "@/lib/document-import/extract";
+import { extractDocument, isImageFile, isPdfFile, previewFirstPage, type ExtractProgress } from "@/lib/document-import/extract";
 import { detectDocumentType, parseDocument } from "@/lib/document-import/parsers";
 import { DOCUMENT_LABEL, type ParsedDocument } from "@/lib/document-import/types";
 import type { DocumentKind } from "@/types/domain";
@@ -40,7 +40,7 @@ interface LoadedDocument {
   parsed: ParsedDocument;
 }
 
-/** Carga de un PDF (correo, OI, OT, OI firmada o informe AXIS) como requerimiento(s). Solo encargados. */
+/** Carga de un PDF o imagen PNG/JPG (correo, OI, OT, OI firmada o informe AXIS) como requerimiento(s). Solo encargados. */
 export function DocumentImport() {
   const { user } = useSession();
   const api = useDataApi();
@@ -79,18 +79,23 @@ export function DocumentImport() {
   async function handleFile(file: File | undefined) {
     if (!file || !sources) return;
     setError(null);
-    if (file.type !== "application/pdf" && !file.name.toLowerCase().endsWith(".pdf")) {
-      setError("El archivo debe ser un PDF.");
+    const isImage = isImageFile(file);
+    if (!isImage && !isPdfFile(file)) {
+      setError("El archivo debe ser un PDF o una imagen PNG o JPG.");
       return;
     }
     if (file.size > MAX_BYTES) {
-      setError("El PDF supera los 15 MB.");
+      setError(`${isImage ? "La imagen" : "El PDF"} supera los 15 MB.`);
       return;
     }
 
-    setStep({ name: "reading", fileName: file.name, progress: { stage: "reading", progress: null, message: "Leyendo el PDF…" } });
+    setStep({
+      name: "reading",
+      fileName: file.name,
+      progress: { stage: "reading", progress: null, message: isImage ? "Leyendo la imagen…" : "Leyendo el PDF…" },
+    });
     try {
-      const extracted = await extractPdf(file, (progress) => setStep({ name: "reading", fileName: file.name, progress }));
+      const extracted = await extractDocument(file, (progress) => setStep({ name: "reading", fileName: file.name, progress }));
       const detected = detectDocumentType(extracted.text, { fromOcr: extracted.fromOcr });
       const kind: DocumentKind = detected === "UNKNOWN" ? "EMAIL" : detected;
       const parsed = parseDocument(kind, extracted.text);
@@ -110,7 +115,11 @@ export function DocumentImport() {
       setShowErrors(false);
       setStep({ name: "review" });
     } catch {
-      setError("No pudimos leer el PDF. Verifica que no esté protegido con contraseña.");
+      setError(
+        isImage
+          ? "No pudimos leer la imagen. Verifica que sea un PNG o JPG válido y que el texto se vea nítido."
+          : "No pudimos leer el PDF. Verifica que no esté protegido con contraseña.",
+      );
       setStep({ name: "upload" });
     } finally {
       if (inputRef.current) inputRef.current.value = "";
@@ -192,7 +201,7 @@ export function DocumentImport() {
     <div className="pb-8">
       <PageHeader
         title="Cargar documento"
-        subtitle="Registra requerimientos desde un correo, una OI, una OT o un informe de trabajo en PDF."
+        subtitle="Registra requerimientos desde un correo, una OI, una OT o un informe de trabajo, en PDF o imagen (PNG, JPG)."
       />
 
       {error && (
@@ -209,7 +218,7 @@ export function DocumentImport() {
             ref={inputRef}
             id="document-file"
             type="file"
-            accept="application/pdf,.pdf"
+            accept="application/pdf,image/png,image/jpeg,.pdf,.png,.jpg,.jpeg"
             className="sr-only"
             onChange={(event) => handleFile(event.target.files?.[0])}
           />
@@ -231,8 +240,8 @@ export function DocumentImport() {
             )}
           >
             <UploadIcon className="h-8 w-8 text-accent" />
-            <span className="font-bold text-accent">Elegir PDF o arrastrarlo aquí</span>
-            <span className="text-sm text-ink-secondary">Correo impreso, OI, OI firmada, OT o informe de trabajo AXIS · hasta 15 MB</span>
+            <span className="font-bold text-accent">Elegir PDF o imagen, o arrastrarlo aquí</span>
+            <span className="text-sm text-ink-secondary">Correo impreso, OI, OI firmada, OT o informe de trabajo AXIS · PDF, PNG o JPG · hasta 15 MB</span>
           </label>
           <ul className="mt-5 grid gap-2 text-sm text-ink-secondary sm:grid-cols-2">
             <li><strong className="text-ink">Correo:</strong> crea el requerimiento (uno por fila o punto de la lista).</li>
@@ -241,8 +250,8 @@ export function DocumentImport() {
             <li><strong className="text-ink">OI firmada o informe AXIS:</strong> cierra el requerimiento con la conformidad firmada.</li>
           </ul>
           <p className="mt-5 text-xs text-ink-meta">
-            El documento se procesa en este navegador; no se envía a servidores. Si es un escaneo, la lectura de imagen descarga
-            su modelo de idioma español desde internet la primera vez.
+            El documento se procesa en este navegador; no se envía a servidores. Si es un escaneo o una imagen, la lectura de
+            imagen descarga su modelo de idioma español desde internet la primera vez.
           </p>
         </div>
       )}
@@ -288,7 +297,7 @@ export function DocumentImport() {
             </details>
             {loaded.preview && (
               // eslint-disable-next-line @next/next/no-img-element -- vista previa generada en el navegador
-              <img src={loaded.preview} alt="Primera página del documento" className="hidden w-full rounded-lg border border-line-soft shadow-card lg:block" />
+              <img src={loaded.preview} alt="Vista previa del documento" className="hidden w-full rounded-lg border border-line-soft shadow-card lg:block" />
             )}
           </aside>
 
