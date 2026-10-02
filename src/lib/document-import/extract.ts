@@ -1,7 +1,7 @@
 /**
- * Lectura de PDFs en el navegador: texto digital con pdfjs y, si el PDF es un escaneo, OCR con
- * tesseract.js (español), probando la orientación. Todo ocurre en el navegador; tesseract descarga
- * su modelo de idioma desde un CDN la primera vez.
+ * Lectura de PDFs e imágenes (PNG/JPG) en el navegador: texto digital con pdfjs y, si el PDF es un
+ * escaneo o el archivo es una imagen, OCR con tesseract.js (español), probando la orientación. Todo
+ * ocurre en el navegador; tesseract descarga su modelo de idioma desde un CDN la primera vez.
  */
 import type { PDFDocumentProxy } from "pdfjs-dist";
 
@@ -78,7 +78,11 @@ function rotate(source: HTMLCanvasElement, degrees: 90 | 270): HTMLCanvasElement
   return canvas;
 }
 
-async function ocrPages(pdf: PDFDocumentProxy, onProgress: (progress: ExtractProgress) => void): Promise<{ text: string; confidence: number }> {
+async function ocrCanvases(
+  count: number,
+  getCanvas: (number: number) => Promise<HTMLCanvasElement>,
+  onProgress: (progress: ExtractProgress) => void,
+): Promise<{ text: string; confidence: number }> {
   const { createWorker } = await import("tesseract.js");
   let pageNumber = 1;
   const worker = await createWorker("spa", 1, {
@@ -87,7 +91,7 @@ async function ocrPages(pdf: PDFDocumentProxy, onProgress: (progress: ExtractPro
         onProgress({
           stage: "ocr",
           progress: message.progress,
-          message: `Leyendo imagen de la página ${pageNumber} de ${pdf.numPages}…`,
+          message: count > 1 ? `Leyendo imagen de la página ${pageNumber} de ${count}…` : "Leyendo el texto de la imagen…",
         });
       } else if (message.status.includes("loading")) {
         onProgress({ stage: "ocr", progress: null, message: "Preparando el lector de imágenes (la primera vez descarga el idioma español)…" });
@@ -98,8 +102,8 @@ async function ocrPages(pdf: PDFDocumentProxy, onProgress: (progress: ExtractPro
   try {
     const texts: string[] = [];
     const confidences: number[] = [];
-    for (pageNumber = 1; pageNumber <= pdf.numPages; pageNumber += 1) {
-      const canvas = await renderPage(pdf, pageNumber, 2);
+    for (pageNumber = 1; pageNumber <= count; pageNumber += 1) {
+      const canvas = await getCanvas(pageNumber);
       let best = await worker.recognize(canvas);
       // Escaneos girados (ej. el informe AXIS viene en horizontal): se prueba 90° y 270°.
       if (best.data.confidence < 60) {
@@ -129,15 +133,61 @@ export async function extractPdf(file: File, onProgress: (progress: ExtractProgr
       return { text, fromOcr: false, pages: pdf.numPages, ocrConfidence: null };
     }
     onProgress({ stage: "ocr", progress: null, message: "El PDF es un escaneo: aplicando lectura de imagen (OCR)…" });
-    const ocr = await ocrPages(pdf, onProgress);
+    const ocr = await ocrCanvases(pdf.numPages, (number) => renderPage(pdf, number, 2), onProgress);
     return { text: ocr.text, fromOcr: true, pages: pdf.numPages, ocrConfidence: ocr.confidence };
   } finally {
     await close();
   }
 }
 
-/** Imagen (data URL) de la primera página para mostrar junto al formulario de revisión. */
+/** Lado mayor máximo (px) al leer una foto: suficiente para OCR sin agotar la memoria. */
+const MAX_IMAGE_SIDE = 2800;
+
+export function isImageFile(file: File): boolean {
+  return /^image\/(png|jpeg)$/.test(file.type) || /\.(png|jpe?g)$/i.test(file.name);
+}
+
+export function isPdfFile(file: File): boolean {
+  return file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf");
+}
+
+/** Dibuja la imagen (respetando la orientación EXIF de las fotos de celular) reducida si es muy grande. */
+async function imageToCanvas(file: File, maxSide: number): Promise<HTMLCanvasElement> {
+  const bitmap = await createImageBitmap(file, { imageOrientation: "from-image" });
+  try {
+    const scale = Math.min(1, maxSide / Math.max(bitmap.width, bitmap.height));
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.max(1, Math.round(bitmap.width * scale));
+    canvas.height = Math.max(1, Math.round(bitmap.height * scale));
+    const context = canvas.getContext("2d");
+    if (!context) throw new Error("No se pudo preparar la imagen.");
+    context.fillStyle = "#fff";
+    context.fillRect(0, 0, canvas.width, canvas.height);
+    context.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+    return canvas;
+  } finally {
+    bitmap.close();
+  }
+}
+
+/** Lee el texto de una foto o captura (PNG/JPG) con OCR. */
+export async function extractImage(file: File, onProgress: (progress: ExtractProgress) => void): Promise<ExtractedPdf> {
+  onProgress({ stage: "ocr", progress: null, message: "Preparando la imagen…" });
+  const canvas = await imageToCanvas(file, MAX_IMAGE_SIDE);
+  const ocr = await ocrCanvases(1, async () => canvas, onProgress);
+  return { text: ocr.text, fromOcr: true, pages: 1, ocrConfidence: ocr.confidence };
+}
+
+/** Extrae el texto de un PDF o de una imagen PNG/JPG. */
+export function extractDocument(file: File, onProgress: (progress: ExtractProgress) => void): Promise<ExtractedPdf> {
+  return isImageFile(file) ? extractImage(file, onProgress) : extractPdf(file, onProgress);
+}
+
+/** Imagen (data URL) del documento (primera página o la propia foto) para mostrar junto al formulario de revisión. */
 export async function previewFirstPage(file: File): Promise<string> {
+  if (isImageFile(file)) {
+    return (await imageToCanvas(file, 1200)).toDataURL("image/jpeg", 0.8);
+  }
   const { pdf, close } = await loadPdf(file);
   try {
     const canvas = await renderPage(pdf, 1, 1.2);
