@@ -4,7 +4,7 @@ Sistema de postventa y garantías inmobiliarias para **Axis Desarrollos Construc
 
 **Demo publicada:** https://post-vent-axis.vercel.app
 
-> Prototipo funcional sin backend: los datos son de ejemplo y se guardan solo en el navegador de cada persona (`localStorage`). El inicio de sesión es simulado: se elige un usuario de la lista. No ingresar datos reales de clientes.
+> Prototipo funcional sin backend: los datos son de ejemplo y se guardan solo en el navegador de cada persona (`localStorage`). La entrada (`/login`) es un formulario de correo y contraseña que todavía no tiene backend; mientras dure la etapa de pruebas hay un botón hacia `/pruebas`, donde se elige un usuario de la lista (inicio de sesión simulado). No ingresar datos reales de clientes.
 
 ## Qué hace cada rol
 
@@ -25,3 +25,7 @@ npx tsc --noEmit && npm run lint && npm run build   # verificación antes de cad
 Stack: Next.js 16 (App Router), React 19, TypeScript, Tailwind CSS 3, zod, recharts, SheetJS. Marca según el Manual de Uso de Marca Axis 2024 (`public/brand/formato-axis/`).
 
 Cada push a `master` se publica automáticamente en Vercel.
+
+### Modo pruebas
+
+`NEXT_PUBLIC_MODO_PRUEBAS` controla el botón "Entrar a la pantalla de pruebas" y la ruta `/pruebas`. Está activo salvo que valga exactamente `false`, así que el despliegue actual funciona sin configurar nada. Para salir de la etapa de pruebas, configúrala como `false` en Vercel y vuelve a desplegar (las variables `NEXT_PUBLIC_` se fijan al compilar).

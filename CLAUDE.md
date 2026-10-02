@@ -37,8 +37,9 @@ Store en memoria por `Context + useReducer`, sembrado desde `src/mocks/data.ts`:
 
 ## Sesión y roles
 
-- `/login`: selector de usuario mock (propietario, encargado, administrador de obra o admin) → guarda cookie de sesión → redirige a la home de su rol.
-- `src/proxy.ts` (el "middleware" de Next 16) redirige según la cookie: sin sesión → `/login`; con sesión, cada rol solo accede a su propio route group (`(propietario)`, `(encargado)`, `(adminobra)`, `(admin)`).
+- `/login` es la landing: ingreso con correo y contraseña (`zod` `loginSchema`; errores bajo cada campo; mensajes genéricos). Sin backend todavía: `src/data/auth.ts` (`signInWithPassword`) es el único punto de integración y hoy responde `NO_DISPONIBLE`; con backend ahí va la llamada al servidor y la sesión pasa a ser una cookie firmada (hoy son las cookies simuladas `pv_user_id`/`pv_role`). Regla: la contraseña nunca se guarda, registra ni viaja fuera de ese adaptador; no crear claves de demo.
+- `/pruebas`: selector de usuarios de ejemplo (propietario, encargado, administrador de obra o superadministrador) → guarda la cookie de sesión → home del rol. Solo existe en **modo pruebas** (`src/lib/app-mode.ts`, `isTestMode()`): activo salvo que `NEXT_PUBLIC_MODO_PRUEBAS` valga exactamente `false`. Para salir de la etapa de pruebas: configurar `NEXT_PUBLIC_MODO_PRUEBAS=false` en Vercel y volver a desplegar; entonces el botón desaparece de `/login` y `/pruebas` redirige a `/login`.
+- `src/proxy.ts` (el "middleware" de Next 16; la decisión es la función pura `decideRoute`) redirige según la cookie: sin sesión → `/login` (y `/pruebas` solo en modo pruebas); con sesión, cada rol solo accede a su propio route group (`(propietario)`, `(encargado)`, `(adminobra)`, `(admin)`).
 - Zonas: Postventa Centro (C), Postventa Sur (S) y Postventa Austral (A).
 - Administrador de obra (`ADMIN_OBRA`): solo lectura, acotado a `User.projectIds`. Ve `/admin-obra` con indicadores agregados (`src/lib/project-metrics.ts`): fallas por origen, torre/piso y desempeño de equipos internos vs subcontratos. Nunca datos personales de propietarios ni obras fuera de sus `projectIds`.
 - Conmutador de usuario visible solo en desarrollo (`process.env.NODE_ENV === "development"`), en el header de cada layout por rol.
@@ -106,3 +107,9 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 - `/encargado/estadisticas`: tablero de sus zonas con ventana móvil (última semana, 2 semanas, mes, 3 meses, todo), filtros (zona, obra, origen, equipo, estado) y descarga Excel.
 - Cálculos puros en `src/lib/zone-stats.ts` (la pantalla y el Excel usan los mismos); Excel en `src/lib/export-zone-stats.ts`.
+
+## Ubicación de la obra
+
+- `project-form.tsx`: un solo campo "Ubicación" (coordenadas, enlace de Google Maps largo o corto, o vacío para buscar desde Dirección + Comuna). `parseCoordinates` (`src/lib/geo.ts`) lee coordenadas, `@`, `!3d!4d`, `q=`/`query=`.
+- Primer código de servidor del proyecto: Route Handlers `POST /api/resolve-maps-link` (`src/lib/maps-link.ts`: solo https y hosts de `ALLOWED_MAPS_HOSTS`, redirecciones revalidadas una a una, máximo 5, timeout 5 s; no debe volverse un proxy abierto) y `POST /api/geocode` (`src/lib/geocode.ts`, hoy Nominatim: 1 solicitud/seg, User-Agent identificable, sin autocompletado; cambiar de proveedor = tocar solo `geocodeAddress`). Son stateless, sin sesión.
+- `src/proxy.ts` excluye `/api/` del matcher: las rutas por rol no deben interceptarlas.

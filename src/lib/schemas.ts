@@ -72,3 +72,9 @@ export function fieldErrors(error: z.ZodError): Record<string, string> {
   }
   return result;
 }
+
+/** Formulario de ingreso. La contraseña solo se exige; no se recorta ni se valida su forma aquí. */
+export const loginSchema = z.object({
+  email: z.string().trim().min(1, "Ingresa tu correo.").email("Escribe un correo válido, por ejemplo nombre@empresa.cl."),
+  password: z.string().min(1, "Ingresa tu contraseña."),
+});
