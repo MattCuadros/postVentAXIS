@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useCallback, useState, type ReactNode } from "react";
+import { useCallback, useState, useSyncExternalStore, type ReactNode } from "react";
 import { z } from "zod";
 import { MediaPicker, type PickedMedia } from "@/components/tickets/media-picker";
 import { BottomBar } from "@/components/ui/bottom-bar";
@@ -17,6 +17,12 @@ import { useQuery } from "@/data/use-query";
 import { cn } from "@/lib/cn";
 import { unitLabel } from "@/lib/format";
 import { capacityOf } from "@/lib/unit-access";
+import {
+  clearAgentDraft,
+  getAgentDraftSnapshot,
+  getServerAgentDraftSnapshot,
+  subscribeToAgentDraft,
+} from "@/lib/agent-ticket-draft";
 import type { Unit } from "@/types/domain";
 
 const STEPS = ["Vivienda", "Tipo de problema", "Descripción", "Confirmar"] as const;
@@ -79,6 +85,11 @@ export function NewTicketWizard() {
   const { user } = useSession();
   const api = useDataApi();
   const userId = user?.id;
+  const agentDraft = useSyncExternalStore(
+    subscribeToAgentDraft,
+    getAgentDraftSnapshot,
+    getServerAgentDraftSnapshot,
+  );
 
   const { data: units } = useQuery(
     useCallback(async (): Promise<Unit[]> => (userId ? api.getUnitsForUser(userId) : []), [api, userId]),
@@ -88,16 +99,20 @@ export function NewTicketWizard() {
   const { data: responsibles } = useQuery(api.getUnitResponsibles);
 
   const [step, setStep] = useState(0);
-  const [form, setForm] = useState<FormState>({
-    unitId: "",
-    categoryId: "",
-    room: "",
-    description: "",
-    media: [],
-  });
+  const [formOverrides, setFormOverrides] = useState<Partial<FormState>>({});
   const [errors, setErrors] = useState<Errors>({});
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+
+  const draftRoom = agentDraft?.room === "Baño" ? "Baño principal" : agentDraft?.room;
+  const form: FormState = {
+    unitId: "",
+    categoryId: agentDraft?.categoryId ?? "",
+    room: draftRoom && ROOMS.includes(draftRoom) ? draftRoom : agentDraft ? "Otro" : "",
+    description: agentDraft?.description ?? "",
+    media: [],
+    ...formOverrides,
+  };
 
   // Con una sola vivienda no hace falta elegir: se preselecciona.
   const unitId = form.unitId || (units?.length === 1 ? units[0].id : "");
@@ -106,7 +121,7 @@ export function NewTicketWizard() {
   const category = categories?.find((item) => item.id === form.categoryId);
 
   function update<K extends keyof FormState>(key: K, value: FormState[K]) {
-    setForm((current) => ({ ...current, [key]: value }));
+    setFormOverrides((current) => ({ ...current, [key]: value }));
     setErrors((current) => ({ ...current, [key]: undefined }));
   }
 
@@ -153,6 +168,7 @@ export function NewTicketWizard() {
         scheduledDate: null,
         rejectionReason: null,
       });
+      clearAgentDraft();
       router.replace(`/propietario/tickets/${ticket.id}?creado=1`);
     } catch {
       setSubmitError("No pudimos enviar tu requerimiento. Intenta nuevamente.");
@@ -160,14 +176,14 @@ export function NewTicketWizard() {
     }
   }
 
-  const context = [unit && unitLabel(unit), category?.name].filter(Boolean).join(" · ");
+  const context = [unit && unitLabel(unit), step > 0 && category?.name].filter(Boolean).join(" · ");
 
   return (
     <>
       <header className="-mx-4 -mt-6 border-b border-line-soft bg-surface px-4 pb-4 pt-4 sm:-mx-6 sm:px-6">
         <div className="flex items-center gap-3">
           {step === 0 ? (
-            <Link href="/propietario" aria-label="Volver a mis requerimientos" className="flex h-9 w-9 items-center justify-center rounded-md text-accent hover:bg-accent-soft">
+            <Link href="/propietario" aria-label="Volver a mis requerimientos" onClick={clearAgentDraft} className="flex h-9 w-9 items-center justify-center rounded-md text-accent hover:bg-accent-soft">
               <ChevronLeftIcon />
             </Link>
           ) : (

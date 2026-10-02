@@ -30,6 +30,18 @@ export default function MisRequerimientosPage() {
     <>
       <PageHeader title="Mis requerimientos" />
 
+      {process.env.NODE_ENV === "development" && (
+        <Link
+          href="/propietario/asistente"
+          className="mt-5 rounded-lg border border-line-soft bg-surface p-4 shadow-card transition hover:border-accent/40"
+        >
+          <span className="block font-bold text-accent">Antes de crear un requerimiento, prueba la autogestión</span>
+          <span className="mt-1 block text-sm text-ink-secondary">
+            Conversa con el asistente para revisar si puedes resolver el problema de forma segura.
+          </span>
+        </Link>
+      )}
+
       {tickets === undefined ? (
         <ContentSkeleton label="Cargando requerimientos…" />
       ) : tickets.length === 0 ? (
