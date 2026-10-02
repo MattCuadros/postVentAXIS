@@ -45,12 +45,12 @@ function daysFromToday(days: number): string {
 }
 
 /**
- * Agenda de la demo relativa a hoy: la visita del ticket ASIGNADO y el trabajo del PROGRAMADO
+ * Agenda de la demo relativa a hoy: la visita del ticket EN_REVISION y el trabajo del PROGRAMADO
  * quedan siempre en los próximos días, para que el calendario del encargado nunca esté vacío.
  */
 function withUpcomingAgenda(seedTickets: Ticket[]): Ticket[] {
   return seedTickets.map((ticket) => {
-    if (ticket.status === "ASIGNADO") {
+    if (ticket.status === "EN_REVISION") {
       return { ...ticket, visitDate: daysFromToday(2), visitTime: "10:00" };
     }
     if (ticket.status === "PROGRAMADO") {
@@ -83,7 +83,7 @@ export type DataAction =
       history: TicketStatusHistory[];
     }
   | {
-      /** Agenda o reagenda la visita inspectiva sin cambiar el estado (solo mientras está ASIGNADO). */
+      /** Agenda o reagenda la visita inspectiva sin cambiar el estado (solo mientras está EN_REVISION). */
       type: "SCHEDULE_VISIT";
       ticketId: string;
       visitDate: string;
@@ -240,7 +240,7 @@ export function reducer(state: DataState, action: DataAction): DataState {
     case "SCHEDULE_VISIT": {
       const ticket = state.tickets.find(({ id }) => id === action.ticketId);
       const user = state.users.find(({ id }) => id === action.changedById);
-      if (!ticket || !user || user.role === "PROPIETARIO" || ticket.status !== "ASIGNADO") {
+      if (!ticket || !user || user.role === "PROPIETARIO" || ticket.status !== "EN_REVISION") {
         throw new Error("Invalid schedule visit action");
       }
 
