@@ -22,8 +22,8 @@ export const OWNER_STATUS_LABEL: Partial<Record<TicketStatus, string>> = {
 export const MAIN_FLOW: TicketStatus[] = [
   "INGRESADO",
   "EN_REVISION",
-  "ASIGNADO",
   "VISITA_INSPECTIVA",
+  "ASIGNADO",
   "PROGRAMADO",
   "EN_EJECUCION",
   "EN_RECEPCION",
@@ -58,12 +58,12 @@ const STAFF: Role[] = ["ENCARGADO", "ADMIN"];
 export const TRANSITIONS: Record<TicketStatus, Transition[]> = {
   INGRESADO: [{ to: "EN_REVISION", roles: STAFF, action: "Iniciar revisión", requiresComment: false }],
   EN_REVISION: [
-    { to: "ASIGNADO", roles: STAFF, action: "Asignar equipo", requiresComment: false },
+    { to: "VISITA_INSPECTIVA", roles: STAFF, action: "Registrar visita", requiresComment: false },
     { to: "NO_PROCEDE", roles: STAFF, action: "Marcar como no procede", requiresComment: true },
   ],
-  ASIGNADO: [{ to: "VISITA_INSPECTIVA", roles: STAFF, action: "Registrar visita", requiresComment: false }],
+  ASIGNADO: [{ to: "PROGRAMADO", roles: STAFF, action: "Programar trabajo", requiresComment: false }],
   VISITA_INSPECTIVA: [
-    { to: "PROGRAMADO", roles: STAFF, action: "Programar trabajo", requiresComment: false },
+    { to: "ASIGNADO", roles: STAFF, action: "Asignar equipo", requiresComment: false },
     { to: "NO_PROCEDE", roles: STAFF, action: "Marcar como no procede", requiresComment: true },
   ],
   PROGRAMADO: [

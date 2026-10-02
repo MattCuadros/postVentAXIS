@@ -27,7 +27,7 @@ interface FormSpec {
     field: "visitDate" | "scheduledDate";
     notAfterToday?: boolean;
     notBeforeToday?: boolean;
-    /** La fecha puede quedar vacía (ej. agendar la visita al asignar equipo). */
+    /** La fecha puede quedar vacía. */
     optional?: boolean;
   };
   /** Hora junto a la fecha: "required" exige hora cuando hay fecha; "optional" la deja libre. */
@@ -43,16 +43,7 @@ interface FormSpec {
 }
 
 const FORMS: Partial<Record<TicketStatus, FormSpec>> = {
-  ASIGNADO: {
-    title: "Asignar equipo",
-    crew: true,
-    date: { label: "Agendar visita inspectiva (opcional)", field: "visitDate", notBeforeToday: true, optional: true },
-    time: "required",
-    dateNote: "Visita agendada para el",
-    comment: { label: "Indicaciones para el equipo (opcional)", required: false },
-    submitLabel: "Asignar equipo",
-  },
-  VISITA_INSPECTIVA: {
+  EN_REVISION: {
     title: "Registrar visita inspectiva",
     date: { label: "Fecha de la visita", field: "visitDate", notAfterToday: true },
     time: "optional",
@@ -60,6 +51,14 @@ const FORMS: Partial<Record<TicketStatus, FormSpec>> = {
     media: "VISITA",
     category: true,
     submitLabel: "Registrar visita",
+  },
+  VISITA_INSPECTIVA: {
+    title: "Asignar equipo",
+    description: "Revisa el diagnóstico de la visita antes de asignar el equipo.",
+    crew: true,
+    category: true,
+    comment: { label: "Indicaciones para el equipo (opcional)", required: false },
+    submitLabel: "Asignar equipo",
   },
   PROGRAMADO: {
     title: "Programar trabajo",
@@ -169,7 +168,7 @@ export function StaffActions({
     ticket.specialCase === null &&
     ["EN_REVISION", "VISITA_INSPECTIVA"].includes(ticket.status) &&
     role !== "PROPIETARIO";
-  const canScheduleVisit = ticket.status === "ASIGNADO" && role !== "PROPIETARIO";
+  const canScheduleVisit = ticket.status === "EN_REVISION" && role !== "PROPIETARIO";
   const busy = running !== null || markingSpecial;
 
   if (transitions.length === 0 && !canMarkSpecial && !canScheduleVisit) return null;
@@ -208,7 +207,7 @@ export function StaffActions({
             disabled={busy}
             onClick={() => setScheduleOpen(true)}
           >
-            {ticket.visitDate ? "Reagendar visita" : "Agendar visita"}
+            {ticket.visitDate ? "Ver / reagendar visita" : "Agendar visita"}
           </Button>
         )}
         {canMarkSpecial && (

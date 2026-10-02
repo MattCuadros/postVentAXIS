@@ -149,7 +149,7 @@ export function useDataApi() {
     return { ...ticket, specialCase: { reason: cleanReason, markedById, markedAt }, updatedAt: markedAt };
   }, [dispatch, state.tickets]);
 
-  /** Agenda o reagenda la visita inspectiva de un ticket ASIGNADO, sin cambiar su estado. */
+  /** Agenda o reagenda la visita inspectiva de un ticket EN_REVISION, sin cambiar su estado. */
   const scheduleVisit = useCallback(async (
     ticketId: string,
     changedById: string,
