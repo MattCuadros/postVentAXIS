@@ -58,8 +58,9 @@ test("el encargado registra la visita antes de asignar equipo; un video largo se
 
   await page.getByRole("button", { name: "Asignar equipo" }).first().click();
   const assign = page.locator("dialog[open]");
-  await expect(assign.locator('input[type="radio"]').first()).toBeVisible();
-  await assign.locator('input[type="radio"]').first().check();
+  const crewOption = assign.locator("label").filter({ has: page.locator('input[type="radio"]') }).first();
+  await expect(crewOption).toBeVisible();
+  await crewOption.click();
   await assign.getByRole("button", { name: "Asignar equipo" }).click();
   await expect(assign).toHaveCount(0);
   const assigned = (await savedState(page)).state.tickets.find((item: { id: string }) => item.id === ticket.id);
