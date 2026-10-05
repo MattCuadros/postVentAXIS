@@ -102,7 +102,15 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 ## Persistencia local (sin backend)
 
-- `src/data/persistence.ts` guarda el estado completo en `localStorage` (`postventaxis:datos`, versión 9; cada versión migra la anterior: v1→v2 folios por obra, v2→v3 horas de visita/trabajo, v3→v4 referencias y documentos de tickets, v4→v5 zonas Postventa y `projectIds`, v5→v6 `photos` → `media`, v6→v7 responsables por unidad, v7→v8 marcador reservado para `feat/visita-antes-de-asignar`, v8→v9 tipo de obra inferido desde las unidades). `DataProvider` lo carga al montar, guarda en cada cambio y sincroniza entre pestañas. "Restablecer datos de ejemplo" (menú de usuario) vuelve a `createSeedState()`.
+- `src/data/persistence.ts` guarda el estado completo en `localStorage` (`postventaxis:datos`, versión 10; cada versión migra la anterior: v1→v2 folios por obra, v2→v3 horas de visita/trabajo, v3→v4 referencias y documentos de tickets, v4→v5 zonas Postventa y `projectIds`, v5→v6 `photos` → `media`, v6→v7 responsables por unidad, v7→v8 marcador reservado para `feat/visita-antes-de-asignar`, v8→v9 tipo de obra inferido desde las unidades, v9→v10 tres fechas opcionales por unidad). `DataProvider` lo carga al montar, guarda en cada cambio y sincroniza entre pestañas. "Restablecer datos de ejemplo" (menú de usuario) vuelve a `createSeedState()`.
+
+## Fechas de entrega por unidad
+
+- `Unit.provisionalDeliveryDate`, `Unit.municipalReceptionDate` y `Unit.deliveryDate` son fechas ISO opcionales; `deliveryDate` corresponde a la entrega a propietario o administrador según `ownerLabel(projectType)`.
+- Se editan en la ficha de cada unidad. En vistas, las fechas ausentes se muestran como «Pendiente». La obra no guarda fechas generales.
+- La plantilla de importación ofrece «Fecha entrega a propietario», «Fecha Recepción Provisoria» y «Fecha Recepción Final Municipal»; acepta «Fecha entrega» como alias heredado. `document-import` deja las fechas sin valor porque la fecha de solicitud no acredita una entrega.
+- La ficha administrativa de obra y el detalle del requerimiento muestran las tres fechas. `ADMIN_OBRA` solo recibe agregados de recepción provisoria y municipal; no ve la entrega a propietario/administrador.
+- Las fechas deben ser ISO válidas. El orden incoherente genera un aviso en el formulario y no bloquea el guardado.
 - La sesión usa dos cookies: `pv_user_id` y `pv_role`. `src/proxy.ts` rutea solo por rol; el cliente valida que el usuario exista y esté activo.
 
 ## Estadísticas del encargado

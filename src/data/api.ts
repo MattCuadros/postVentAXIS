@@ -37,7 +37,7 @@ export interface ImportRequirementInput {
   projectId: string;
   /** Unidad existente; o bien `newUnit` para crearla. */
   unitId: string | null;
-  newUnit: Pick<Unit, "type" | "tower" | "floor" | "number" | "deliveryDate"> | null;
+  newUnit: Pick<Unit, "type" | "tower" | "floor" | "number" | "provisionalDeliveryDate" | "municipalReceptionDate" | "deliveryDate"> | null;
   /**
    * Propietario para la unidad nueva, o para una existente que aún no tenga uno: uno ya
    * registrado, o `newOwner` para crearlo. Ambos null si no hay datos de propietario.

@@ -12,17 +12,19 @@ export const UNIT_TEMPLATE_HEADERS = [
   "Torre",
   "Piso",
   "Número",
-  "Fecha entrega",
+  "Fecha entrega a propietario",
+  "Fecha Recepción Provisoria",
+  "Fecha Recepción Final Municipal",
   "Correo propietario",
   "Nombre propietario",
   "Teléfono propietario",
 ] as const;
 
 export const UNIT_TEMPLATE_EXAMPLE = [
-  ["Departamento", "A", "1", "101", "15-10-2026", "mgonzalez@correo.cl", "María González", "+56 9 1234 5678"],
-  ["Departamento", "A", "1", "102", "15-10-2026", "psilva@correo.cl", "Pablo Silva", "+56 9 2345 6789"],
-  ["Casa", "", "", "12", "30-11-2026", "mgonzalez@correo.cl", "", ""],
-  ["Departamento", "A", "1", "103", "15-10-2026", "", "", ""],
+  ["Departamento", "A", "1", "101", "15-10-2026", "15-08-2026", "01-09-2026", "mgonzalez@correo.cl", "María González", "+56 9 1234 5678"],
+  ["Departamento", "A", "1", "102", "", "", "", "psilva@correo.cl", "Pablo Silva", "+56 9 2345 6789"],
+  ["Casa", "", "", "12", "30-11-2026", "30-09-2026", "15-10-2026", "mgonzalez@correo.cl", "", ""],
+  ["Departamento", "A", "1", "103", "", "", "", "", "", ""],
 ];
 
 export function unitTemplateHeadersForRole(personLabel: string): string[] {
@@ -31,12 +33,12 @@ export function unitTemplateHeadersForRole(personLabel: string): string[] {
 
 export function unitTemplateExampleForProject(projectType: ProjectType): string[][] {
   const examples: Record<UnitType, string[]> = {
-    CASA: ["Casa", "", "", "12", "15-10-2026", "", "", ""],
-    DEPARTAMENTO: ["Departamento", "A", "1", "101", "15-10-2026", "", "", ""],
-    LOCAL: ["Local", "", "", "3", "15-10-2026", "", "", ""],
-    OFICINA: ["Oficina", "B", "12", "1203", "15-10-2026", "", "", ""],
-    RECINTO: ["Recinto", "", "", "Pabellón Norte", "15-10-2026", "", "", ""],
-    SECTOR: ["Sector", "", "", "Tramo 2", "15-10-2026", "", "", ""],
+    CASA: ["Casa", "", "", "12", "15-10-2026", "15-08-2026", "01-09-2026", "", "", ""],
+    DEPARTAMENTO: ["Departamento", "A", "1", "101", "15-10-2026", "15-08-2026", "01-09-2026", "", "", ""],
+    LOCAL: ["Local", "", "", "3", "15-10-2026", "15-08-2026", "01-09-2026", "", "", ""],
+    OFICINA: ["Oficina", "B", "12", "1203", "15-10-2026", "15-08-2026", "01-09-2026", "", "", ""],
+    RECINTO: ["Recinto", "", "", "Pabellón Norte", "15-10-2026", "15-08-2026", "01-09-2026", "", "", ""],
+    SECTOR: ["Sector", "", "", "Tramo 2", "15-10-2026", "15-08-2026", "01-09-2026", "", "", ""],
   };
   return allowedUnitTypes(projectType).map((type) => examples[type]);
 }
@@ -144,7 +146,7 @@ export function validateUnitImport(rows: SheetRow[], existingUnits: Unit[], user
 
   return rows
     .map((row, index) => ({ row, line: index + 2 }))
-    .filter(({ row }) => UNIT_TEMPLATE_HEADERS.some((header) => pick(row, header) !== ""))
+    .filter(({ row }) => [...UNIT_TEMPLATE_HEADERS, "Fecha entrega"].some((header) => pick(row, header) !== ""))
     .map(({ row, line }) => {
       const errors: string[] = [];
       const warnings: string[] = [];
@@ -154,8 +156,12 @@ export function validateUnitImport(rows: SheetRow[], existingUnits: Unit[], user
       const tower = pick(row, "Torre");
       const floor = pick(row, "Piso");
       const number = pick(row, "Número");
-      const dateText = pick(row, "Fecha entrega");
+      const dateText = pick(row, "Fecha entrega a propietario") || pick(row, "Fecha entrega");
       const deliveryDate = parseSheetDate(dateText);
+      const provisionalText = pick(row, "Fecha Recepción Provisoria");
+      const municipalText = pick(row, "Fecha Recepción Final Municipal");
+      const provisionalDeliveryDate = parseSheetDate(provisionalText);
+      const municipalReceptionDate = parseSheetDate(municipalText);
       const email = (pick(row, `Correo ${person}`) || pick(row, "Correo propietario")).toLowerCase();
       const ownerName = pick(row, `Nombre ${person}`) || pick(row, "Nombre propietario");
       const ownerPhone = pick(row, `Teléfono ${person}`) || pick(row, "Teléfono propietario");
@@ -163,6 +169,8 @@ export function validateUnitImport(rows: SheetRow[], existingUnits: Unit[], user
       if (type === null) errors.push(typeText ? `Tipo "${typeText}" no válido.` : "Falta el tipo de unidad.");
       else if (!allowed.includes(type)) errors.push(`La obra (${PROJECT_TYPE_LABEL[projectType]}) no admite unidades de tipo ${UNIT_TYPE_LABEL[type]}.`);
       if (dateText && deliveryDate === null) errors.push(`Fecha "${dateText}" no válida: usa DD-MM-AAAA.`);
+      if (provisionalText && provisionalDeliveryDate === null) errors.push(`Fecha "${provisionalText}" no válida: usa DD-MM-AAAA.`);
+      if (municipalText && municipalReceptionDate === null) errors.push(`Fecha "${municipalText}" no válida: usa DD-MM-AAAA.`);
 
       const parsed = unitSchema.safeParse({
         type: type ?? "DEPARTAMENTO",
@@ -170,16 +178,19 @@ export function validateUnitImport(rows: SheetRow[], existingUnits: Unit[], user
         floor: type === "DEPARTAMENTO" || type === "OFICINA" || type === "LOCAL" ? floor : "",
         number,
         ownerId: "",
-        deliveryDate: deliveryDate ?? (dateText ? "invalida" : ""),
+        deliveryDate: deliveryDate ?? null,
+        provisionalDeliveryDate: provisionalDeliveryDate ?? null,
+        municipalReceptionDate: municipalReceptionDate ?? null,
       });
       if (!parsed.success) {
         for (const [field, message] of Object.entries(fieldErrors(parsed.error))) {
-          if (field !== "deliveryDate" || !dateText) errors.push(message);
+          if (field === "deliveryDate" && !dateText || field === "provisionalDeliveryDate" && !provisionalText || field === "municipalReceptionDate" && !municipalText) continue;
+          errors.push(message);
         }
       }
 
       const unitFields =
-        type === null || deliveryDate === null || !number
+        type === null || (dateText && deliveryDate === null) || (provisionalText && provisionalDeliveryDate === null) || (municipalText && municipalReceptionDate === null) || !number
           ? null
           : {
               type,
@@ -187,6 +198,8 @@ export function validateUnitImport(rows: SheetRow[], existingUnits: Unit[], user
               floor: type !== "DEPARTAMENTO" && type !== "OFICINA" && type !== "LOCAL" || floor === "" || !/^-?\d+$/.test(floor) ? null : Number(floor),
               number,
               deliveryDate,
+              provisionalDeliveryDate,
+              municipalReceptionDate,
             };
 
       const ownerOutcome = resolveOwner(email, ownerName, ownerPhone, users, newOwners, person);

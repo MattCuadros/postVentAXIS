@@ -19,8 +19,8 @@ const encargadoCentro: User = { id: "u-enc", name: "Encargado", email: "enc@demo
 const encargadoOtraZona: User = { id: "u-enc-2", name: "Otro encargado", email: "enc2@demo.cl", phone: "+56 9 6666 6666", role: "ENCARGADO", zoneIds: ["z-sur"], projectIds: [], active: true };
 const admin: User = { id: "u-admin", name: "Admin", email: "admin@demo.cl", phone: "+56 9 7777 7777", role: "ADMIN", zoneIds: [], projectIds: [], active: true };
 
-const unitWithOwner: Unit = { id: "un-1", projectId: "p-1", type: "DEPARTAMENTO", tower: "A", floor: 7, number: "704", ownerId: titular.id, deliveryDate: "2026-01-01" };
-const unitNoOwner: Unit = { id: "un-2", projectId: "p-2", type: "CASA", tower: null, floor: null, number: "12", ownerId: null, deliveryDate: "2026-01-01" };
+const unitWithOwner: Unit = { id: "un-1", projectId: "p-1", type: "DEPARTAMENTO", tower: "A", floor: 7, number: "704", ownerId: titular.id, provisionalDeliveryDate: null, municipalReceptionDate: null, deliveryDate: "2026-01-01" };
+const unitNoOwner: Unit = { id: "un-2", projectId: "p-2", type: "CASA", tower: null, floor: null, number: "12", ownerId: null, provisionalDeliveryDate: null, municipalReceptionDate: null, deliveryDate: "2026-01-01" };
 
 const project: Project = { id: "p-1", name: "Obra Uno", code: "UNO", type: "HABITACIONAL_EXTENSION", zoneId: "z-centro", address: "", commune: "", location: { lat: 0, lng: 0 } };
 

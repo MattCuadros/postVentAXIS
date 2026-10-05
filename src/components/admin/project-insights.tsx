@@ -105,6 +105,11 @@ export function ProjectInsightsView() {
             </InsightCard>
           </div>
 
+          <div className="mt-6 grid gap-4 lg:grid-cols-2">
+            <InsightCard title="Fecha Recepción Provisoria" rows={insights.receptionDates.provisional} empty={insights.total === 0}><CategoryBars data={insights.receptionDates.provisional.slice(0, 10)} /></InsightCard>
+            <InsightCard title="Fecha Recepción Final Municipal" rows={insights.receptionDates.municipal} empty={insights.total === 0}><CategoryBars data={insights.receptionDates.municipal.slice(0, 10)} /></InsightCard>
+          </div>
+
           <section className="mt-6 rounded-lg border border-line-soft bg-surface p-6 shadow-card">
             <h2 className="text-lg text-ink">Desempeño por equipo de trabajo</h2>
             <p className="mt-1 text-sm text-ink-secondary">Rechazos: veces que el {personRole.toLocaleLowerCase("es")} no quedó conforme y el trabajo se reprogramó.</p>

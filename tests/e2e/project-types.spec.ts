@@ -19,13 +19,18 @@ test("obra Retail solo ofrece unidades Local y permite agregar Local 3", async (
 
   const unitDialog = page.locator("dialog[open]");
   await expect(unitDialog.getByText("Tipo: Local")).toBeVisible();
-  await expect(unitDialog.getByLabel("Administrador")).toBeVisible();
+  await expect(unitDialog.getByLabel("Administrador", { exact: true })).toBeVisible();
   await expect(unitDialog.getByLabel("Tipo")).toHaveCount(0);
   await expect(unitDialog.getByLabel("Casa")).toHaveCount(0);
   await unitDialog.getByLabel("Número").fill("3");
-  await unitDialog.getByLabel("Fecha de entrega").fill("2026-10-02");
+  await unitDialog.getByLabel("Fecha Recepción Provisoria").fill("2026-08-10");
+  await unitDialog.getByLabel("Fecha Recepción Final Municipal").fill("2026-09-01");
   await unitDialog.getByRole("button", { name: "Agregar unidad" }).click();
   await expect(page.getByRole("cell", { name: "Local 3" })).toBeVisible();
+  await expect(page.getByRole("columnheader", { name: "Fecha Recepción Provisoria" })).toBeVisible();
+  await expect(page.getByRole("columnheader", { name: "Fecha Recepción Final Municipal" })).toBeVisible();
+  await expect(page.getByRole("columnheader", { name: "Fecha entrega a administrador" })).toBeVisible();
+  await expect(page.getByRole("cell", { name: "Pendiente" })).toBeVisible();
   const state = (await savedState(page)).state;
   const localId = state.units.find((unit: { projectId: string; number: string }) => unit.projectId === state.projects.find((project: { code: string }) => project.code === "RTP").id && unit.number === "3").id;
   await patchRecord(page, "tickets", "t-3", { unitId: localId });

@@ -191,7 +191,11 @@ export function StaffTicketDetail({ ticketId, backHref }: StaffTicketDetailProps
             <p className="text-sm font-bold text-ink">{unitLabel(unit)} · {project.name}</p>
             <p className="text-sm text-ink-secondary">{project.address}, {project.commune}</p>
             {zone && <p className="text-sm text-ink-secondary">{zone.name}</p>}
-            <p className="mt-1 text-xs text-ink-meta">Entregada el {formatLongDate(unit.deliveryDate)}</p>
+            <div className="mt-2 space-y-1 text-xs">
+              <p><span className="text-ink-secondary">Fecha Recepción Provisoria:</span> <span className={unit.provisionalDeliveryDate ? "text-ink" : "text-ink-meta"}>{unit.provisionalDeliveryDate ? formatLongDate(unit.provisionalDeliveryDate) : "Pendiente"}</span></p>
+              <p><span className="text-ink-secondary">Fecha Recepción Final Municipal:</span> <span className={unit.municipalReceptionDate ? "text-ink" : "text-ink-meta"}>{unit.municipalReceptionDate ? formatLongDate(unit.municipalReceptionDate) : "Pendiente"}</span></p>
+              <p><span className="text-ink-secondary">Fecha entrega a {personLower}:</span> <span className={unit.deliveryDate ? "text-ink" : "text-ink-meta"}>{unit.deliveryDate ? formatLongDate(unit.deliveryDate) : "Pendiente"}</span></p>
+            </div>
             <a href={mapsUrl(project.location)} target="_blank" rel="noopener noreferrer" className="mt-2 inline-block text-sm font-bold text-accent hover:underline">
               Ver obra en el mapa
             </a>

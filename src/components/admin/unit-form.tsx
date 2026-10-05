@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { useDataApi } from "@/data/api";
 import { useQuery } from "@/data/use-query";
-import { fieldErrors, unitSchema } from "@/lib/schemas";
+import { fieldErrors, unitDateWarnings, unitSchema } from "@/lib/schemas";
 import { allowedUnitTypes, UNIT_TYPE_LABEL, unitFields } from "@/lib/project-types";
 import { ownerLabel } from "@/lib/project-types";
 import type { Unit, UnitType } from "@/types/domain";
@@ -34,12 +34,15 @@ export function UnitForm({ projectId, unit, onCreated, onCancel }: UnitFormProps
     floor: unit?.floor?.toString() ?? "",
     number: unit?.number ?? "",
     ownerId: unit?.ownerId ?? "",
+    provisionalDeliveryDate: unit?.provisionalDeliveryDate ?? "",
+    municipalReceptionDate: unit?.municipalReceptionDate ?? "",
     deliveryDate: unit?.deliveryDate ?? "",
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
 
   const selectedType = permittedTypes.includes(values.type) ? values.type : permittedTypes[0];
+  const dateWarnings = unitDateWarnings({ provisionalDeliveryDate: values.provisionalDeliveryDate || null, municipalReceptionDate: values.municipalReceptionDate || null, deliveryDate: values.deliveryDate || null });
 
   function set<K extends keyof typeof values>(key: K, value: (typeof values)[K]) {
     setValues((current) => ({ ...current, [key]: value }));
@@ -59,7 +62,9 @@ export function UnitForm({ projectId, unit, onCreated, onCancel }: UnitFormProps
       floor: !fieldsForType.floor || result.data.floor === "" ? null : Number(result.data.floor),
       number: result.data.number,
       ownerId: result.data.ownerId || null,
-      deliveryDate: result.data.deliveryDate,
+      provisionalDeliveryDate: result.data.provisionalDeliveryDate || null,
+      municipalReceptionDate: result.data.municipalReceptionDate || null,
+      deliveryDate: result.data.deliveryDate || null,
     };
     setSaving(true);
     try {
@@ -87,7 +92,12 @@ export function UnitForm({ projectId, unit, onCreated, onCancel }: UnitFormProps
         {owners.map((owner) => <option key={owner.id} value={owner.id}>{owner.name} · {owner.email}</option>)}
       </Select>
       <p className="-mt-2 text-xs text-ink-meta">¿No aparece? Créalo primero en Usuarios.</p>
-      <Input label="Fecha de entrega" name="unit-delivery" type="date" value={values.deliveryDate} error={errors.deliveryDate} onChange={(event) => set("deliveryDate", event.target.value)} />
+      <div className="grid gap-4 sm:grid-cols-3">
+        <div><Input label="Fecha Recepción Provisoria" name="unit-provisional" type="date" value={values.provisionalDeliveryDate} error={errors.provisionalDeliveryDate} onChange={(event) => set("provisionalDeliveryDate", event.target.value)} /><p className="mt-1 text-xs text-ink-meta">Déjala vacía si aún no ocurre.</p></div>
+        <div><Input label="Fecha Recepción Final Municipal" name="unit-municipal" type="date" value={values.municipalReceptionDate} error={errors.municipalReceptionDate} onChange={(event) => set("municipalReceptionDate", event.target.value)} /><p className="mt-1 text-xs text-ink-meta">Déjala vacía si aún no ocurre.</p></div>
+        <div><Input label={`Fecha entrega a ${project ? ownerLabel(project.type).toLocaleLowerCase("es") : "propietario/administrador"}`} name="unit-delivery" type="date" value={values.deliveryDate} error={errors.deliveryDate} onChange={(event) => set("deliveryDate", event.target.value)} /><p className="mt-1 text-xs text-ink-meta">Déjala vacía si aún no ocurre.</p></div>
+      </div>
+      {dateWarnings.map((warning) => <p key={warning} className="text-sm text-warning">{warning}</p>)}
 
       <div className="mt-2 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
         <Button variant="secondary" disabled={saving} onClick={onCancel}>Cancelar</Button>

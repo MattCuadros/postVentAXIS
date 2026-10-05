@@ -71,7 +71,9 @@ export interface Unit {
   number: string;
   /** null: sin propietario cargado aún (se completa después, o al firmar un documento con sus datos). */
   ownerId: string | null;
-  deliveryDate: string; // ISO date
+  provisionalDeliveryDate: string | null;
+  municipalReceptionDate: string | null;
+  deliveryDate: string | null;
 }
 
 export interface TicketCategory {

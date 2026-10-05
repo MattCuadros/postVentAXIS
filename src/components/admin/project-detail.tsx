@@ -84,13 +84,15 @@ export function ProjectDetail({ projectId }: { projectId: string }) {
         </div>
       ) : (
         <div className="mt-6 overflow-x-auto rounded-lg border border-line-soft bg-surface px-6 py-2 shadow-card">
-          <table className="w-full min-w-[40rem] text-left text-sm">
+          <table className="w-full min-w-[72rem] text-left text-sm">
             <thead>
               <tr className="border-b border-line-soft">
                 <th scope="col" className="py-4 pr-4 font-bold text-ink">Unidad</th>
                 <th scope="col" className="py-4 pr-4 font-bold text-ink">Tipo</th>
                 <th scope="col" className="py-4 pr-4 font-bold text-ink">{ownerLabel(project.type)}</th>
-                <th scope="col" className="py-4 pr-4 font-bold text-ink">Entrega</th>
+                <th scope="col" className="py-4 pr-4 font-bold text-ink">Fecha Recepción Provisoria</th>
+                <th scope="col" className="py-4 pr-4 font-bold text-ink">Fecha Recepción Final Municipal</th>
+                <th scope="col" className="py-4 pr-4 font-bold text-ink">Fecha entrega a {ownerLabel(project.type).toLocaleLowerCase("es")}</th>
                 <th scope="col" className="py-4 pr-4 text-right font-bold text-ink">Requerimientos abiertos</th>
                 <th scope="col" className="py-4 text-right font-bold text-ink">
                   <span className="sr-only">Acciones</span>
@@ -108,7 +110,7 @@ export function ProjectDetail({ projectId }: { projectId: string }) {
                     <td className="py-4 pr-4 text-ink">
                       {owner ? <>{owner.name}<span className="block text-xs text-ink-meta">{owner.email}</span></> : <span className="text-ink-meta">Sin {ownerLabel(project.type).toLocaleLowerCase("es")}</span>}
                     </td>
-                    <td className="py-4 pr-4 text-ink">{formatLongDate(unit.deliveryDate)}</td>
+                    {[unit.provisionalDeliveryDate, unit.municipalReceptionDate, unit.deliveryDate].map((date, index) => <td key={index} className={`py-4 pr-4 ${date ? "text-ink" : "text-ink-meta"}`}><span className="sm:hidden block text-xs font-bold text-ink-secondary">{["Fecha Recepción Provisoria", "Fecha Recepción Final Municipal", `Fecha entrega a ${ownerLabel(project.type).toLocaleLowerCase("es")}`][index]}</span>{date ? formatLongDate(date) : "Pendiente"}</td>)}
                     <td className="py-4 pr-4 text-right tabular-nums text-ink">{open}</td>
                     <td className="py-4 text-right">
                       <button type="button" className="text-sm font-bold text-accent hover:underline" onClick={() => setEditingUnitId(unit.id)}>

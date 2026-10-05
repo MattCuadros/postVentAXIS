@@ -3,7 +3,7 @@ import { createSeedState } from "@/data/store";
 import { unitTemplateExampleForProject, unitTemplateHeadersForRole, validateUnitImport } from "@/lib/unit-import";
 import type { Unit, User } from "@/types/domain";
 
-const HEADERS = ["Tipo", "Torre", "Piso", "Número", "Fecha entrega", "Correo propietario", "Nombre propietario", "Teléfono propietario"] as const;
+const HEADERS = ["Tipo", "Torre", "Piso", "Número", "Fecha entrega a propietario", "Correo propietario", "Nombre propietario", "Teléfono propietario", "Fecha Recepción Provisoria", "Fecha Recepción Final Municipal"] as const;
 
 function row(...values: string[]): Record<string, string> {
   return Object.fromEntries(HEADERS.map((header, index) => [header, values[index] ?? ""]));
@@ -71,8 +71,8 @@ describe("validateUnitImport: dato faltante no bloquea, dato equivocado sí", ()
 });
 
 describe("validateUnitImport: unidades existentes", () => {
-  const ownerlessUnit: Unit = { id: "u-existente", projectId: "p-mirador", type: "DEPARTAMENTO", tower: "Z", floor: 9, number: "901", ownerId: null, deliveryDate: "2026-01-01" };
-  const ownedUnit: Unit = { id: "u-con-dueno", projectId: "p-mirador", type: "DEPARTAMENTO", tower: "Z", floor: 9, number: "902", ownerId: owner.id, deliveryDate: "2026-01-01" };
+  const ownerlessUnit: Unit = { id: "u-existente", projectId: "p-mirador", type: "DEPARTAMENTO", tower: "Z", floor: 9, number: "901", ownerId: null, provisionalDeliveryDate: null, municipalReceptionDate: null, deliveryDate: "2026-01-01" };
+  const ownedUnit: Unit = { id: "u-con-dueno", projectId: "p-mirador", type: "DEPARTAMENTO", tower: "Z", floor: 9, number: "902", ownerId: owner.id, provisionalDeliveryDate: null, municipalReceptionDate: null, deliveryDate: "2026-01-01" };
 
   it("unidad existente sin propietario + correo válido: asigna en vez de rechazar", () => {
     const [result] = validateUnitImport([row("Departamento", "Z", "9", "901", "15-10-2026", owner.email)], [ownerlessUnit, ownedUnit], users);
@@ -142,5 +142,27 @@ describe("validateUnitImport: tipos permitidos por obra", () => {
     const [result] = validateUnitImport([retailRow], [], users, "RETAIL", "Administrador");
     expect(result.errors).toEqual([]);
     expect(result.ownerLabel).toBe("Sin administrador");
+  });
+});
+
+describe("fechas de unidad en la plantilla", () => {
+  it("publica las tres fechas en la plantilla", () => {
+    expect(HEADERS).toContain("Fecha entrega a propietario");
+    expect(HEADERS).toContain("Fecha Recepción Provisoria");
+    expect(HEADERS).toContain("Fecha Recepción Final Municipal");
+  });
+
+  it("acepta alias antiguo y fechas vacías como pendientes", () => {
+    const [legacy] = validateUnitImport([{ Tipo: "Departamento", Torre: "A", Piso: "1", Número: "501", "Fecha entrega": "15-10-2026" }], [], users);
+    expect(legacy.errors).toEqual([]);
+    expect(legacy.unit).toMatchObject({ deliveryDate: "2026-10-15", provisionalDeliveryDate: null, municipalReceptionDate: null });
+    const [pending] = validateUnitImport([row("Departamento", "A", "1", "502")], [], users);
+    expect(pending.errors).toEqual([]);
+    expect(pending.unit).toMatchObject({ deliveryDate: null, provisionalDeliveryDate: null, municipalReceptionDate: null });
+  });
+
+  it("rechaza una fecha incorrecta en cualquiera de las columnas", () => {
+    const [result] = validateUnitImport([{ ...row("Departamento", "A", "1", "503"), "Fecha Recepción Provisoria": "31-02-2026" }], [], users);
+    expect(result.errors).toContain('Fecha "31-02-2026" no válida: usa DD-MM-AAAA.');
   });
 });
