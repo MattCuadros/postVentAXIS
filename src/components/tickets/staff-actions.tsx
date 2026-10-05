@@ -43,7 +43,7 @@ interface FormSpec {
 }
 
 const FORMS: Partial<Record<TicketStatus, FormSpec>> = {
-  EN_REVISION: {
+  VISITA_INSPECTIVA: {
     title: "Registrar visita inspectiva",
     date: { label: "Fecha de la visita", field: "visitDate", notAfterToday: true },
     time: "optional",
@@ -52,7 +52,7 @@ const FORMS: Partial<Record<TicketStatus, FormSpec>> = {
     category: true,
     submitLabel: "Registrar visita",
   },
-  VISITA_INSPECTIVA: {
+  ASIGNADO: {
     title: "Asignar equipo",
     description: "Revisa el diagnóstico de la visita antes de asignar el equipo.",
     crew: true,
