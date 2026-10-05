@@ -11,6 +11,7 @@ import { useSession } from "@/data/session-context";
 import { useQuery } from "@/data/use-query";
 import { PERIOD_LABEL, type CountRow, type Period } from "@/lib/metrics";
 import { computeProjectInsights, ticketsOfProjects, type CrewPerformance } from "@/lib/project-metrics";
+import { ownerLabel } from "@/lib/project-types";
 
 const PERIODS: Period[] = ["TODO", "TRIMESTRE", "MES"];
 const oneDecimal = new Intl.NumberFormat("es-CL", { maximumFractionDigits: 1, minimumFractionDigits: 1 });
@@ -52,6 +53,9 @@ export function ProjectInsightsView() {
   const subtitle = myProjects.length === 0
     ? "No tienes obras asignadas. Pide al administrador que te asigne tus obras."
     : `Solo lectura · ${myProjects.map((project) => project.name).join(", ")}`;
+  const personRole = projectFilter
+    ? ownerLabel(myProjects.find((project) => project.id === projectFilter)?.type ?? "HABITACIONAL_ALTURA")
+    : "Propietario / Administrador";
 
   return (
     <div className="pb-8">
@@ -89,7 +93,7 @@ export function ProjectInsightsView() {
             <StatTile label="Requerimientos" value={String(insights.total)} />
             <StatTile label="Abiertos" value={String(insights.open)} />
             <StatTile label="Días promedio de cierre" value={days(insights.avgDaysToClose)} />
-            <StatTile label="Rechazos del propietario" value={String(insights.ownerRejections)} tone="action" />
+            <StatTile label={`Rechazos de ${personRole}`} value={String(insights.ownerRejections)} tone="action" />
           </section>
 
           <div className="mt-6 grid gap-4 lg:grid-cols-2">
@@ -103,7 +107,7 @@ export function ProjectInsightsView() {
 
           <section className="mt-6 rounded-lg border border-line-soft bg-surface p-6 shadow-card">
             <h2 className="text-lg text-ink">Desempeño por equipo de trabajo</h2>
-            <p className="mt-1 text-sm text-ink-secondary">Rechazos: veces que el propietario no quedó conforme y el trabajo se reprogramó.</p>
+            <p className="mt-1 text-sm text-ink-secondary">Rechazos: veces que el {personRole.toLocaleLowerCase("es")} no quedó conforme y el trabajo se reprogramó.</p>
             <div className="mt-4 grid gap-4 sm:grid-cols-2">
               {(["INTERNO", "SUBCONTRATO"] as const).map((type) => {
                 const row = insights.byCrewType[type];

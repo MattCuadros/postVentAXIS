@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { createSeedState } from "@/data/store";
-import { validateUnitImport } from "@/lib/unit-import";
+import { unitTemplateExampleForProject, unitTemplateHeadersForRole, validateUnitImport } from "@/lib/unit-import";
 import type { Unit, User } from "@/types/domain";
 
 const HEADERS = ["Tipo", "Torre", "Piso", "Número", "Fecha entrega", "Correo propietario", "Nombre propietario", "Teléfono propietario"] as const;
@@ -96,7 +96,7 @@ describe("validateUnitImport: unidades existentes", () => {
 
   it("unidad repetida dentro del mismo archivo: error en la segunda aparición", () => {
     const rows = [row("Casa", "", "", "50", "15-10-2026"), row("Casa", "", "", "50", "15-10-2026")];
-    const [first, second] = validateUnitImport(rows, [], users);
+    const [first, second] = validateUnitImport(rows, [], users, "HABITACIONAL_EXTENSION");
     expect(first.errors).toEqual([]);
     expect(second.errors).toEqual(["Unidad repetida en el archivo."]);
   });
@@ -113,5 +113,34 @@ describe("validateUnitImport: unidades existentes", () => {
     expect(results.every((r) => r.errors.length === 0)).toBe(true);
     expect(results.filter((r) => r.owner !== null && !("none" in r.owner))).toHaveLength(2);
     expect(results.filter((r) => r.owner && "none" in r.owner)).toHaveLength(126);
+  });
+});
+
+describe("validateUnitImport: tipos permitidos por obra", () => {
+  it("reconoce tipos nuevos y aplica el único tipo cuando se omite", () => {
+    const [local] = validateUnitImport([row("Local", "", "", "3", "15-10-2026")], [], users, "RETAIL");
+    expect(local.errors).toEqual([]);
+    expect(local.unit?.type).toBe("LOCAL");
+    const [implicit] = validateUnitImport([row("", "", "", "4", "15-10-2026")], [], users, "RETAIL");
+    expect(implicit.errors).toEqual([]);
+    expect(implicit.unit?.type).toBe("LOCAL");
+    expect(validateUnitImport([row("Of.", "B", "12", "1203", "15-10-2026")], [], users, "OFICINAS")[0].unit?.type).toBe("OFICINA");
+    expect(validateUnitImport([row("Recinto", "", "", "Pabellón Norte", "15-10-2026")], [], users, "INSTITUCIONAL")[0].unit?.type).toBe("RECINTO");
+    expect(validateUnitImport([row("Sector", "", "", "Tramo 2", "15-10-2026")], [], users, "URBANIZACION")[0].unit?.type).toBe("SECTOR");
+  });
+
+  it("rechaza filas cuyo tipo no admite la obra", () => {
+    const [result] = validateUnitImport([row("Casa", "", "", "12", "15-10-2026")], [], users, "RETAIL");
+    expect(result.errors).toContain("La obra (Retail) no admite unidades de tipo Casa.");
+  });
+
+  it("adapta las columnas y etiquetas de persona en obras no habitacionales", () => {
+    const headers = unitTemplateHeadersForRole("Administrador");
+    expect(headers).toContain("Correo administrador");
+    expect(unitTemplateExampleForProject("RETAIL").map((example) => example[0])).toEqual(["Local"]);
+    const retailRow = Object.fromEntries(headers.map((header, index) => [header, ["Local", "", "", "8", "15-10-2026", "", "", ""][index]]));
+    const [result] = validateUnitImport([retailRow], [], users, "RETAIL", "Administrador");
+    expect(result.errors).toEqual([]);
+    expect(result.ownerLabel).toBe("Sin administrador");
   });
 });

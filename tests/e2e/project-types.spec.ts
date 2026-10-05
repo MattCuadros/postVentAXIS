@@ -1,0 +1,35 @@
+import { expect, test } from "@playwright/test";
+import { loginAs, patchRecord, savedState } from "./helpers";
+
+test("obra Retail solo ofrece unidades Local y permite agregar Local 3", async ({ page, context }) => {
+  await loginAs(context, "u-admin", "ADMIN");
+  await page.goto("/admin/obras");
+  await page.getByRole("button", { name: "Nueva obra" }).click();
+  const projectDialog = page.locator("dialog[open]");
+  await projectDialog.getByLabel("Nombre de la obra").fill("Retail de prueba");
+  await projectDialog.getByLabel("Código de obra").fill("RTP");
+  await projectDialog.getByLabel("Tipo de obra").selectOption("RETAIL");
+  await projectDialog.getByLabel("Zona").selectOption({ index: 1 });
+  await projectDialog.getByLabel("Dirección").fill("Av. Comercio 1");
+  await projectDialog.getByLabel("Comuna").fill("Santiago");
+  await projectDialog.getByLabel("Ubicación").fill("-33.44, -70.66");
+  await projectDialog.getByRole("button", { name: "Crear obra" }).click();
+  await page.getByRole("link", { name: /Retail de prueba/ }).click();
+  await page.getByRole("button", { name: "Agregar unidad" }).click();
+
+  const unitDialog = page.locator("dialog[open]");
+  await expect(unitDialog.getByText("Tipo: Local")).toBeVisible();
+  await expect(unitDialog.getByLabel("Administrador")).toBeVisible();
+  await expect(unitDialog.getByLabel("Tipo")).toHaveCount(0);
+  await expect(unitDialog.getByLabel("Casa")).toHaveCount(0);
+  await unitDialog.getByLabel("Número").fill("3");
+  await unitDialog.getByLabel("Fecha de entrega").fill("2026-10-02");
+  await unitDialog.getByRole("button", { name: "Agregar unidad" }).click();
+  await expect(page.getByRole("cell", { name: "Local 3" })).toBeVisible();
+  const state = (await savedState(page)).state;
+  const localId = state.units.find((unit: { projectId: string; number: string }) => unit.projectId === state.projects.find((project: { code: string }) => project.code === "RTP").id && unit.number === "3").id;
+  await patchRecord(page, "tickets", "t-3", { unitId: localId });
+  await page.reload();
+  await page.goto("/admin/requerimientos/t-3");
+  await expect(page.getByRole("heading", { name: "Administrador", exact: true })).toBeVisible();
+});

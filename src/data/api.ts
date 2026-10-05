@@ -7,6 +7,7 @@ import { delay } from "@/lib/delay";
 import { findTicketByRefs, planImport, type ImportPlan, type ImportRowData } from "@/lib/document-import/plan";
 import { nextFolio } from "@/lib/folio";
 import { todayIso } from "@/lib/format";
+import { allowedUnitTypes } from "@/lib/project-types";
 import { unitsForUser } from "@/lib/unit-access";
 import type {
   DocumentKind,
@@ -243,6 +244,9 @@ export function useDataApi() {
 
       let unit = requirement.unitId ? unitsById.get(requirement.unitId) : undefined;
       const wanted = requirement.newUnit;
+      if (wanted && !allowedUnitTypes(project.type).includes(wanted.type)) {
+        throw new Error(`Unit type ${wanted.type} is not allowed for project ${project.id}`);
+      }
       if (!unit && wanted) {
         // Varias filas del mismo documento pueden traer la misma unidad nueva: se crea una sola vez.
         unit = [...unitsById.values()].find((item) =>
@@ -446,10 +450,12 @@ export function useDataApi() {
 
   const createUnit = useCallback(async (input: CreateUnitInput): Promise<Unit> => {
     await simulatedLatency();
+    const project = state.projects.find((item) => item.id === input.projectId);
+    if (!project || !allowedUnitTypes(project.type).includes(input.type)) throw new Error("Unit type is not allowed for this project");
     const unit: Unit = { ...input, id: crypto.randomUUID() };
     dispatch({ type: "CREATE_UNIT", unit });
     return unit;
-  }, [dispatch]);
+  }, [dispatch, state.projects]);
 
   const updateUnit = useCallback(async (unitId: string, changes: UpdateUnitInput): Promise<Unit> => {
     await simulatedLatency();
@@ -457,11 +463,13 @@ export function useDataApi() {
     if (existingUnit === undefined) {
       throw new Error(`Unit not found: ${unitId}`);
     }
+    const project = state.projects.find((item) => item.id === existingUnit.projectId);
+    if (project && !allowedUnitTypes(project.type).includes(changes.type ?? existingUnit.type)) throw new Error("Unit type is not allowed for this project");
 
     const unit: Unit = { ...existingUnit, ...changes, id: existingUnit.id };
     dispatch({ type: "UPDATE_UNIT", unitId, changes });
     return unit;
-  }, [dispatch, state.units]);
+  }, [dispatch, state.projects, state.units]);
 
   const createCrew = useCallback(async (input: CreateCrewInput): Promise<WorkCrew> => {
     await simulatedLatency();

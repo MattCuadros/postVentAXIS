@@ -73,7 +73,7 @@ export function DocumentImport() {
   }, [zoneProjects, units, users, categories, tickets]);
 
   const included = drafts.filter((draft) => draft.include);
-  const errorsByKey = new Map(drafts.map((draft) => [draft.key, draftErrors(draft)]));
+  const errorsByKey = new Map(drafts.map((draft) => [draft.key, draftErrors(draft, sources ?? undefined)]));
   const hasErrors = included.some((draft) => Object.keys(errorsByKey.get(draft.key) ?? {}).length > 0);
 
   async function handleFile(file: File | undefined) {
@@ -167,7 +167,7 @@ export function DocumentImport() {
           newUnit: draft.unitMode === "new"
             ? {
                 type: draft.newUnit.type,
-                tower: draft.newUnit.type === "DEPARTAMENTO" && draft.newUnit.tower.trim() ? draft.newUnit.tower.trim().toUpperCase() : null,
+                tower: (draft.newUnit.type === "DEPARTAMENTO" || draft.newUnit.type === "OFICINA") && draft.newUnit.tower.trim() ? draft.newUnit.tower.trim().toUpperCase() : null,
                 floor: null,
                 number: draft.newUnit.number.trim().toUpperCase(),
                 deliveryDate: draft.parsed.requestDate ?? new Date().toISOString().slice(0, 10),

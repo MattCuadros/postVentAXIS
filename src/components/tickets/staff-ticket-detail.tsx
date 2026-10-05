@@ -21,17 +21,22 @@ import { mapsUrl } from "@/lib/geo";
 import { DOCUMENT_LABEL } from "@/lib/document-import/types";
 import { STATUS_LABEL, type Transition } from "@/lib/ticket-status";
 import { someoneCanSign } from "@/lib/unit-access";
+import { ownerLabel } from "@/lib/project-types";
 import type { Ticket, TicketDocument, TicketMedia, TicketMediaStage, TicketStatusHistory } from "@/types/domain";
 
-const DONE_MESSAGE: Partial<Record<Ticket["status"], string>> = {
-  EN_REVISION: "Revisión iniciada.",
-  ASIGNADO: "Equipo asignado. El propietario ya lo ve en su teléfono.",
-  VISITA_INSPECTIVA: "Visita registrada con tu diagnóstico.",
-  PROGRAMADO: "Trabajo programado. El propietario verá la fecha.",
-  EN_EJECUCION: "Trabajo en ejecución.",
-  EN_RECEPCION: "Le pedimos al propietario que confirme su conformidad.",
-  NO_PROCEDE: "Marcado como no procede. El propietario verá el motivo.",
-};
+function doneMessage(status: Ticket["status"], person: string): string | undefined {
+  const lower = person.toLocaleLowerCase("es");
+  const messages: Partial<Record<Ticket["status"], string>> = {
+    EN_REVISION: "Revisión iniciada.",
+    ASIGNADO: `Equipo asignado. El ${lower} ya lo ve en su teléfono.`,
+    VISITA_INSPECTIVA: "Visita registrada con tu diagnóstico.",
+    PROGRAMADO: `Trabajo programado. El ${lower} verá la fecha.`,
+    EN_EJECUCION: "Trabajo en ejecución.",
+    EN_RECEPCION: `Le pedimos al ${lower} que confirme su conformidad.`,
+    NO_PROCEDE: `Marcado como no procede. El ${lower} verá el motivo.`,
+  };
+  return messages[status];
+}
 
 /** Si el propietario rechazó la recepción, su comentario más reciente. */
 function ownerRejection(history: TicketStatusHistory[]): TicketStatusHistory | undefined {
@@ -87,9 +92,11 @@ export function StaffTicketDetail({ ticketId, backHref }: StaffTicketDetailProps
   const zone = zones?.find((item) => item.id === project.zoneId);
   const rejection = history ? ownerRejection(history) : undefined;
   const days = daysOpen(ticket);
+  const person = ownerLabel(project.type);
+  const personLower = person.toLocaleLowerCase("es");
 
   function handleDone(transition: Transition) {
-    setNotice(DONE_MESSAGE[transition.to] ?? "Cambio guardado.");
+    setNotice(doneMessage(transition.to, person) ?? "Cambio guardado.");
   }
 
   function handleSpecialCase() {
@@ -126,11 +133,11 @@ export function StaffTicketDetail({ ticketId, backHref }: StaffTicketDetailProps
           <Panel title="Próximo paso">
             {rejection && (
               <div className="mb-4 rounded-md bg-brand-orange-soft p-3 text-sm">
-                <p className="flex items-center gap-2 font-bold text-brand-orange-ink"><AlertIcon className="h-4 w-4" />El propietario no quedó conforme</p>
+                <p className="flex items-center gap-2 font-bold text-brand-orange-ink"><AlertIcon className="h-4 w-4" />El {personLower} no quedó conforme</p>
                 {rejection.comment && <p className="mt-1 text-ink-secondary">{rejection.comment}</p>}
               </div>
             )}
-            <NextStepInfo ticket={ticket} />
+            <NextStepInfo ticket={ticket} person={person} />
             <div className="mt-4">
               <StaffActions
                 ticket={ticket}
@@ -138,6 +145,7 @@ export function StaffTicketDetail({ ticketId, backHref }: StaffTicketDetailProps
                 userId={user.id}
                 zoneId={project.zoneId}
                 projectId={project.id}
+                personLabel={person}
                 onDone={handleDone}
                 onSpecialCase={handleSpecialCase}
                 onVisitScheduled={setNotice}
@@ -146,7 +154,7 @@ export function StaffTicketDetail({ ticketId, backHref }: StaffTicketDetailProps
                     ? {
                         to: "EN_RECEPCION",
                         message: "Agrega un titular o un responsable con permiso de firma para solicitar la recepción.",
-                        actionLabel: "Asignar propietario",
+                        actionLabel: `Asignar ${personLower}`,
                         onAction: () => setAssigningOwner(true),
                       }
                     : undefined
@@ -155,7 +163,7 @@ export function StaffTicketDetail({ ticketId, backHref }: StaffTicketDetailProps
             </div>
           </Panel>
 
-          <Panel title="Propietario">
+          <Panel title={person}>
             {owner ? (
               <dl className="flex flex-col gap-1 text-sm">
                 <dt className="sr-only">Nombre</dt>
@@ -167,9 +175,9 @@ export function StaffTicketDetail({ ticketId, backHref }: StaffTicketDetailProps
               </dl>
             ) : (
               <>
-                <p className="text-sm text-ink-secondary">Sin propietario.</p>
+                <p className="text-sm text-ink-secondary">Sin {personLower}.</p>
                 <button type="button" className="mt-2 text-sm font-bold text-accent hover:underline" onClick={() => setAssigningOwner(true)}>
-                  Asignar propietario
+                  Asignar {personLower}
                 </button>
               </>
             )}
@@ -204,7 +212,7 @@ export function StaffTicketDetail({ ticketId, backHref }: StaffTicketDetailProps
             <p className="mt-2 whitespace-pre-line text-ink">{ticket.description}</p>
             {ticket.reportedCategoryId !== ticket.categoryId && (
               <p className="mt-3 text-sm text-ink-secondary">
-                Origen reportado por el propietario:{" "}
+                Origen reportado por el {personLower}:{" "}
                 {categories?.find((item) => item.id === ticket.reportedCategoryId)?.name ?? "—"}
               </p>
             )}
@@ -235,7 +243,7 @@ export function StaffTicketDetail({ ticketId, backHref }: StaffTicketDetailProps
             {history === undefined || users === undefined ? (
               <ContentSkeleton label="Cargando historial…" lines={2} />
             ) : (
-              <TicketHistory history={history} users={users} />
+              <TicketHistory history={history} users={users} personLabel={person} />
             )}
           </Panel>
         </div>
@@ -244,10 +252,11 @@ export function StaffTicketDetail({ ticketId, backHref }: StaffTicketDetailProps
       <AssignOwnerDialog
         open={assigningOwner}
         unit={unit}
+        personLabel={person}
         onClose={() => setAssigningOwner(false)}
         onAssigned={(ownerName) => {
           setAssigningOwner(false);
-          setNotice(`${ownerName} asignado como propietario de ${unitLabel(unit)}.`);
+          setNotice(`${ownerName} asignado como ${personLower} de ${unitLabel(unit)}.`);
         }}
       />
     </div>
@@ -349,11 +358,12 @@ const NEXT_STEP: Partial<Record<Ticket["status"], string>> = {
   NO_PROCEDE: "Requerimiento cerrado como no procede.",
 };
 
-function NextStepInfo({ ticket }: { ticket: Ticket }) {
+function NextStepInfo({ ticket, person }: { ticket: Ticket; person: string }) {
+  const text = NEXT_STEP[ticket.status]?.replaceAll("propietario", person.toLocaleLowerCase("es"));
   return (
     <p className="text-sm text-ink-secondary">
       <span className="sr-only">Estado actual: {STATUS_LABEL[ticket.status]}. </span>
-      {NEXT_STEP[ticket.status]}
+      {text}
     </p>
   );
 }

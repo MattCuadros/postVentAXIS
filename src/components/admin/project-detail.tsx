@@ -16,6 +16,7 @@ import { useQuery } from "@/data/use-query";
 import { formatLongDate, unitLabel } from "@/lib/format";
 import { formatCoordinates, mapsUrl } from "@/lib/geo";
 import { isClosed } from "@/lib/ticket-status";
+import { ownerLabel, PROJECT_TYPE_LABEL, UNIT_TYPE_LABEL } from "@/lib/project-types";
 
 export function ProjectDetail({ projectId }: { projectId: string }) {
   const { user } = useSession();
@@ -55,7 +56,7 @@ export function ProjectDetail({ projectId }: { projectId: string }) {
         subtitle={
           <>
             <p>
-              {project.address}, {project.commune} · {zone?.name}
+              {PROJECT_TYPE_LABEL[project.type]} · {project.address}, {project.commune} · {zone?.name}
             </p>
             <p className="text-xs text-ink-meta">
               Ubicación: {formatCoordinates(project.location)} ·{" "}
@@ -78,7 +79,7 @@ export function ProjectDetail({ projectId }: { projectId: string }) {
       {projectUnits.length === 0 ? (
         <div className="mt-6 rounded-lg border border-line-soft bg-surface p-8 text-center shadow-card">
           <p className="font-bold text-ink">Esta obra aún no tiene unidades</p>
-          <p className="mt-1 text-sm text-ink-secondary">Agrega cada vivienda con su propietario para que pueda ingresar requerimientos.</p>
+          <p className="mt-1 text-sm text-ink-secondary">Agrega cada unidad con su {ownerLabel(project.type).toLocaleLowerCase("es")} para que pueda ingresar requerimientos.</p>
           <p className="mt-1 text-sm text-ink-secondary">Si son muchas, usa <strong className="text-ink">Importar unidades (CSV)</strong> con la plantilla.</p>
         </div>
       ) : (
@@ -88,7 +89,7 @@ export function ProjectDetail({ projectId }: { projectId: string }) {
               <tr className="border-b border-line-soft">
                 <th scope="col" className="py-4 pr-4 font-bold text-ink">Unidad</th>
                 <th scope="col" className="py-4 pr-4 font-bold text-ink">Tipo</th>
-                <th scope="col" className="py-4 pr-4 font-bold text-ink">Propietario</th>
+                <th scope="col" className="py-4 pr-4 font-bold text-ink">{ownerLabel(project.type)}</th>
                 <th scope="col" className="py-4 pr-4 font-bold text-ink">Entrega</th>
                 <th scope="col" className="py-4 pr-4 text-right font-bold text-ink">Requerimientos abiertos</th>
                 <th scope="col" className="py-4 text-right font-bold text-ink">
@@ -103,9 +104,9 @@ export function ProjectDetail({ projectId }: { projectId: string }) {
                 return (
                   <tr key={unit.id} className="border-b border-line-soft last:border-b-0">
                     <td className="py-4 pr-4 font-bold text-ink">{unitLabel(unit)}</td>
-                    <td className="py-4 pr-4 text-ink">{unit.type === "CASA" ? "Casa" : `Departamento${unit.floor === null ? "" : ` · piso ${unit.floor}`}`}</td>
+                    <td className="py-4 pr-4 text-ink">{UNIT_TYPE_LABEL[unit.type]}{unit.floor === null ? "" : ` · piso ${unit.floor}`}</td>
                     <td className="py-4 pr-4 text-ink">
-                      {owner ? <>{owner.name}<span className="block text-xs text-ink-meta">{owner.email}</span></> : <span className="text-ink-meta">Sin propietario</span>}
+                      {owner ? <>{owner.name}<span className="block text-xs text-ink-meta">{owner.email}</span></> : <span className="text-ink-meta">Sin {ownerLabel(project.type).toLocaleLowerCase("es")}</span>}
                     </td>
                     <td className="py-4 pr-4 text-ink">{formatLongDate(unit.deliveryDate)}</td>
                     <td className="py-4 pr-4 text-right tabular-nums text-ink">{open}</td>
@@ -173,8 +174,8 @@ export function ProjectDetail({ projectId }: { projectId: string }) {
               setNotice(
                 `${imported} ${imported === 1 ? "unidad procesada" : "unidades procesadas"}` +
                   (assigned > 0 ? ` (${assigned} ${assigned === 1 ? "asignación a unidad existente" : "asignaciones a unidades existentes"})` : "") +
-                  (newOwners > 0 ? ` · ${newOwners} ${newOwners === 1 ? "propietario creado" : "propietarios creados"}` : "") +
-                  (withoutOwner > 0 ? ` · ${withoutOwner} sin propietario (se pueden completar reimportando el mismo archivo)` : "") +
+                  (newOwners > 0 ? ` · ${newOwners} ${ownerLabel(project.type).toLocaleLowerCase("es")} ${newOwners === 1 ? "creado" : "creados"}` : "") +
+                  (withoutOwner > 0 ? ` · ${withoutOwner} sin ${ownerLabel(project.type).toLocaleLowerCase("es")} (se pueden completar reimportando el mismo archivo)` : "") +
                   (skipped > 0 ? `. ${skipped} ${skipped === 1 ? "fila con errores no se importó" : "filas con errores no se importaron"}.` : "."),
               );
             }}

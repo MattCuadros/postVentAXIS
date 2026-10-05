@@ -43,9 +43,10 @@ export const users: User[] = [
 ];
 
 export const projects: Project[] = [
-  { id: "p-mirador", name: "Edificio Mirador Central", code: "MIR", zoneId: "z-centro", address: "Av. Ejemplo 1234", commune: "Santiago", location: { lat: -33.4489, lng: -70.6693 } },
-  { id: "p-altobulnes", name: "Alto Bulnes III", code: "AB3", zoneId: "z-austral", address: "Av. Bulnes 3200", commune: "Punta Arenas", location: { lat: -53.1395, lng: -70.9138 } },
-  { id: "p-bosque", name: "Condominio Los Robles", code: "ROB", zoneId: "z-sur", address: "Camino Demo 567", commune: "Puerto Montt", location: { lat: -41.4693, lng: -72.9424 } },
+  { id: "p-mirador", name: "Edificio Mirador Central", code: "MIR", type: "HABITACIONAL_ALTURA", zoneId: "z-centro", address: "Av. Ejemplo 1234", commune: "Santiago", location: { lat: -33.4489, lng: -70.6693 } },
+  { id: "p-altobulnes", name: "Alto Bulnes III", code: "AB3", type: "HABITACIONAL_EXTENSION", zoneId: "z-austral", address: "Av. Bulnes 3200", commune: "Punta Arenas", location: { lat: -53.1395, lng: -70.9138 } },
+  { id: "p-bosque", name: "Condominio Los Robles", code: "ROB", type: "HABITACIONAL_EXTENSION", zoneId: "z-sur", address: "Camino Demo 567", commune: "Puerto Montt", location: { lat: -41.4693, lng: -72.9424 } },
+  { id: "p-retail", name: "Centro Comercial Demo", code: "CCD", type: "RETAIL", zoneId: "z-centro", address: "Av. Comercio 450", commune: "Santiago", location: { lat: -33.445, lng: -70.66 } },
 ];
 
 export const units: Unit[] = [
@@ -56,6 +57,8 @@ export const units: Unit[] = [
   { id: "un-ab-f3", projectId: "p-altobulnes", type: "CASA", tower: null, floor: null, number: "F3", ownerId: "u-prop-6", deliveryDate: "2022-12-01" },
   { id: "un-ab-f35", projectId: "p-altobulnes", type: "CASA", tower: null, floor: null, number: "F35", ownerId: "u-prop-7", deliveryDate: "2023-07-14" },
   { id: "un-4", projectId: "p-mirador", type: "DEPARTAMENTO", tower: "C", floor: 1, number: "105", ownerId: "u-prop-4", deliveryDate: "2026-04-10" },
+  { id: "un-retail-1", projectId: "p-retail", type: "LOCAL", tower: null, floor: null, number: "3", ownerId: null, deliveryDate: "2026-04-10" },
+  { id: "un-retail-2", projectId: "p-retail", type: "LOCAL", tower: null, floor: null, number: "4", ownerId: null, deliveryDate: "2026-04-10" },
 ];
 
 /** Además del titular: un hijo (puede firmar) y la administradora del comité (responsable de dos obras). */

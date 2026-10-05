@@ -21,6 +21,7 @@ import { useSession } from "@/data/session-context";
 import { useQuery } from "@/data/use-query";
 import { AGENDA_DURATION, agendaRange, buildAgenda, googleCalendarUrl, splitLocal, type AgendaItem } from "@/lib/calendar";
 import { formatDateAndTime, todayIso, unitLabel } from "@/lib/format";
+import { ownerLabel } from "@/lib/project-types";
 import type { Project, Unit, User, WorkCrew } from "@/types/domain";
 import "./staff-calendar.css";
 
@@ -241,6 +242,8 @@ function EventDetail({ item, unit, projects, users, crews }: EventDetailProps) {
   const ticket = item.ticket;
   const project = projects.find((candidate) => candidate.id === unit?.projectId);
   const owner = users.find((candidate) => candidate.id === unit?.ownerId);
+  const person = project ? ownerLabel(project.type) : "Propietario / Administrador";
+  const personLower = person.toLocaleLowerCase("es");
   const crew = crews.find((candidate) => candidate.id === ticket.crewId);
   const place = [project?.name, unit ? unitLabel(unit) : null].filter(Boolean).join(" · ");
   const location = project ? `${project.address}, ${project.commune}` : "";
@@ -249,7 +252,7 @@ function EventDetail({ item, unit, projects, users, crews }: EventDetailProps) {
     date: item.date,
     time: item.time,
     durationMinutes: AGENDA_DURATION[item.kind],
-    details: `${ticket.folio} · ${ticket.room}\n${ticket.description}${owner ? `\nPropietario: ${owner.name} ${owner.phone}` : ""}`,
+    details: `${ticket.folio} · ${ticket.room}\n${ticket.description}${owner ? `\n${person}: ${owner.name} ${owner.phone}` : ""}`,
     location,
   });
 
@@ -264,8 +267,8 @@ function EventDetail({ item, unit, projects, users, crews }: EventDetailProps) {
         <DetailRow label="Dónde" value={place || "—"} hint={location} />
         <DetailRow label="Falla" value={`${ticket.room} · ${ticket.description}`} />
         <DetailRow
-          label="Propietario"
-          value={owner?.name ?? "Sin propietario"}
+          label={person}
+          value={owner?.name ?? `Sin ${personLower}`}
           hint={
             owner && (
               <a href={`tel:${owner.phone.replace(/\s/g, "")}`} className="text-accent hover:underline">{owner.phone}</a>

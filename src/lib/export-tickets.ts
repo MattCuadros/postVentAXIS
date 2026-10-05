@@ -1,5 +1,6 @@
 import { daysOpen, todayIso, unitLabel } from "@/lib/format";
 import { STATUS_LABEL } from "@/lib/ticket-status";
+import { ownerLabel } from "@/lib/project-types";
 import type { Project, Ticket, TicketCategory, Unit, User, WorkCrew, Zone } from "@/types/domain";
 
 interface ExportSources {
@@ -30,7 +31,7 @@ export async function exportTicketsToExcel(sources: ExportSources): Promise<void
       "Categoría confirmada": categories.find((item) => item.id === ticket.categoryId)?.name ?? "",
       Recinto: ticket.room,
       Descripción: ticket.description,
-      Propietario: users.find((item) => item.id === unit?.ownerId)?.name ?? "Sin propietario",
+      "Propietario / Administrador": users.find((item) => item.id === unit?.ownerId)?.name ?? `Sin ${project ? ownerLabel(project.type).toLocaleLowerCase("es") : "propietario / administrador"}`,
       Encargado: users.find((item) => item.id === ticket.encargadoId)?.name ?? "",
       Equipo: crews.find((item) => item.id === ticket.crewId)?.name ?? "",
       Ingresado: ticket.createdAt.slice(0, 10),

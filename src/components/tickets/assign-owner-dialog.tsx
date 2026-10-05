@@ -12,15 +12,17 @@ import type { Unit } from "@/types/domain";
 interface AssignOwnerDialogProps {
   open: boolean;
   unit: Unit;
+  personLabel: string;
   onClose: () => void;
   onAssigned: (ownerName: string) => void;
 }
 
 /** Asigna el titular de una unidad que no tiene propietario: uno existente, o uno nuevo. */
-export function AssignOwnerDialog({ open, unit, onClose, onAssigned }: AssignOwnerDialogProps) {
+export function AssignOwnerDialog({ open, unit, personLabel, onClose, onAssigned }: AssignOwnerDialogProps) {
   const api = useDataApi();
   const { data: users } = useQuery(api.getUsers);
   const owners = users?.filter((user) => user.role === "PROPIETARIO" && user.active) ?? [];
+  const person = personLabel.toLocaleLowerCase("es");
 
   const [mode, setMode] = useState<"existing" | "new">("existing");
   const [ownerId, setOwnerId] = useState("");
@@ -45,7 +47,7 @@ export function AssignOwnerDialog({ open, unit, onClose, onAssigned }: AssignOwn
     setError(null);
     if (mode === "existing") {
       if (!ownerId) {
-        setError("Elige el propietario.");
+        setError(`Elige ${person}.`);
         return;
       }
       setSaving(true);
@@ -60,7 +62,7 @@ export function AssignOwnerDialog({ open, unit, onClose, onAssigned }: AssignOwn
       return;
     }
     if (!newOwner.name.trim() || !newOwner.email.trim() || !newOwner.phone.trim()) {
-      setError("Completa nombre, correo y teléfono del propietario nuevo.");
+        setError(`Completa nombre, correo y tel\u00e9fono del ${person} nuevo.`);
       return;
     }
     setSaving(true);
@@ -83,10 +85,10 @@ export function AssignOwnerDialog({ open, unit, onClose, onAssigned }: AssignOwn
   }
 
   return (
-    <Dialog open={open} title="Asignar propietario" onClose={handleClose}>
+    <Dialog open={open} title={`Asignar ${person}`} onClose={handleClose}>
       <div className="flex flex-col gap-4">
         <Select
-          label="Propietario"
+          label={personLabel}
           name="assign-owner"
           value={mode === "new" ? "__new" : ownerId}
           onChange={(event) => {
@@ -98,9 +100,9 @@ export function AssignOwnerDialog({ open, unit, onClose, onAssigned }: AssignOwn
             }
           }}
         >
-          <option value="">Elige el propietario</option>
+          <option value="">Elige {person}</option>
           {owners.map((owner) => <option key={owner.id} value={owner.id}>{owner.name} · {owner.email}</option>)}
-          <option value="__new">+ Crear propietario nuevo</option>
+          <option value="__new">+ Crear {person} nuevo</option>
         </Select>
         {mode === "new" && (
           <div className="grid gap-3 sm:grid-cols-3">

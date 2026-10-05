@@ -7,6 +7,7 @@ import { Select } from "@/components/ui/select";
 import { useDataApi } from "@/data/api";
 import { useQuery } from "@/data/use-query";
 import { canManageResponsibles, RESPONSIBLE_RELATION_LABEL, relationNeedsNote } from "@/lib/unit-access";
+import { ownerLabel } from "@/lib/project-types";
 import type { ResponsibleRelation, Unit, UnitResponsible, User } from "@/types/domain";
 
 const RELATIONS = Object.keys(RESPONSIBLE_RELATION_LABEL) as ResponsibleRelation[];
@@ -32,6 +33,8 @@ export function UnitResponsibles({ unit, actingUser }: UnitResponsiblesProps) {
 
   const responsibles = allResponsibles?.filter((item) => item.unitId === unit.id) ?? [];
   const titular = users?.find((item) => item.id === unit.ownerId);
+  const project = projects?.find((item) => item.id === unit.projectId);
+  const person = project ? ownerLabel(project.type) : "Propietario / Administrador";
   const canManage = !!projects && canManageResponsibles(actingUser, unit, projects);
 
   async function handleRemove(id: string) {
@@ -55,8 +58,8 @@ export function UnitResponsibles({ unit, actingUser }: UnitResponsiblesProps) {
   return (
     <div className="flex flex-col gap-3">
       <div>
-        <p className="text-xs font-bold text-ink-secondary">Titular</p>
-        <p className="text-sm text-ink">{titular ? `${titular.name} · ${titular.email}` : "Sin propietario"}</p>
+        <p className="text-xs font-bold text-ink-secondary">{person}</p>
+        <p className="text-sm text-ink">{titular ? `${titular.name} · ${titular.email}` : `Sin ${person.toLocaleLowerCase("es")}`}</p>
       </div>
 
       {responsibles.length > 0 && (

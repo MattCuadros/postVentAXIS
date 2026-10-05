@@ -8,8 +8,10 @@ import { StatusBadge } from "@/components/ui/status-badge";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/cn";
 import { DOCUMENT_PATH } from "@/lib/document-import/plan";
+import { ownerLabel } from "@/lib/project-types";
 import { formatDateAndTime, formatLongDate, unitLabel } from "@/lib/format";
 import { STATUS_LABEL } from "@/lib/ticket-status";
+import { allowedUnitTypes, UNIT_TYPE_LABEL, unitFields } from "@/lib/project-types";
 import type { DocumentKind, Project, UnitType, User } from "@/types/domain";
 
 interface ImportDraftCardProps {
@@ -26,6 +28,8 @@ interface ImportDraftCardProps {
 export function ImportDraftCard({ index, draft, kind, projects, sources, errors, onChange }: ImportDraftCardProps) {
   const linked = draft.linkedTicketId ? sources.tickets.find((ticket) => ticket.id === draft.linkedTicketId) : undefined;
   const projectUnits = sources.units.filter((unit) => unit.projectId === draft.projectId);
+  const project = projects.find((item) => item.id === draft.projectId);
+  const permittedTypes = project ? allowedUnitTypes(project.type) : [];
   const unit = sources.units.find((item) => item.id === draft.unitId);
   const owners = sources.users.filter((user) => user.role === "PROPIETARIO" && user.active);
   const unitOwner = unit ? sources.users.find((user) => user.id === unit.ownerId) : undefined;
@@ -133,7 +137,7 @@ export function ImportDraftCard({ index, draft, kind, projects, sources, errors,
               </div>
 
               {draft.unitMode === "existing" && unitOwner && (
-                <p className="-mt-2 text-xs text-ink-meta">Propietario registrado: {unitOwner.name}</p>
+                <p className="-mt-2 text-xs text-ink-meta">{project ? ownerLabel(project.type) : "Propietario / Administrador"} registrado: {unitOwner.name}</p>
               )}
 
               {draft.unitMode === "new" && (
@@ -146,10 +150,9 @@ export function ImportDraftCard({ index, draft, kind, projects, sources, errors,
                       value={draft.newUnit.type}
                       onChange={(event) => update({ newUnit: { ...draft.newUnit, type: event.target.value as UnitType } })}
                     >
-                      <option value="CASA">Casa</option>
-                      <option value="DEPARTAMENTO">Departamento</option>
+                      {permittedTypes.map((type) => <option key={type} value={type}>{UNIT_TYPE_LABEL[type]}</option>)}
                     </Select>
-                    {draft.newUnit.type === "DEPARTAMENTO" && (
+                    {unitFields(draft.newUnit.type).tower && (
                       <Input
                         label="Torre"
                         name={`unit-tower-${draft.key}`}
@@ -158,22 +161,22 @@ export function ImportDraftCard({ index, draft, kind, projects, sources, errors,
                       />
                     )}
                     <Input
-                      label="Número"
+                      label={unitFields(draft.newUnit.type).freeText ? "Nombre" : "Número"}
                       name={`unit-number-${draft.key}`}
                       value={draft.newUnit.number}
                       onChange={(event) => update({ newUnit: { ...draft.newUnit, number: event.target.value } })}
                     />
                   </div>
                   <div className="mt-3">
-                    <OwnerPicker draft={draft} owners={owners} error={errors.owner} allowNone={false} onChange={update} />
+                  <OwnerPicker draft={draft} owners={owners} error={errors.owner} allowNone={false} label={project ? ownerLabel(project.type) : "Propietario / Administrador"} onChange={update} />
                   </div>
                 </div>
               )}
 
               {draft.unitMode === "existing" && unit && !unitOwner && (
                 <div className="rounded-md bg-warning/10 p-4">
-                  <p className="mb-3 text-xs font-bold text-warning">Esta unidad no tiene propietario registrado</p>
-                  <OwnerPicker draft={draft} owners={owners} error={errors.owner} allowNone onChange={update} />
+                  <p className="mb-3 text-xs font-bold text-warning">Esta unidad no tiene {project ? ownerLabel(project.type).toLocaleLowerCase("es") : "propietario / administrador"} registrado</p>
+                  <OwnerPicker draft={draft} owners={owners} error={errors.owner} allowNone label={project ? ownerLabel(project.type) : "Propietario / Administrador"} onChange={update} />
                 </div>
               )}
 
@@ -229,17 +232,19 @@ interface OwnerPickerProps {
   error?: string;
   /** true: la unidad ya existe y el propietario es opcional (ofrece "No asignar por ahora"). */
   allowNone: boolean;
+  label: string;
   onChange: (changes: Partial<ImportDraft>) => void;
 }
 
 /** Select de propietario (existente, nuevo o, para unidades existentes, ninguno) con sus datos si es nuevo. */
-function OwnerPicker({ draft, owners, error, allowNone, onChange }: OwnerPickerProps) {
+function OwnerPicker({ draft, owners, error, allowNone, label, onChange }: OwnerPickerProps) {
   const value = draft.ownerMode === "new" ? "__new" : draft.ownerMode === "none" ? "" : draft.ownerId;
+  const roleLabel = label.toLocaleLowerCase("es");
 
   return (
     <>
       <Select
-        label="Propietario"
+        label={label}
         name={`owner-${draft.key}`}
         value={value}
         error={error}
@@ -249,14 +254,14 @@ function OwnerPicker({ draft, owners, error, allowNone, onChange }: OwnerPickerP
           else onChange({ ownerMode: "existing", ownerId: event.target.value });
         }}
       >
-        <option value="">{allowNone ? "No asignar por ahora" : "Elige el propietario"}</option>
+        <option value="">{allowNone ? "No asignar por ahora" : `Elige ${roleLabel}`}</option>
         {owners.map((owner) => (
           <option key={owner.id} value={owner.id}>{owner.name} · {owner.email}</option>
         ))}
-        <option value="__new">+ Crear propietario con los datos leídos</option>
+        <option value="__new">+ Crear {roleLabel} con los datos leídos</option>
       </Select>
       {draft.ownerMode === "new" && draft.parsed.ownerFromSender && (
-        <p className="mt-2 text-xs text-ink-meta">Leído del remitente del correo. Revisa que sea el propietario.</p>
+        <p className="mt-2 text-xs text-ink-meta">Leído del remitente del correo. Revisa que corresponda a {roleLabel}.</p>
       )}
       {draft.ownerMode === "new" && (
         <div className="mt-3 grid gap-3 sm:grid-cols-3">

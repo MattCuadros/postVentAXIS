@@ -6,7 +6,7 @@ import type { TicketStatusHistory, User } from "@/types/domain";
  * Bitácora del ticket para el equipo Axis: cada cambio con quién, cuándo y su comentario.
  * Es el respaldo ("cada paso queda con tu nombre y la fecha").
  */
-export function TicketHistory({ history, users }: { history: TicketStatusHistory[]; users: User[] }) {
+export function TicketHistory({ history, users, personLabel = "Propietario / Administrador" }: { history: TicketStatusHistory[]; users: User[]; personLabel?: string }) {
   const entries = history.toReversed();
 
   return (
@@ -22,7 +22,7 @@ export function TicketHistory({ history, users }: { history: TicketStatusHistory
               <p className="text-sm font-bold text-ink">{STATUS_LABEL[entry.to]}</p>
               <p className="text-xs text-ink-meta">
                 {formatDateTime(entry.createdAt)} · {author?.name ?? "Usuario desconocido"}
-                {author?.role === "PROPIETARIO" && " (propietario)"}
+                {author?.role === "PROPIETARIO" && ` (${personLabel.toLocaleLowerCase("es")})`}
               </p>
               {entry.comment && (
                 <p className="mt-1.5 whitespace-pre-line rounded-md bg-surface-secondary px-3 py-2 text-sm text-ink-secondary">{entry.comment}</p>

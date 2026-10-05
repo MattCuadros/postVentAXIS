@@ -41,7 +41,10 @@ export function daysOpen(ticket: Ticket, now: Date = new Date()): number {
 /** "Torre A 704" para departamentos, "Casa 12" para casas. */
 export function unitLabel(unit: Unit): string {
   if (unit.type === "CASA") return `Casa ${unit.number}`;
-  return unit.tower === null ? `Depto. ${unit.number}` : `Torre ${unit.tower} ${unit.number}`;
+  if (unit.type === "DEPARTAMENTO") return unit.tower === null ? `Depto. ${unit.number}` : `Torre ${unit.tower} ${unit.number}`;
+  if (unit.type === "OFICINA") return `${unit.tower === null ? "" : `Torre ${unit.tower} `}Of. ${unit.number}`;
+  if (unit.type === "LOCAL") return `Local ${unit.number}`;
+  return `${unit.type === "RECINTO" ? "Recinto" : "Sector"} ${unit.number}`;
 }
 
 /** "30 de septiembre, 10:00" (sin hora: "30 de septiembre"). */
