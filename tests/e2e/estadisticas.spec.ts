@@ -50,3 +50,32 @@ test("el encargado filtra sus estadísticas por período y descarga el Excel", a
   expect(book.SheetNames).toEqual(["Resumen", "Tendencia", "Por estado", "Por origen", "Por obra", "Por equipo", "Requerimientos"]);
   expect(XLSX.utils.sheet_to_json(book.Sheets.Requerimientos)).toHaveLength(open);
 });
+
+test("el envío del informe valida destinatarios y mantiene disponible el Excel", async ({ page, context }) => {
+  await loginAs(context, "u-enc-centro", "ENCARGADO");
+  await page.goto("/encargado/estadisticas");
+  const input = page.getByLabel("Enviar a");
+  await input.fill("no-es-correo");
+  await page.getByRole("button", { name: "Enviar" }).click();
+  await expect(page.getByText(/Ingresa entre 1 y 5 correos válidos/)).toBeVisible();
+  await expect(page.getByRole("button", { name: "Descargar Excel" })).toBeEnabled();
+});
+
+test("envía el PDF con éxito y ofrece mailto cuando SMTP no está disponible", async ({ page, context }) => {
+  await loginAs(context, "u-enc-centro", "ENCARGADO");
+  await page.goto("/encargado/estadisticas");
+  await page.getByLabel("Enviar a").fill("destino@axisdc.cl");
+  await page.route("**/api/reports/email", async (route) => route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ ok: true }) }));
+  await page.getByRole("button", { name: "Enviar" }).click();
+  await expect(page.getByRole("status").filter({ hasText: "Informe enviado a destino@axisdc.cl" })).toBeVisible();
+
+  await page.getByLabel("Enviar a").fill("destino@axisdc.cl");
+  await page.unroute("**/api/reports/email");
+  await page.route("**/api/reports/email", async (route) => route.fulfill({ status: 503, contentType: "application/json", body: JSON.stringify({ ok: false, reason: "NO_DISPONIBLE" }) }));
+  await page.addInitScript(() => { window.addEventListener("beforeunload", (event) => event.preventDefault()); });
+  const downloads = page.waitForEvent("download");
+  await page.getByRole("button", { name: "Enviar" }).click();
+  const downloaded = await downloads;
+  expect(downloaded.suggestedFilename()).toMatch(/\.pdf$/);
+  await expect(page.getByText(/Adjunta el archivo descargado/)).toBeVisible();
+});

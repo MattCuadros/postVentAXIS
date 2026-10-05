@@ -3,13 +3,14 @@ import type { CountRow } from "@/lib/metrics";
 import { STATUS_LABEL } from "@/lib/ticket-status";
 import { STALE_DAYS, STATS_PERIOD_LABEL, STATUS_GROUP_LABEL, type StatsFilters, type ZoneStats } from "@/lib/zone-stats";
 
-interface ExportContext {
+export interface ZoneStatsExportContext {
   stats: ZoneStats;
   filters: StatsFilters;
   /** Nombres legibles de los filtros elegidos (zona, obra, origen, equipo). */
   filterNames: { zone: string; project: string; category: string; crew: string };
   encargado: string;
 }
+export type ExportContext = ZoneStatsExportContext;
 
 const dateFormat = new Intl.DateTimeFormat("es-CL", { day: "2-digit", month: "2-digit", year: "numeric" });
 const round1 = (value: number | null) => (value === null ? "" : Math.round(value * 10) / 10);
@@ -19,8 +20,8 @@ function slug(text: string): string {
   return text.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
 }
 
-/** Descarga las estadísticas del período como Excel (resumen, desgloses, tendencia y detalle). */
-export async function exportZoneStatsToExcel({ stats, filters, filterNames, encargado }: ExportContext): Promise<void> {
+/** Construye el mismo libro Excel sin iniciar una descarga. */
+export async function buildZoneStatsWorkbook({ stats, filters, filterNames, encargado }: ExportContext) {
   const XLSX = await import("xlsx");
   const book = XLSX.utils.book_new();
 
@@ -101,5 +102,28 @@ export async function exportZoneStatsToExcel({ stats, filters, filterNames, enca
     [14, 20, 26, 16, 14, 20, 20, 26, 12, 14, 14, 12, 8, 10, 12, 10, 30, 60],
   );
 
-  XLSX.writeFile(book, `estadisticas-${slug(filterNames.zone)}-${slug(STATS_PERIOD_LABEL[filters.period])}-${todayIso()}.xlsx`);
+  return { book, filename: `estadisticas-${slug(filterNames.zone)}-${slug(STATS_PERIOD_LABEL[filters.period])}-${todayIso()}.xlsx` };
+}
+
+export async function exportZoneStatsToExcel(ctx: ExportContext): Promise<void> {
+  const { book, filename } = await buildZoneStatsWorkbook(ctx);
+  const XLSX = await import("xlsx");
+  XLSX.writeFile(book, filename);
+}
+
+export function zoneStatsSummary({ stats, filters, filterNames, encargado }: ExportContext): { subject: string; text: string } {
+  const zone = filterNames.zone || "Todas mis zonas";
+  const project = filterNames.project || "Todas";
+  const range = stats.start ? `${dateFormat.format(stats.start)} al ${dateFormat.format(stats.end)}` : `Hasta el ${dateFormat.format(stats.end)}`;
+  const metrics = [
+    ["Ingresados", String(stats.ingresados)], ["Abiertos", String(stats.abiertos)],
+    [`Abiertos hace más de ${STALE_DAYS} días`, String(stats.atrasados)], ["Cierres conformes en el período", String(stats.cerradosEnPeriodo)],
+    ["Días promedio hasta la visita", round1(stats.avgDaysToVisit) === "" ? "sin datos" : String(round1(stats.avgDaysToVisit))],
+    ["Días promedio de cierre", round1(stats.avgDaysToClose) === "" ? "sin datos" : String(round1(stats.avgDaysToClose))],
+    ["Esperando conformidad", String(stats.enRecepcion)], ["No procede", String(stats.noProcede)],
+  ];
+  return {
+    subject: `Estadísticas PostventAXIS · ${zone} · ${project} · ${STATS_PERIOD_LABEL[filters.period]}`,
+    text: ["Informe de estadísticas PostventAXIS", `Zona: ${zone}`, `Obra: ${project}`, `Origen: ${filterNames.category || "Todos"}`, `Equipo: ${filterNames.crew || "Todos"}`, `Estado: ${STATUS_GROUP_LABEL[filters.status]}`, `Período: ${STATS_PERIOD_LABEL[filters.period]} (${range})`, "", ...metrics.map(([label, value]) => `${label}: ${value}`), "", `Encargado: ${encargado}`, `Generado: ${new Intl.DateTimeFormat("es-CL", { dateStyle: "long", timeStyle: "short", timeZone: "America/Santiago" }).format(stats.end)}`, "Generado desde PostventAXIS"].join("\n"),
+  };
 }

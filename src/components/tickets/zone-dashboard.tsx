@@ -10,8 +10,10 @@ import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/ui/page-header";
 import { Select } from "@/components/ui/select";
 import { ContentSkeleton } from "@/components/ui/skeleton";
+import { Notice } from "@/components/ui/notice";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { useDataApi } from "@/data/api";
+import { sendReportEmail, type SendReportEmailResult } from "@/data/email";
 import { useSession } from "@/data/session-context";
 import { useQuery } from "@/data/use-query";
 import { formatShortDate, unitLabel } from "@/lib/format";
@@ -29,6 +31,7 @@ import {
   type StatsFilters,
   type StatusGroup,
 } from "@/lib/zone-stats";
+import { parseRecipients } from "@/lib/report-email-schema";
 
 const oneDecimal = new Intl.NumberFormat("es-CL", { maximumFractionDigits: 1, minimumFractionDigits: 1 });
 const rangeDate = new Intl.DateTimeFormat("es-CL", { day: "numeric", month: "short", year: "numeric" });
@@ -61,6 +64,12 @@ export function ZoneDashboard() {
 
   const [filters, setFilters] = useState<StatsFilters>(DEFAULT_FILTERS);
   const [exporting, setExporting] = useState(false);
+  const [pdfBusy, setPdfBusy] = useState(false);
+  const [emailBusy, setEmailBusy] = useState(false);
+  const [recipientText, setRecipientText] = useState("");
+  const [recipientError, setRecipientError] = useState("");
+  const [emailNotice, setEmailNotice] = useState<{ tone: "success" | "danger" | "info"; text: string } | null>(null);
+  const [recentRecipients, setRecentRecipients] = useState<string[]>([]);
   const [showAll, setShowAll] = useState(false);
   const [requestedStat, setSelectedStat] = useState<StatKey | null>(() => STAT_KEYS.find((key) => key === searchParams.get("ver")) ?? null);
   const set = <K extends keyof StatsFilters>(key: K, value: StatsFilters[K]) => {
@@ -91,22 +100,73 @@ export function ZoneDashboard() {
   const toggleStat = (key: StatKey) => { setSelectedStat((current) => current === key ? null : key); setShowAll(false); };
   const filtered = filters.projectId || filters.categoryId || filters.crewId || filters.status !== "TODOS" || filters.zoneId;
 
+  function exportContext() {
+    if (!stats || !user) return null;
+    return { stats, filters, encargado: user.name, filterNames: {
+      zone: zoneName || "Mis zonas", project: myProjects.find((item) => item.id === filters.projectId)?.name ?? "Todas",
+      category: categories?.find((item) => item.id === filters.categoryId)?.name ?? "Todos", crew: myCrews.find((item) => item.id === filters.crewId)?.name ?? "Todos",
+    } };
+  }
+
+  async function createPdf() {
+    const ctx = exportContext();
+    if (!ctx) return null;
+    const response = await fetch("/api/reports/pdf", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({
+      filters: ctx.filters, filterNames: ctx.filterNames, encargado: ctx.encargado,
+      stats: {
+        start: ctx.stats.start?.toISOString() ?? null, end: ctx.stats.end.toISOString(), ingresados: ctx.stats.ingresados, abiertos: ctx.stats.abiertos, atrasados: ctx.stats.atrasados, cerradosEnPeriodo: ctx.stats.cerradosEnPeriodo,
+        avgDaysToVisit: ctx.stats.avgDaysToVisit, avgDaysToClose: ctx.stats.avgDaysToClose, enRecepcion: ctx.stats.enRecepcion, noProcede: ctx.stats.noProcede, cerrados: ctx.stats.cerrados, casosEspeciales: ctx.stats.casosEspeciales, reclasificados: ctx.stats.reclasificados, ownerRejections: ctx.stats.ownerRejections,
+        byStatus: ctx.stats.byStatus, byCategory: ctx.stats.byCategory, byProject: ctx.stats.byProject, byCrew: ctx.stats.byCrew,
+        rows: ctx.stats.rows.map((row) => ({ folio: row.ticket.folio, unit: row.unit ? unitLabel(row.unit) : "Sin unidad", days: row.days, status: row.ticket.status })),
+      },
+    }) });
+    if (!response.ok) throw new Error("No se pudo generar el informe PDF");
+    return { bytes: new Uint8Array(await response.arrayBuffer()), filename: response.headers.get("content-disposition")?.match(/filename="([^"]+)"/)?.[1] ?? "estadisticas-postventaxis.pdf" };
+  }
+
+  async function handlePdfDownload() {
+    setPdfBusy(true);
+    try {
+      const result = await createPdf();
+      if (!result) return;
+      const url = URL.createObjectURL(new Blob([Uint8Array.from(result.bytes).buffer], { type: "application/pdf" }));
+      const anchor = document.createElement("a"); anchor.href = url; anchor.download = result.filename; anchor.click(); URL.revokeObjectURL(url);
+    } finally { setPdfBusy(false); }
+  }
+
+  async function handleEmail(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault(); setRecipientError(""); setEmailNotice(null);
+    const parsed = parseRecipients(recipientText);
+    if (!parsed.success) { setRecipientError("Ingresa entre 1 y 5 correos válidos, separados por coma o punto y coma."); return; }
+    setEmailBusy(true);
+    try {
+      const pdf = await createPdf(); const ctx = exportContext();
+      if (!pdf || !ctx) return;
+      const { zoneStatsSummary } = await import("@/lib/export-zone-stats");
+      const summary = zoneStatsSummary(ctx);
+      const result: SendReportEmailResult = await sendReportEmail({ to: parsed.data, ...summary, attachment: { filename: pdf.filename, content: btoa(String.fromCharCode(...pdf.bytes)) } });
+      if (result.ok) {
+        setRecipientText(""); setEmailNotice({ tone: "success", text: `Informe enviado a ${parsed.data.join(", ")}.` });
+        const updated = [...parsed.data, ...recentRecipients.filter((email) => !parsed.data.includes(email))].slice(0, 5);
+        setRecentRecipients(updated);
+        try { localStorage.setItem(`postventaxis:destinatarios:${user?.id}`, JSON.stringify(updated)); } catch { /* almacenamiento opcional */ }
+      } else if (result.reason === "NO_DISPONIBLE") {
+        const url = URL.createObjectURL(new Blob([Uint8Array.from(pdf.bytes).buffer], { type: "application/pdf" }));
+        const anchor = document.createElement("a"); anchor.href = url; anchor.download = pdf.filename; anchor.click(); URL.revokeObjectURL(url);
+        const maxText = 1800; const mailText = summary.text.length > maxText ? `${summary.text.slice(0, maxText - 55)}\n(resumen recortado; ver PDF adjunto)` : summary.text;
+        window.location.href = `mailto:${encodeURIComponent(parsed.data.join(","))}?subject=${encodeURIComponent(summary.subject)}&body=${encodeURIComponent(mailText)}`;
+        setEmailNotice({ tone: "info", text: "Te descargamos el informe y abrimos tu correo con el mensaje listo. Adjunta el archivo descargado antes de enviar." });
+      } else setEmailNotice({ tone: "danger", text: result.reason === "RECHAZADO" ? "No pudimos enviar a esa dirección. Revísala e intenta de nuevo." : "No pudimos conectar con el servicio de correo. Intenta de nuevo." });
+    } finally { setEmailBusy(false); }
+  }
+
   async function handleExport() {
     if (!stats || !user) return;
     setExporting(true);
     try {
       const { exportZoneStatsToExcel } = await import("@/lib/export-zone-stats");
-      await exportZoneStatsToExcel({
-        stats,
-        filters,
-        encargado: user.name,
-        filterNames: {
-          zone: zoneName || "Mis zonas",
-          project: myProjects.find((item) => item.id === filters.projectId)?.name ?? "Todas",
-          category: categories?.find((item) => item.id === filters.categoryId)?.name ?? "Todos",
-          crew: myCrews.find((item) => item.id === filters.crewId)?.name ?? "Todos",
-        },
-      });
+      const ctx = exportContext();
+      if (ctx) await exportZoneStatsToExcel(ctx);
     } finally {
       setExporting(false);
     }
@@ -118,11 +178,26 @@ export function ZoneDashboard() {
         title="Estadísticas"
         subtitle={`${zoneName || "Mis zonas"} · ${range}`}
         actions={
-          <Button variant="secondary" disabled={exporting || !stats} onClick={handleExport}>
-            {exporting ? "Preparando Excel…" : "Descargar Excel"}
-          </Button>
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+            <Button variant="secondary" disabled={pdfBusy || !stats} onClick={handlePdfDownload}>{pdfBusy ? "Preparando PDF…" : "Descargar PDF"}</Button>
+            <Button variant="secondary" disabled={exporting || !stats} onClick={handleExport}>{exporting ? "Preparando Excel…" : "Descargar Excel"}</Button>
+          </div>
         }
       />
+
+      <section className="mt-4 rounded-lg border border-line-soft bg-surface p-4 shadow-card">
+        <form className="flex flex-col gap-3 sm:flex-row sm:items-end" onSubmit={handleEmail} noValidate>
+          <div className="min-w-0 flex-1">
+            <label htmlFor="stats-recipients" className="mb-1 block text-sm font-bold text-ink">Enviar a</label>
+            <input id="stats-recipients" type="email" multiple list="stats-recent-recipients" placeholder="correo@axisdc.cl" value={recipientText} onChange={(event) => { setRecipientText(event.target.value); setRecipientError(""); }} aria-invalid={Boolean(recipientError)} aria-describedby={recipientError ? "stats-recipients-error" : undefined} className="min-h-11 w-full rounded-md border border-line bg-white px-3 py-2 text-sm text-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent" />
+            {user && <RecentRecipients userId={user.id} onLoad={setRecentRecipients} />}
+            <datalist id="stats-recent-recipients">{recentRecipients.map((email) => <option key={email} value={email} />)}</datalist>
+            {recipientError && <p id="stats-recipients-error" className="mt-1 text-sm text-danger">{recipientError}</p>}
+          </div>
+          <Button type="submit" variant="secondary" disabled={emailBusy || !stats}>{emailBusy ? "Enviando…" : "Enviar"}</Button>
+        </form>
+        {emailNotice && <Notice tone={emailNotice.tone} className="mt-3">{emailNotice.text}</Notice>}
+      </section>
 
       <section aria-label="Filtros" className="mt-6 rounded-lg border border-line-soft bg-surface p-4 shadow-card">
         <fieldset className="flex flex-wrap gap-2" aria-label="Período">
@@ -261,6 +336,19 @@ export function ZoneDashboard() {
       )}
     </div>
   );
+}
+
+function RecentRecipients({ userId, onLoad }: { userId: string; onLoad: (emails: string[]) => void }) {
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      try {
+        const value: unknown = JSON.parse(localStorage.getItem(`postventaxis:destinatarios:${userId}`) ?? "[]");
+        onLoad(Array.isArray(value) ? value.filter((item): item is string => typeof item === "string").slice(0, 5) : []);
+      } catch { onLoad([]); }
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, [userId, onLoad]);
+  return null;
 }
 
 function BreakdownCard({ title, rows }: { title: string; rows: CountRow[] }): ReactNode {
