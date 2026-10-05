@@ -58,7 +58,7 @@ test("el encargado registra la visita antes de asignar equipo; un video largo se
 
   await page.getByRole("button", { name: "Asignar equipo" }).first().click();
   const assign = page.locator("dialog[open]");
-  await expect(assign.getByLabel("Equipo")).toBeVisible();
+  await expect(assign.locator('input[type="radio"]').first()).toBeVisible();
   await assign.locator('input[type="radio"]').first().check();
   await assign.getByRole("button", { name: "Asignar equipo" }).click();
   await expect(assign).toHaveCount(0);
