@@ -1,0 +1,41 @@
+create type app_role as enum ('ADMIN','ENCARGADO','PROPIETARIO','ADMIN_OBRA');
+create type ticket_status as enum ('INGRESADO','EN_REVISION','ASIGNADO','VISITA_INSPECTIVA','PROGRAMADO','EN_EJECUCION','EN_RECEPCION','CERRADO','NO_PROCEDE');
+create type project_type as enum ('HABITACIONAL_EXTENSION','HABITACIONAL_ALTURA','RETAIL','INSTITUCIONAL','URBANIZACION','OFICINAS','INDUSTRIAL');
+create type unit_type as enum ('CASA','DEPARTAMENTO','LOCAL','OFICINA','RECINTO','SECTOR');
+create type work_crew_type as enum ('INTERNO','SUBCONTRATO');
+create type ticket_media_type as enum ('IMAGE','VIDEO');
+create type ticket_media_stage as enum ('PROBLEMA','VISITA','SOLUCION');
+create type document_kind as enum ('EMAIL','OI','OI_FIRMADA','OT','INFORME_AXIS');
+create type responsible_relation as enum ('FAMILIAR','REPRESENTANTE','ADMIN_COMITE','OTRO');
+
+create table zones (id text primary key default gen_random_uuid()::text, name text not null, code text not null unique check (code in ('N','C','S','A')));
+create table users (id text primary key default gen_random_uuid()::text, auth_user_id uuid unique, name text not null, email text not null unique, phone text not null, role app_role not null, active boolean not null default true);
+create unique index users_email_lower_uq on users (lower(email));
+create table user_zones (user_id text not null references users(id) on delete cascade, zone_id text not null references zones(id) on delete cascade, primary key(user_id,zone_id));
+create table projects (id text primary key default gen_random_uuid()::text, name text not null, code text not null unique check (char_length(code) between 2 and 4 and code = upper(code)), type project_type not null, zone_id text not null references zones(id), address text not null, commune text not null, latitude double precision not null check(latitude between -90 and 90), longitude double precision not null check(longitude between -180 and 180));
+create table user_projects (user_id text not null references users(id) on delete cascade, project_id text not null references projects(id) on delete cascade, primary key(user_id,project_id));
+create table units (id text primary key default gen_random_uuid()::text, project_id text not null references projects(id), type unit_type not null, tower text, floor integer, number text not null, owner_id text references users(id) on delete set null, provisional_delivery_date date, municipal_reception_date date, delivery_date date, unique nulls not distinct(project_id,tower,floor,number));
+create table ticket_categories (id text primary key default gen_random_uuid()::text, name text not null);
+create table work_crews (id text primary key default gen_random_uuid()::text, name text not null, type work_crew_type not null, contact_name text not null, phone text not null, zone_id text not null references zones(id));
+create table crew_projects (crew_id text not null references work_crews(id) on delete cascade, project_id text not null references projects(id) on delete cascade, primary key(crew_id,project_id));
+create table tickets (id text primary key default gen_random_uuid()::text, folio text not null unique, unit_id text not null references units(id), category_id text not null references ticket_categories(id), reported_category_id text not null references ticket_categories(id), room text not null, description text not null, status ticket_status not null, created_by_id text not null references users(id), encargado_id text references users(id), crew_id text references work_crews(id), visit_date date, visit_time time, scheduled_date date, scheduled_time time, rejection_reason text, created_at timestamptz not null, updated_at timestamptz not null, check(status <> 'NO_PROCEDE' or nullif(trim(rejection_reason),'') is not null));
+create table ticket_media (id text primary key default gen_random_uuid()::text, ticket_id text not null references tickets(id) on delete cascade, url text not null, type ticket_media_type not null, duration_seconds integer check(duration_seconds is null or duration_seconds >= 0), stage ticket_media_stage not null, uploaded_by_id text not null references users(id), created_at timestamptz not null, check(type <> 'IMAGE' or duration_seconds is null));
+create table ticket_documents (id text primary key default gen_random_uuid()::text, ticket_id text not null references tickets(id) on delete cascade, kind document_kind not null, file_name text not null, size bigint not null check(size >= 0), uploaded_by_id text not null references users(id), uploaded_at timestamptz not null);
+create table ticket_external_refs (ticket_id text not null references tickets(id) on delete cascade, ref text not null, primary key(ticket_id,ref));
+create table ticket_special_cases (ticket_id text primary key references tickets(id) on delete cascade, reason text not null, marked_by_id text not null references users(id), marked_at timestamptz not null);
+create table ticket_status_history (id text primary key default gen_random_uuid()::text, ticket_id text not null references tickets(id) on delete cascade, from_status ticket_status, to_status ticket_status not null, changed_by_id text not null references users(id), comment text, actor_capacity text, created_at timestamptz not null);
+create table unit_responsibles (id text primary key default gen_random_uuid()::text, unit_id text not null references units(id) on delete cascade, user_id text not null references users(id), relation responsible_relation not null, relation_note text, can_sign_conformity boolean not null, created_at timestamptz not null, created_by_id text not null references users(id), unique(unit_id,user_id), check(relation not in ('FAMILIAR','OTRO') or nullif(trim(relation_note),'') is not null));
+
+create index projects_zone_idx on projects(zone_id);
+create index user_zones_zone_idx on user_zones(zone_id); create index user_projects_project_idx on user_projects(project_id); create index crew_projects_project_idx on crew_projects(project_id);
+create index units_project_idx on units(project_id); create index units_owner_idx on units(owner_id);
+create index users_role_idx on users(role); create index work_crews_zone_idx on work_crews(zone_id);
+create index tickets_unit_idx on tickets(unit_id); create index tickets_category_idx on tickets(category_id); create index tickets_reported_category_idx on tickets(reported_category_id); create index tickets_created_by_idx on tickets(created_by_id); create index tickets_encargado_idx on tickets(encargado_id); create index tickets_crew_idx on tickets(crew_id); create index tickets_status_created_idx on tickets(status,created_at desc);
+create index ticket_media_ticket_idx on ticket_media(ticket_id); create index ticket_media_uploader_idx on ticket_media(uploaded_by_id);
+create index ticket_documents_ticket_idx on ticket_documents(ticket_id); create index ticket_documents_uploader_idx on ticket_documents(uploaded_by_id);
+create index history_ticket_created_idx on ticket_status_history(ticket_id,created_at); create index history_actor_idx on ticket_status_history(changed_by_id);
+create index special_cases_marker_idx on ticket_special_cases(marked_by_id);
+create index responsibles_user_idx on unit_responsibles(user_id); create index responsibles_created_by_idx on unit_responsibles(created_by_id);
+
+create function set_updated_at() returns trigger language plpgsql as $$ begin new.updated_at = now(); return new; end $$;
+create trigger tickets_updated_at before update on tickets for each row execute function set_updated_at();

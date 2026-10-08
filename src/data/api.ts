@@ -2,6 +2,7 @@
 
 import { useCallback, useMemo } from "react";
 import { applyTransition } from "@/data/store";
+import { isSupabaseDataSourceEnabled, loadTicketsFromSupabase, loadUsersFromSupabase, saveTicketToSupabase, saveUserToSupabase } from "@/data/supabase-repository";
 import { useDataContext } from "@/data/store-context";
 import { delay } from "@/lib/delay";
 import { findTicketByRefs, planImport, type ImportPlan, type ImportRowData } from "@/lib/document-import/plan";
@@ -70,11 +71,19 @@ export function useDataApi() {
   const { state, dispatch } = useDataContext();
 
   const getTickets = useCallback(async (): Promise<Ticket[]> => {
+    if (isSupabaseDataSourceEnabled()) {
+      const remote = await loadTicketsFromSupabase();
+      if (remote) return remote;
+    }
     await simulatedLatency();
     return state.tickets;
   }, [state.tickets]);
 
   const getTicket = useCallback(async (id: string): Promise<Ticket | undefined> => {
+    if (isSupabaseDataSourceEnabled()) {
+      const remote = await loadTicketsFromSupabase();
+      if (remote) return remote.find((ticket) => ticket.id === id);
+    }
     await simulatedLatency();
     return state.tickets.find((ticket) => ticket.id === id);
   }, [state.tickets]);
@@ -135,6 +144,9 @@ export function useDataApi() {
     };
 
     dispatch({ type: "CREATE_TICKET", ticket, historyId: crypto.randomUUID() });
+    if (isSupabaseDataSourceEnabled()) {
+      await saveTicketToSupabase(ticket);
+    }
     return ticket;
   }, [dispatch, state.projects, state.tickets, state.units, state.zones]);
 
@@ -412,6 +424,10 @@ export function useDataApi() {
   }, [state.projects]);
 
   const getUsers = useCallback(async (): Promise<User[]> => {
+    if (isSupabaseDataSourceEnabled()) {
+      const remote = await loadUsersFromSupabase();
+      if (remote) return remote;
+    }
     await simulatedLatency();
     return state.users;
   }, [state.users]);
@@ -474,6 +490,9 @@ export function useDataApi() {
     await simulatedLatency();
     const user: User = { ...input, id: crypto.randomUUID() };
     dispatch({ type: "CREATE_USER", user });
+    if (isSupabaseDataSourceEnabled()) {
+      await saveUserToSupabase(user);
+    }
     return user;
   }, [dispatch]);
 
@@ -486,6 +505,9 @@ export function useDataApi() {
 
     const user: User = { ...existingUser, ...changes, id: existingUser.id };
     dispatch({ type: "UPDATE_USER", userId, changes });
+    if (isSupabaseDataSourceEnabled()) {
+      await saveUserToSupabase(user);
+    }
     return user;
   }, [dispatch, state.users]);
 
