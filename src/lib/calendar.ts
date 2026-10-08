@@ -18,7 +18,7 @@ export interface AgendaItem {
 /** Duración por defecto de cada tipo en el calendario, en minutos. */
 export const AGENDA_DURATION: Record<AgendaKind, number> = { VISITA: 60, TRABAJO: 120 };
 
-const VISIT_PENDING: TicketStatus[] = ["EN_REVISION", "ASIGNADO"];
+const VISIT_PENDING: TicketStatus[] = ["EN_REVISION"];
 const WORK_STATUSES: TicketStatus[] = ["PROGRAMADO", "EN_EJECUCION", "EN_RECEPCION", "CERRADO"];
 
 /**
@@ -38,7 +38,7 @@ export function buildAgenda(tickets: Ticket[], today: string): AgendaItem[] {
         date: ticket.visitDate,
         time: ticket.visitTime,
         done: !pending,
-        editable: ticket.status === "ASIGNADO" && ticket.visitDate >= today,
+        editable: ticket.status === "EN_REVISION" && ticket.visitDate >= today,
       });
     }
 

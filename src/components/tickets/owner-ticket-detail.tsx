@@ -153,7 +153,7 @@ function isUpcoming(date: string): boolean {
 
 function ScheduleInfo({ ticket, crewName }: { ticket: Ticket; crewName?: string }) {
   const lines: string[] = [];
-  if ((ticket.status === "ASIGNADO" || ticket.status === "VISITA_INSPECTIVA") && ticket.visitDate && isUpcoming(ticket.visitDate)) {
+  if (ticket.status === "EN_REVISION" && ticket.visitDate && isUpcoming(ticket.visitDate)) {
     lines.push(`Visita inspectiva: ${formatDateAndTime(ticket.visitDate, ticket.visitTime)}`);
   }
   if ((ticket.status === "PROGRAMADO" || ticket.status === "EN_EJECUCION") && ticket.scheduledDate && isUpcoming(ticket.scheduledDate)) {
