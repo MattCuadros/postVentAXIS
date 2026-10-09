@@ -75,6 +75,8 @@ export interface ZoneStats {
   end: Date;
   /** Requerimientos ingresados en el período que cumplen los filtros. */
   rows: StatsRow[];
+  /** Requerimientos cerrados dentro de la ventana, también si ingresaron antes. */
+  closedInPeriodRows: StatsRow[];
   ingresados: number;
   abiertos: number;
   cerrados: number;
@@ -97,6 +99,8 @@ export interface ZoneStats {
 }
 
 export const STALE_DAYS = 30;
+export const STAT_KEYS = ["ingresados", "abiertos", "atrasados", "cerradosEnPeriodo", "diasVisita", "diasCierre", "enRecepcion", "noProcede"] as const;
+export type StatKey = (typeof STAT_KEYS)[number];
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 function startOfDay(date: Date): Date {
@@ -219,6 +223,24 @@ export function computeZoneStats(filters: StatsFilters, sources: StatsSources, n
     .toSorted((a, b) => b.ticket.createdAt.localeCompare(a.ticket.createdAt));
 
   const closedRows = rows.filter((row) => row.closedAt !== null);
+  const closedInPeriodRows = scoped
+    .filter((ticket) => {
+      const closedAt = closedAtOf(ticket);
+      return closedAt !== null && inWindow(closedAt);
+    })
+    .map((ticket) => rows.find((row) => row.ticket.id === ticket.id) ?? {
+      ticket,
+      project: projectOf(ticket)?.name ?? "—",
+      unit: unitOf(ticket),
+      category: categories.find((item) => item.id === ticket.categoryId)?.name ?? "Sin categoría",
+      reportedCategory: categories.find((item) => item.id === ticket.reportedCategoryId)?.name ?? "Sin categoría",
+      crew: crews.find((item) => item.id === ticket.crewId)?.name ?? "Sin asignar",
+      closedAt: closedAtOf(ticket),
+      days: Math.max(0, (new Date(closedAtOf(ticket) ?? ticket.updatedAt).getTime() - new Date(ticket.createdAt).getTime()) / DAY_MS),
+      daysToVisit: null,
+      ownerRejections: historyOf(ticket).filter((entry) => entry.from === "EN_RECEPCION" && entry.to === "PROGRAMADO").length,
+    });
+  closedInPeriodRows.sort((a, b) => (b.closedAt ?? "").localeCompare(a.closedAt ?? ""));
   const statusOrder: TicketStatus[] = [...MAIN_FLOW, "NO_PROCEDE"];
   const byStatus = statusOrder
     .map((status) => ({ id: status, label: STATUS_LABEL[status], count: rows.filter((row) => row.ticket.status === status).length }))
@@ -240,6 +262,7 @@ export function computeZoneStats(filters: StatsFilters, sources: StatsSources, n
     start,
     end: now,
     rows,
+    closedInPeriodRows,
     ingresados: rows.length,
     abiertos: rows.filter((row) => !isClosed(row.ticket.status)).length,
     cerrados: closedRows.length,
@@ -249,10 +272,7 @@ export function computeZoneStats(filters: StatsFilters, sources: StatsSources, n
     reclasificados: rows.filter((row) => row.ticket.categoryId !== row.ticket.reportedCategoryId).length,
     ownerRejections: rows.reduce((sum, row) => sum + row.ownerRejections, 0),
     atrasados: rows.filter((row) => !isClosed(row.ticket.status) && row.days > STALE_DAYS).length,
-    cerradosEnPeriodo: scoped.filter((ticket) => {
-      const closedAt = closedAtOf(ticket);
-      return closedAt !== null && inWindow(closedAt);
-    }).length,
+    cerradosEnPeriodo: closedInPeriodRows.length,
     avgDaysToClose: average(closedRows.map((row) => row.days)),
     avgDaysToVisit: average(rows.flatMap((row) => (row.daysToVisit === null ? [] : [row.daysToVisit]))),
     byStatus,
@@ -261,4 +281,18 @@ export function computeZoneStats(filters: StatsFilters, sources: StatsSources, n
     byCrew: countBy(rows.map((row) => row.crew)),
     trend,
   };
+}
+
+/** Filas asociadas a cada indicador; los promedios muestran las observaciones que los componen. */
+export function rowsForStat(key: StatKey, stats: ZoneStats): StatsRow[] {
+  switch (key) {
+    case "ingresados": return stats.rows;
+    case "abiertos": return stats.rows.filter((row) => !isClosed(row.ticket.status));
+    case "atrasados": return stats.rows.filter((row) => !isClosed(row.ticket.status) && row.days > STALE_DAYS);
+    case "cerradosEnPeriodo": return stats.closedInPeriodRows;
+    case "diasVisita": return stats.rows.filter((row) => row.daysToVisit !== null).toSorted((a, b) => b.daysToVisit! - a.daysToVisit!);
+    case "diasCierre": return stats.rows.filter((row) => row.closedAt !== null).toSorted((a, b) => b.days - a.days);
+    case "enRecepcion": return stats.rows.filter((row) => row.ticket.status === "EN_RECEPCION");
+    case "noProcede": return stats.rows.filter((row) => row.ticket.status === "NO_PROCEDE");
+  }
 }

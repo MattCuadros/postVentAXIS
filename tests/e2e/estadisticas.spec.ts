@@ -22,6 +22,23 @@ test("el encargado filtra sus estadísticas por período y descarga el Excel", a
   }
   for (let index = 1; index < counts.length; index += 1) expect(counts[index]).toBeGreaterThanOrEqual(counts[index - 1]);
 
+  const openTile = page.getByRole("button", { name: /Ver los \d+ requerimientos: Abiertos$/ });
+  await openTile.click();
+  await expect(openTile).toHaveAttribute("aria-pressed", "true");
+  await expect(page.getByText(/^Mostrando: Abiertos \(\d+\)/)).toBeVisible();
+  const expectedOpen = Number((await page.getByText(/^Mostrando: Abiertos \((\d+)\)/).innerText()).match(/\((\d+)\)/)?.[1]);
+  if (expectedOpen > 50) {
+    await page.getByRole("button", { name: `Mostrar los ${expectedOpen} requerimientos` }).click();
+    await expect(page.locator("main table tbody tr")).toHaveCount(expectedOpen);
+  }
+  const firstFolio = page.locator("main table tbody tr a").first();
+  await firstFolio.click();
+  await page.waitForURL(/\/tickets\//);
+  await page.goBack();
+  await expect(page).toHaveURL(/ver=abiertos/);
+  await expect(page.getByText(/^Mostrando: Abiertos/)).toBeVisible();
+  await expect(page.locator('button[aria-label^="Ver los 0 requerimientos:"]')).toHaveCount(0);
+  await page.getByRole("button", { name: "Todo el período", exact: true }).click();
   await page.getByLabel("Estado").selectOption("ABIERTOS");
   const open = Number(await value("Ingresados en el período").innerText());
   expect(open).toBeLessThanOrEqual(counts.at(-1)!);

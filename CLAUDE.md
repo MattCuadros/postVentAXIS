@@ -105,8 +105,8 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 ## Estadísticas del encargado
 
-- `/encargado/estadisticas`: tablero de sus zonas con ventana móvil (última semana, 2 semanas, mes, 3 meses, todo), filtros (zona, obra, origen, equipo, estado) y descarga Excel.
-- Cálculos puros en `src/lib/zone-stats.ts` (la pantalla y el Excel usan los mismos); Excel en `src/lib/export-zone-stats.ts`.
+- `/encargado/estadisticas`: tablero de sus zonas con ventana móvil (última semana, 2 semanas, mes, 3 meses, todo), filtros (zona, obra, origen, equipo, estado), descarga Excel e indicadores seleccionables que filtran la tabla. La selección se conserva en `?ver=<StatKey>`; “Ver todos” la limpia. Los promedios abren las filas que aportan al cálculo.
+- Cálculos puros y `rowsForStat` en `src/lib/zone-stats.ts` (la pantalla y el Excel usan los mismos); Excel en `src/lib/export-zone-stats.ts`. `StatTile` conserva presentación estática si no recibe `onSelect`.
 
 ## Ubicación de la obra
 
