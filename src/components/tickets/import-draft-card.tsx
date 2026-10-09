@@ -1,6 +1,6 @@
 "use client";
 
-import type { ImportDraft, DraftSources } from "@/components/tickets/import-draft";
+import { ownerDefaults, type ImportDraft, type DraftSources } from "@/components/tickets/import-draft";
 import { AlertIcon } from "@/components/ui/icons";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
@@ -51,6 +51,7 @@ export function ImportDraftCard({ index, draft, kind, projects, sources, errors,
 
   return (
     <section
+      tabIndex={-1}
       className={cn(
         "rounded-lg border bg-surface p-5 shadow-card transition-opacity",
         draft.include ? "border-line-soft" : "border-dashed border-line opacity-60",
@@ -101,7 +102,14 @@ export function ImportDraftCard({ index, draft, kind, projects, sources, errors,
                   name={`project-${draft.key}`}
                   value={draft.projectId}
                   error={errors.project}
-                  onChange={(event) => update({ projectId: event.target.value, unitId: "", unitMode: "existing", ownerMode: "none", ownerId: "" })}
+                  onChange={(event) => {
+                    const projectId = event.target.value;
+                    const parsedProject = projects.find((item) => item.id === projectId);
+                    const inferredUnit = parsedProject
+                      ? sources.units.find((item) => item.projectId === parsedProject.id && item.id === draft.unitId)
+                      : undefined;
+                    update({ projectId, unitId: inferredUnit?.id ?? "", unitMode: inferredUnit ? "existing" : parsedProject ? "new" : "existing", ...ownerDefaults(inferredUnit, draft.parsed, sources) });
+                  }}
                 >
                   <option value="">{parsed.projectHint ? `Leído: "${parsed.projectHint}" · elige la obra` : "Elige la obra"}</option>
                   {projects.map((project) => (
@@ -116,15 +124,14 @@ export function ImportDraftCard({ index, draft, kind, projects, sources, errors,
                   disabled={!draft.projectId}
                   onChange={(event) => {
                     if (event.target.value === "__new") {
-                      update({ unitMode: "new", unitId: "", ownerMode: "new", ownerId: "" });
+                      update({ unitMode: "new", unitId: "", ...ownerDefaults(undefined, draft.parsed, sources) });
                       return;
                     }
                     const chosen = projectUnits.find((item) => item.id === event.target.value);
                     update({
                       unitMode: "existing",
                       unitId: event.target.value,
-                      ownerMode: chosen?.ownerId ? "existing" : "none",
-                      ownerId: chosen?.ownerId ?? "",
+                      ...ownerDefaults(chosen, draft.parsed, sources),
                     });
                   }}
                 >

@@ -91,7 +91,8 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 - El worker de pdfjs se sirve desde `public/pdf.worker.min.mjs`: al actualizar `pdfjs-dist`, volver a copiarlo desde `node_modules/pdfjs-dist/build/`.
 - Los PDF se guardan en IndexedDB (`src/data/document-store.ts`); el ticket guarda solo la metadata.
 - Ejemplos reales de documentos en `examples/` (fuera del repo); textos anonimizados en `examples/textos/`. Nunca subir datos reales de clientes al repo.
-- `parseEmail` completa el propietario nuevo (nombre/correo/teléfono) desde el remitente ("De:") del mensaje más antiguo del hilo (`messages.at(-1)`), solo cuando el correo trae un único requerimiento y el remitente es externo (`INTERNAL_EMAIL_DOMAINS`, hoy solo `axisdc.cl`). Con tabla de varios propietarios no se toca `ownerEmail`. `ParsedRequirement.ownerFromSender` avisa en el borrador que ese dato vino del remitente, no del documento.
+- `parseEmail` completa el propietario nuevo (nombre/correo/teléfono) desde el remitente externo del mensaje original; en correos reenviados (`RV:`, `RE:`, `FW:`, `FWD:`) busca el `De:`/`From:` original y no propone remitentes internos (`INTERNAL_EMAIL_DOMAINS`, hoy `axisdc.cl`). Con tabla de varios propietarios no se toca `ownerEmail`. `ParsedRequirement.ownerFromSender` avisa en el borrador que ese dato vino del remitente, no del documento.
+- `ownerDefaults` (`src/components/tickets/import-draft.ts`) elige los valores iniciales del propietario según la unidad seleccionada y los datos detectados; `draftErrors(draft, sources)` valida solo campos visibles. El resumen de errores de carga indica requerimiento y dato pendiente, y enfoca el primer control con error.
 - Si el documento apunta a una unidad existente sin propietario y trae datos de uno, `ImportDraftCard` ofrece asignarlo (opcional, no bloquea el registro); `api.importDocument` lo actualiza en la misma unidad en vez de crear una nueva (`IMPORT_DOCUMENT` mezcla `units` por id, no solo agrega).
 
 ## Fotos y videos de tickets
@@ -115,8 +116,8 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 ## Estadísticas del encargado
 
-- `/encargado/estadisticas`: tablero de sus zonas con ventana móvil (última semana, 2 semanas, mes, 3 meses, todo), filtros (zona, obra, origen, equipo, estado) y descarga Excel.
-- Cálculos puros en `src/lib/zone-stats.ts` (la pantalla y el Excel usan los mismos); Excel en `src/lib/export-zone-stats.ts`.
+- `/encargado/estadisticas`: tablero de sus zonas con ventana móvil (última semana, 2 semanas, mes, 3 meses, todo), filtros (zona, obra, origen, equipo, estado), descarga Excel e indicadores seleccionables que filtran la tabla. La selección se conserva en `?ver=<StatKey>`; “Ver todos” la limpia. Los promedios abren las filas que aportan al cálculo.
+- Cálculos puros y `rowsForStat` en `src/lib/zone-stats.ts` (la pantalla y el Excel usan los mismos); Excel en `src/lib/export-zone-stats.ts`. `StatTile` conserva presentación estática si no recibe `onSelect`.
 
 ## Ubicación de la obra
 

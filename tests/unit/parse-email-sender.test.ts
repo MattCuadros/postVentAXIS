@@ -45,6 +45,14 @@ Fono: 987654321`;
     expect(requirement.ownerEmail).toBe("mgonzalez@correo.cl");
     expect(requirement.ownerName).toBe("María González");
     expect(requirement.ownerPhone).toBe("987654321");
+    expect(requirement.ownerFromSender).toBe(true);
+  });
+
+  it("reenvío interno sin remitente original externo no propone propietario", () => {
+    const parsed = parseDocument("EMAIL", `RV: Torre B 302 / Ventana\nDe: Postventa Axis <postventa@axisdc.cl>\nAsunto: RV: Torre B 302 / Ventana\n\nReenvío para revisar.`);
+    const [requirement] = parsed.requirements;
+    expect(requirement.ownerEmail).toBeNull();
+    expect(requirement.ownerFromSender).toBeUndefined();
   });
 
   it("correo con tabla de varios propietarios: correo vacío en todas las filas", () => {

@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useMemo, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { CategoryBars } from "@/components/admin/category-bars";
 import { StatTile } from "@/components/admin/stat-tile";
 import { TrendChart } from "@/components/tickets/trend-chart";
@@ -23,6 +24,9 @@ import {
   STATS_PERIOD_LABEL,
   STATS_PERIODS,
   STATUS_GROUP_LABEL,
+  rowsForStat,
+  STAT_KEYS,
+  type StatKey,
   type StatsFilters,
   type StatusGroup,
 } from "@/lib/zone-stats";
@@ -30,6 +34,7 @@ import {
 const oneDecimal = new Intl.NumberFormat("es-CL", { maximumFractionDigits: 1, minimumFractionDigits: 1 });
 const rangeDate = new Intl.DateTimeFormat("es-CL", { day: "numeric", month: "short", year: "numeric" });
 const TABLE_LIMIT = 50;
+const STAT_LABELS: Record<StatKey, string> = { ingresados: "Ingresados en el período", abiertos: "Abiertos", atrasados: `Abiertos hace más de ${STALE_DAYS} días`, cerradosEnPeriodo: "Cierres conformes en el período", diasVisita: "Días promedio hasta la visita", diasCierre: "Días promedio de cierre", enRecepcion: "Esperando conformidad", noProcede: "No procede" };
 
 function days(value: number | null): string {
   return value === null ? "—" : oneDecimal.format(value);
@@ -40,6 +45,10 @@ export function ZoneDashboard() {
   const { user } = useSession();
   const api = useDataApi();
   const zoneIds = user?.zoneIds;
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const tableHeading = useRef<HTMLHeadingElement>(null);
 
   const { data: tickets } = useQuery(
     useCallback(async () => (zoneIds ? api.getTicketsByZones(zoneIds) : []), [api, zoneIds]),
@@ -54,6 +63,7 @@ export function ZoneDashboard() {
   const [filters, setFilters] = useState<StatsFilters>(DEFAULT_FILTERS);
   const [exporting, setExporting] = useState(false);
   const [showAll, setShowAll] = useState(false);
+  const [requestedStat, setSelectedStat] = useState<StatKey | null>(() => STAT_KEYS.find((key) => key === searchParams.get("ver")) ?? null);
   const set = <K extends keyof StatsFilters>(key: K, value: StatsFilters[K]) => {
     setShowAll(false);
     setFilters((current) => ({ ...current, [key]: value, ...(key === "zoneId" || key === "projectType" ? { projectId: "" } : {}) }));
@@ -73,10 +83,17 @@ export function ZoneDashboard() {
 
   const zoneName = filters.zoneId ? myZones.find((zone) => zone.id === filters.zoneId)?.name ?? "" : myZones.map((zone) => zone.name).join(" y ");
   const range = stats?.start ? `${rangeDate.format(stats.start)} – ${rangeDate.format(stats.end)}` : "Desde el primer requerimiento";
-  const filtered = filters.projectId || filters.projectType || filters.categoryId || filters.crewId || filters.status !== "TODOS" || filters.zoneId;
   const personRole = filters.projectId
     ? ownerLabel(projects?.find((project) => project.id === filters.projectId)?.type ?? "HABITACIONAL_ALTURA").toLocaleLowerCase("es")
     : "propietario / administrador";
+  // Una tarjeta que queda sin requerimientos deja de estar seleccionada (se deriva, no se corrige con un efecto).
+  const selectedStat = requestedStat && stats && rowsForStat(requestedStat, stats).length > 0 ? requestedStat : null;
+  const shownRows = stats && selectedStat ? rowsForStat(selectedStat, stats) : stats?.rows ?? [];
+  const selectedLabel = selectedStat ? STAT_LABELS[selectedStat] : "";
+  useEffect(() => { const params = new URLSearchParams(searchParams.toString()); if (requestedStat) params.set("ver", requestedStat); else params.delete("ver"); const query = params.toString(); if (query !== searchParams.toString()) router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false }); }, [requestedStat, router, pathname, searchParams]);
+  useEffect(() => { if (!selectedStat) return; tableHeading.current?.scrollIntoView({ behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" }); tableHeading.current?.focus({ preventScroll: true }); }, [selectedStat]);
+  const toggleStat = (key: StatKey) => { setSelectedStat((current) => current === key ? null : key); setShowAll(false); };
+  const filtered = filters.projectId || filters.projectType || filters.categoryId || filters.crewId || filters.status !== "TODOS" || filters.zoneId;
 
   async function handleExport() {
     if (!stats || !user) return;
@@ -173,14 +190,14 @@ export function ZoneDashboard() {
       ) : (
         <>
           <section aria-label="Resumen" className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-            <StatTile label="Ingresados en el período" value={String(stats.ingresados)} />
-            <StatTile label="Abiertos" value={String(stats.abiertos)} />
-            <StatTile label={`Abiertos hace más de ${STALE_DAYS} días`} value={String(stats.atrasados)} tone="action" />
-            <StatTile label="Cierres conformes en el período" value={String(stats.cerradosEnPeriodo)} />
-            <StatTile label="Días promedio hasta la visita" value={days(stats.avgDaysToVisit)} />
-            <StatTile label="Días promedio de cierre" value={days(stats.avgDaysToClose)} />
-            <StatTile label="Esperando conformidad" value={String(stats.enRecepcion)} tone="action" />
-            <StatTile label="No procede" value={String(stats.noProcede)} />
+            <StatTile label="Ingresados en el período" value={String(stats.ingresados)} onSelect={() => toggleStat("ingresados")} selected={selectedStat === "ingresados"} />
+            <StatTile label="Abiertos" value={String(stats.abiertos)} onSelect={() => toggleStat("abiertos")} selected={selectedStat === "abiertos"} />
+            <StatTile label={`Abiertos hace más de ${STALE_DAYS} días`} value={String(stats.atrasados)} tone="action" onSelect={() => toggleStat("atrasados")} selected={selectedStat === "atrasados"} />
+            <StatTile label="Cierres conformes en el período" value={String(stats.cerradosEnPeriodo)} onSelect={() => toggleStat("cerradosEnPeriodo")} selected={selectedStat === "cerradosEnPeriodo"} />
+            <StatTile label="Días promedio hasta la visita" value={days(stats.avgDaysToVisit)} onSelect={stats.avgDaysToVisit === null ? undefined : () => toggleStat("diasVisita")} selected={selectedStat === "diasVisita"} />
+            <StatTile label="Días promedio de cierre" value={days(stats.avgDaysToClose)} onSelect={stats.avgDaysToClose === null ? undefined : () => toggleStat("diasCierre")} selected={selectedStat === "diasCierre"} />
+            <StatTile label="Esperando conformidad" value={String(stats.enRecepcion)} tone="action" onSelect={() => toggleStat("enRecepcion")} selected={selectedStat === "enRecepcion"} />
+            <StatTile label="No procede" value={String(stats.noProcede)} onSelect={() => toggleStat("noProcede")} selected={selectedStat === "noProcede"} />
           </section>
           <p className="mt-3 text-sm text-ink-secondary">
             {stats.casosEspeciales} {stats.casosEspeciales === 1 ? "caso especial" : "casos especiales"} ·{" "}
@@ -204,8 +221,9 @@ export function ZoneDashboard() {
           </div>
 
           <section className="mt-6 rounded-lg border border-line-soft bg-surface p-6 shadow-card">
-            <h2 className="text-lg text-ink">Requerimientos del período</h2>
-            {stats.rows.length === 0 ? (
+            <h2 ref={tableHeading} tabIndex={-1} className="text-lg text-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent">{selectedStat ? `Requerimientos: ${selectedLabel}` : "Requerimientos del período"}</h2>
+            {selectedStat && <p className="mt-2 text-sm text-ink-secondary">Mostrando: <strong>{selectedLabel}</strong> ({shownRows.length}) · <button type="button" className="font-bold text-accent hover:underline" onClick={() => { setSelectedStat(null); setShowAll(false); }}>Ver todos</button></p>}
+            {shownRows.length === 0 ? (
               <p className="py-8 text-center text-sm text-ink-secondary">No hay requerimientos con estos filtros.</p>
             ) : (
               <>
@@ -219,11 +237,11 @@ export function ZoneDashboard() {
                         <th scope="col" className="py-3 pr-4 font-bold text-ink">Origen</th>
                         <th scope="col" className="py-3 pr-4 font-bold text-ink">Equipo</th>
                         <th scope="col" className="py-3 pr-4 font-bold text-ink">Estado</th>
-                        <th scope="col" className="py-3 text-right font-bold text-ink">Días</th>
+                        <th scope="col" className="py-3 text-right font-bold text-ink">{selectedStat === "diasVisita" ? "Días hasta la visita" : "Días"}</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {(showAll ? stats.rows : stats.rows.slice(0, TABLE_LIMIT)).map((row) => (
+                      {(showAll ? shownRows : shownRows.slice(0, TABLE_LIMIT)).map((row) => (
                         <tr key={row.ticket.id} className="border-b border-line-soft last:border-b-0">
                           <td className="py-3 pr-4">
                             <Link href={`/encargado/tickets/${row.ticket.id}`} className="font-bold text-accent hover:underline">{row.ticket.folio}</Link>
@@ -233,15 +251,15 @@ export function ZoneDashboard() {
                           <td className="py-3 pr-4 text-ink">{row.category}</td>
                           <td className="py-3 pr-4 text-ink-secondary">{row.crew}</td>
                           <td className="py-3 pr-4"><StatusBadge status={row.ticket.status} /></td>
-                          <td className="py-3 text-right tabular-nums text-ink">{Math.floor(row.days)}</td>
+                          <td className="py-3 text-right tabular-nums text-ink">{Math.floor(selectedStat === "diasVisita" ? row.daysToVisit ?? row.days : row.days)}</td>
                         </tr>
                       ))}
                     </tbody>
                   </table>
                 </div>
-                {stats.rows.length > TABLE_LIMIT && !showAll && (
+                {shownRows.length > TABLE_LIMIT && !showAll && (
                   <button type="button" className="mt-4 text-sm font-bold text-accent hover:underline" onClick={() => setShowAll(true)}>
-                    Mostrar los {stats.rows.length} requerimientos
+                    Mostrar los {shownRows.length} requerimientos
                   </button>
                 )}
               </>

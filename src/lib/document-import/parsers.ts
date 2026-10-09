@@ -253,7 +253,7 @@ interface EmailMessage {
 }
 
 /** Dominios de Axis: un remitente de estos dominios nunca es el propietario que reporta. */
-const INTERNAL_EMAIL_DOMAINS = ["axisdc.cl"];
+export const INTERNAL_EMAIL_DOMAINS = ["axisdc.cl"];
 
 function isExternalOwnerEmail(email: string | null): boolean {
   if (!email || /no-?reply/i.test(email)) return false;
@@ -296,8 +296,8 @@ function splitMessages(allLines: string[]): EmailMessage[] {
   for (const raw of allLines) {
     const line = raw.trim();
     if (EMAIL_NOISE.some((pattern) => pattern.test(line))) continue;
-    if (/^De\s*:/i.test(line)) {
-      current = { subject: null, sent: null, from: parseSender(line), body: [] };
+    if (/^(De|From)\s*:/i.test(line)) {
+      current = { subject: null, sent: null, from: parseSender(line.replace(/^From\s*:/i, "De:")), body: [] };
       messages.push(current);
       inHeaders = true;
       continue;
@@ -461,8 +461,10 @@ function parseEmail(text: string): ParsedDocument {
   const allLines = lines(text);
   const title = allLines.map((line) => line.trim()).find((line, index) => index > 0 && line !== "" && !line.includes("@")) ?? "";
   const messages = splitMessages(allLines);
-  const subject = cleanSubject(messages.find((message) => message.subject)?.subject ?? title);
+  const rawSubject = messages.find((message) => message.subject)?.subject ?? title;
+  const subject = cleanSubject(rawSubject);
   const oldest = messages.at(-1);
+  const isForward = /^\s*(RV|RE|FW|FWD)\s*:/i.test(rawSubject);
   const warnings: string[] = [];
 
   const unitHint = unitFromSubject(subject);
@@ -487,11 +489,14 @@ function parseEmail(text: string): ParsedDocument {
 
   // Un solo requerimiento (no la tabla, donde cada fila ya trae su propio propietario): se
   // completa con el remitente del mensaje más antiguo, si es externo (nunca alguien de Axis).
-  if (!fromTable && oldest?.from && isExternalOwnerEmail(oldest.from.email)) {
-    const phone = phoneFromSignature(oldest.body);
+  const ownerMessage = isForward
+    ? [...messages].reverse().find((message) => message.from && isExternalOwnerEmail(message.from.email))
+    : oldest?.from && isExternalOwnerEmail(oldest.from.email) ? oldest : undefined;
+  if (!fromTable && ownerMessage?.from) {
+    const phone = phoneFromSignature(ownerMessage.body);
     for (const requirement of requirements) {
-      requirement.ownerName ??= oldest.from.name;
-      requirement.ownerEmail ??= oldest.from.email;
+      requirement.ownerName ??= ownerMessage.from.name;
+      requirement.ownerEmail ??= ownerMessage.from.email;
       requirement.ownerPhone ??= phone;
       requirement.ownerFromSender = true;
     }
