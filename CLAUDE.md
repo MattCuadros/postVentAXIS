@@ -23,7 +23,7 @@ Antes de tocar cualquier UI, lee `public/brand/formato-axis/SKILL.md` y `public/
 - Gestionar responsables (agregar/editar/quitar) es **solo superadministrador y el encargado de la zona de la unidad** (`canManageResponsibles`); se aplica también en `store.ts` (`CREATE/UPDATE/DELETE_RESPONSIBLE` rechazan a cualquier otro actor, no solo se ocultan en la interfaz). UI: `src/components/admin/unit-responsibles.tsx`, usado desde el detalle del ticket (staff) y desde las unidades de la obra (superadministrador).
 - `TicketStatusHistory.actorCapacity`: calidad de quien actuó ("Titular", "Familiar (hijo)"…), guardada como texto fijo al momento (no se recalcula después). Se calcula en el reducer (`actorCapacityFor`) al crear o transicionar un ticket; null si quien actuó es personal Axis.
 - El administrador de obra nunca ve nombres, correos ni teléfonos de titulares o responsables (solo unidad, torre y piso).
-- Máquina de estados de tickets: `src/lib/ticket-status.ts` (`TRANSITIONS`, `availableTransitions`, `canTransition`, `STATUS_LABEL`, `STATUS_TONE`, `MAIN_FLOW`).
+- Máquina de estados de tickets: `src/lib/ticket-status.ts` (`TRANSITIONS`, `availableTransitions`, `canTransition`, `STATUS_LABEL`, `STATUS_TONE`, `MAIN_FLOW`). Flujo: `INGRESADO → EN_REVISION → VISITA_INSPECTIVA → ASIGNADO → PROGRAMADO → EN_EJECUCION → EN_RECEPCION → CERRADO` (salida `NO_PROCEDE`). La visita inspectiva la registra el encargado de zona antes de asignar equipo; el diagnóstico queda visible en el detalle. La persistencia v8 migra tickets v7 en `ASIGNADO` sin visita a `EN_REVISION`, conserva su cuadrilla e historial.
 - Datos semilla: `src/mocks/data.ts` (zones, categories, users, projects, units, crews, tickets, statusHistory).
 
 ## Capa de datos (`src/data/`)
