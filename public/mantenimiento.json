@@ -1,11 +1,9 @@
 {
   "programado": [],
   "ultimo": {
-    "completadoEn": "2026-10-01T11:16:58.515Z",
+    "completadoEn": "2026-10-08T05:07:28.409Z",
     "novedades": [
-      "Ubicacion de la obra por direccion o enlace de Google Maps",
-      "Correccion interna del despliegue inmediato (sin cambios visibles)",
-      "Nuevo ingreso con correo y contrasena; la seleccion de usuarios pasa a la pantalla de pruebas"
+      "La visita inspectiva ocurre antes de asignar el equipo"
     ]
   }
 }

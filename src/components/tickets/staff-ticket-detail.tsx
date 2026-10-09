@@ -27,7 +27,7 @@ import type { Ticket, TicketDocument, TicketMedia, TicketMediaStage, TicketStatu
 function doneMessage(status: Ticket["status"], person: string): string | undefined {
   const lower = person.toLocaleLowerCase("es");
   const messages: Partial<Record<Ticket["status"], string>> = {
-    EN_REVISION: "Revisión iniciada.",
+    EN_REVISION: "Revisión iniciada; coordina y registra la visita inspectiva.",
     ASIGNADO: `Equipo asignado. El ${lower} ya lo ve en su teléfono.`,
     VISITA_INSPECTIVA: "Visita registrada con tu diagnóstico.",
     PROGRAMADO: `Trabajo programado. El ${lower} verá la fecha.`,
@@ -210,6 +210,12 @@ export function StaffTicketDetail({ ticketId, backHref }: StaffTicketDetailProps
               {[category?.name, ticket.room, `Ingresado el ${formatLongDate(ticket.createdAt)}`].filter(Boolean).join(" · ")}
             </p>
             <p className="mt-2 whitespace-pre-line text-ink">{ticket.description}</p>
+            {ticket.status === "VISITA_INSPECTIVA" && history?.findLast((entry) => entry.to === "VISITA_INSPECTIVA")?.comment && (
+              <div className="mt-4 rounded-md bg-surface-secondary p-3 text-sm">
+                <p className="font-bold text-ink">Diagnóstico de visita</p>
+                <p className="mt-1 whitespace-pre-line text-ink-secondary">{history.findLast((entry) => entry.to === "VISITA_INSPECTIVA")!.comment}</p>
+              </div>
+            )}
             {ticket.reportedCategoryId !== ticket.categoryId && (
               <p className="mt-3 text-sm text-ink-secondary">
                 Origen reportado por el {personLower}:{" "}
@@ -348,9 +354,9 @@ function MediaStrip({ title, items }: { title: string; items: TicketMedia[] }) {
 
 const NEXT_STEP: Partial<Record<Ticket["status"], string>> = {
   INGRESADO: "Revisa si el requerimiento procede.",
-  EN_REVISION: "Asigna una cuadrilla o subcontrato de la zona, o márcalo como no procede.",
-  ASIGNADO: "Agenda la visita con el propietario y, tras visitar la vivienda, registra el diagnóstico el mismo día.",
-  VISITA_INSPECTIVA: "Agenda el trabajo con el propietario, o márcalo como no procede.",
+  EN_REVISION: "Coordina la visita con el propietario y registra el diagnóstico, o marca el requerimiento como no procede.",
+  ASIGNADO: "Asigna el equipo responsable para continuar con el trabajo.",
+  VISITA_INSPECTIVA: "Revisa el diagnóstico de visita y asigna el equipo, o marca el requerimiento como no procede.",
   PROGRAMADO: "Cuando el equipo llegue a la vivienda, inicia el trabajo. Si cambia la fecha, reprograma.",
   EN_EJECUCION: "Al terminar, registra el trabajo realizado y pide la recepción.",
   EN_RECEPCION: "Esperando que el propietario confirme su conformidad.",

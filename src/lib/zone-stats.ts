@@ -213,7 +213,7 @@ export function computeZoneStats(filters: StatsFilters, sources: StatsSources, n
         reportedCategory: categories.find((item) => item.id === ticket.reportedCategoryId)?.name ?? "Sin categoría",
         crew: crews.find((item) => item.id === ticket.crewId)?.name ?? "Sin asignar",
         closedAt,
-        days: Math.max(0, (new Date(end).getTime() - new Date(ticket.createdAt).getTime()) / DAY_MS),
+        days: Math.max(0, (new Date(visit && end < visit.createdAt ? visit.createdAt : end).getTime() - new Date(ticket.createdAt).getTime()) / DAY_MS),
         daysToVisit: visit ? Math.max(0, (new Date(visit.createdAt).getTime() - new Date(ticket.createdAt).getTime()) / DAY_MS) : null,
         ownerRejections: entries.filter((entry) => entry.from === "EN_RECEPCION" && entry.to === "PROGRAMADO").length,
       };

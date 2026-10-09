@@ -64,9 +64,12 @@ export function ticketsOfProjects(tickets: Ticket[], units: Unit[], projectIds: 
 }
 
 export function computeProjectInsights({ tickets, units, categories, crews, history }: Sources): ProjectInsights {
-  const closedAt = (ticket: Ticket) =>
-    history.findLast((entry) => entry.ticketId === ticket.id && entry.to === "CERRADO")?.createdAt ?? ticket.updatedAt;
-  const daysToClose = (ticket: Ticket) => (new Date(closedAt(ticket)).getTime() - new Date(ticket.createdAt).getTime()) / DAY_MS;
+  const daysToClose = (ticket: Ticket) => {
+    const visitAt = history.find((entry) => entry.ticketId === ticket.id && entry.to === "VISITA_INSPECTIVA")?.createdAt;
+    const closed = history.findLast((entry) => entry.ticketId === ticket.id && entry.to === "CERRADO")?.createdAt ?? ticket.updatedAt;
+    const effectiveClose = visitAt && closed < visitAt ? visitAt : closed;
+    return Math.max(0, (new Date(effectiveClose).getTime() - new Date(ticket.createdAt).getTime()) / DAY_MS);
+  };
   const rejections = (ticket: Ticket) =>
     history.filter((entry) => entry.ticketId === ticket.id && entry.from === "EN_RECEPCION" && entry.to === "PROGRAMADO").length;
   const closed = tickets.filter((ticket) => ticket.status === "CERRADO");
