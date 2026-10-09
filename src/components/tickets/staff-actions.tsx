@@ -96,6 +96,7 @@ interface StaffActionsProps {
   userId: string;
   zoneId: string;
   projectId: string;
+  personLabel: string;
   onDone?: (transition: Transition) => void;
   onSpecialCase?: () => void;
   /** Se llama tras agendar o reagendar la visita, con el texto a mostrar. */
@@ -110,6 +111,7 @@ export function StaffActions({
   userId,
   zoneId,
   projectId,
+  personLabel,
   onDone,
   onSpecialCase,
   onVisitScheduled,
@@ -235,6 +237,7 @@ export function StaffActions({
           <TransitionForm
             key={open.to}
             spec={spec}
+            personLabel={personLabel}
             zoneId={zoneId}
             projectId={projectId}
             ticket={ticket}
@@ -256,6 +259,7 @@ export function StaffActions({
           <ScheduleVisitForm
             ticket={ticket}
             userId={userId}
+            personLabel={personLabel}
             onCancel={() => setScheduleOpen(false)}
             onSaved={(message) => {
               setScheduleOpen(false);
@@ -302,6 +306,7 @@ export function StaffActions({
 
 interface TransitionFormProps {
   spec: FormSpec;
+  personLabel: string;
   zoneId: string;
   projectId: string;
   ticket: Ticket;
@@ -314,6 +319,7 @@ interface TransitionFormProps {
 
 function TransitionForm({
   spec,
+  personLabel,
   zoneId,
   projectId,
   ticket,
@@ -422,7 +428,7 @@ function TransitionForm({
 
   return (
     <div className="flex flex-col gap-5">
-      {spec.description && <p className="text-sm text-ink-secondary">{spec.description}</p>}
+      {spec.description && <p className="text-sm text-ink-secondary">{replacePersonLabel(spec.description, personLabel)}</p>}
 
       {spec.crew && (
         <fieldset>
@@ -521,7 +527,7 @@ function TransitionForm({
       )}
 
       <Textarea
-        label={spec.comment.label}
+        label={replacePersonLabel(spec.comment.label, personLabel)}
         name="transition-comment"
         placeholder={spec.comment.placeholder}
         value={comment}
@@ -561,15 +567,20 @@ function TransitionForm({
   );
 }
 
+function replacePersonLabel(value: string, label: string): string {
+  return value.replace(/propietario/gi, (match) => match[0] === match[0].toUpperCase() ? label : label.toLocaleLowerCase("es"));
+}
+
 interface ScheduleVisitFormProps {
   ticket: Ticket;
   userId: string;
+  personLabel: string;
   onCancel: () => void;
   onSaved: (message: string) => void;
 }
 
 /** Agenda la visita inspectiva de un ticket ya asignado (fecha y hora obligatorias). */
-function ScheduleVisitForm({ ticket, userId, onCancel, onSaved }: ScheduleVisitFormProps) {
+function ScheduleVisitForm({ ticket, userId, personLabel, onCancel, onSaved }: ScheduleVisitFormProps) {
   const { scheduleVisit } = useDataApi();
   const today = todayIso();
   const upcoming = ticket.visitDate !== null && ticket.visitDate >= today;
@@ -605,7 +616,7 @@ function ScheduleVisitForm({ ticket, userId, onCancel, onSaved }: ScheduleVisitF
 
   return (
     <div className="flex flex-col gap-5">
-      <p className="text-sm text-ink-secondary">Coordina la fecha con el propietario antes de registrarla.</p>
+      <p className="text-sm text-ink-secondary">Coordina la fecha con el {personLabel.toLocaleLowerCase("es")} antes de registrarla.</p>
       <div className="grid gap-4 sm:grid-cols-[1fr_9rem]">
         <Input
           label="Fecha de la visita"

@@ -3,7 +3,7 @@ import { draftErrors, ownerDefaults, type DraftSources, type ImportDraft } from 
 import { emptyRequirement } from "@/lib/document-import/types";
 
 const owner = { id: "owner-1", name: "Dueño", email: "owner@example.cl", phone: "+56912345678", role: "PROPIETARIO" as const, zoneIds: [], projectIds: [], active: true };
-const project = { id: "project-1", name: "Obra", code: "OB", zoneId: "zone-1", address: "", commune: "", location: { lat: 0, lng: 0 } };
+const project = { id: "project-1", name: "Obra", code: "OB", type: "HABITACIONAL_EXTENSION" as const, zoneId: "zone-1", address: "", commune: "", location: { lat: 0, lng: 0 } };
 const unitWithOwner = { id: "unit-1", projectId: project.id, type: "CASA" as const, tower: null, floor: null, number: "1", ownerId: owner.id, deliveryDate: "2026-01-01" };
 const base: DraftSources = { projects: [project], units: [unitWithOwner], users: [owner], categories: [{ id: "cat", name: "Sanitarias" }], tickets: [] };
 

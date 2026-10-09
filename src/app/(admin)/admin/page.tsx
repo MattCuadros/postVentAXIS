@@ -12,6 +12,7 @@ import { useDataApi } from "@/data/api";
 import { useQuery } from "@/data/use-query";
 import { exportTicketsToExcel } from "@/lib/export-tickets";
 import { computeIndicators, PERIOD_LABEL, type CountRow, type Period } from "@/lib/metrics";
+import { PROJECT_TYPES, PROJECT_TYPE_LABEL } from "@/lib/project-types";
 
 const PERIODS: Period[] = ["MES", "TRIMESTRE", "TODO"];
 const oneDecimal = new Intl.NumberFormat("es-CL", { maximumFractionDigits: 1, minimumFractionDigits: 1 });
@@ -28,12 +29,15 @@ export default function IndicadoresPage() {
   const { data: crews } = useQuery(api.getCrews);
 
   const [period, setPeriod] = useState<Period>("MES");
+  const [projectType, setProjectType] = useState("");
   const [exporting, setExporting] = useState(false);
 
   const indicators = useMemo(() => {
     if (!tickets || !history || !units || !projects || !zones || !categories) return undefined;
-    return computeIndicators(period, { tickets, history, units, projects, zones, categories });
-  }, [period, tickets, history, units, projects, zones, categories]);
+    const projectIds = new Set(projects.filter((project) => !projectType || project.type === projectType).map((project) => project.id));
+    const unitIds = new Set(units.filter((unit) => projectIds.has(unit.projectId)).map((unit) => unit.id));
+    return computeIndicators(period, { tickets: tickets.filter((ticket) => unitIds.has(ticket.unitId)), history, units, projects, zones, categories });
+  }, [period, projectType, tickets, history, units, projects, zones, categories]);
 
   const periodCaption = period === "MES"
     ? new Intl.DateTimeFormat("es-CL", { month: "long", year: "numeric" }).format(new Date())
@@ -59,6 +63,12 @@ export default function IndicadoresPage() {
             <div className="w-44">
               <Select label="Período" name="period" value={period} onChange={(event) => setPeriod(event.target.value as Period)}>
                 {PERIODS.map((item) => <option key={item} value={item}>{PERIOD_LABEL[item]}</option>)}
+              </Select>
+            </div>
+            <div className="w-52">
+              <Select label="Tipo de obra" name="project-type" value={projectType} onChange={(event) => setProjectType(event.target.value)}>
+                <option value="">Todos los tipos</option>
+                {PROJECT_TYPES.map((type) => <option key={type} value={type}>{PROJECT_TYPE_LABEL[type]}</option>)}
               </Select>
             </div>
             <Button variant="secondary" disabled={exporting || !tickets} onClick={handleExport}>
@@ -89,7 +99,7 @@ export default function IndicadoresPage() {
           <section aria-label="Resumen" className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
             <StatTile label={period === "MES" ? "Ingresados este mes" : `Ingresados · ${PERIOD_LABEL[period].toLowerCase()}`} value={String(indicators.created)} />
             <StatTile label="Abiertos ahora" value={String(indicators.open)} />
-            <StatTile label="Esperando conformidad" value={String(indicators.awaitingOwner)} tone="action" />
+            <StatTile label="Esperando conformidad de Propietario / Administrador" value={String(indicators.awaitingOwner)} tone="action" />
             <StatTile label="Casos especiales" value={String(indicators.specialCases)} />
             <StatTile
               label="Días promedio de cierre"

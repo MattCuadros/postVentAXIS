@@ -16,6 +16,7 @@ import { useSession } from "@/data/session-context";
 import { useQuery } from "@/data/use-query";
 import { formatShortDate, unitLabel } from "@/lib/format";
 import type { CountRow } from "@/lib/metrics";
+import { ownerLabel, PROJECT_TYPES, PROJECT_TYPE_LABEL } from "@/lib/project-types";
 import {
   computeZoneStats,
   DEFAULT_FILTERS,
@@ -65,13 +66,13 @@ export function ZoneDashboard() {
   const [requestedStat, setSelectedStat] = useState<StatKey | null>(() => STAT_KEYS.find((key) => key === searchParams.get("ver")) ?? null);
   const set = <K extends keyof StatsFilters>(key: K, value: StatsFilters[K]) => {
     setShowAll(false);
-    setFilters((current) => ({ ...current, [key]: value, ...(key === "zoneId" ? { projectId: "" } : {}) }));
+    setFilters((current) => ({ ...current, [key]: value, ...(key === "zoneId" || key === "projectType" ? { projectId: "" } : {}) }));
   };
 
   const myZones = useMemo(() => (zones ?? []).filter((zone) => zoneIds?.includes(zone.id)), [zones, zoneIds]);
   const myProjects = useMemo(
-    () => (projects ?? []).filter((project) => zoneIds?.includes(project.zoneId) && (!filters.zoneId || project.zoneId === filters.zoneId)),
-    [projects, zoneIds, filters.zoneId],
+    () => (projects ?? []).filter((project) => zoneIds?.includes(project.zoneId) && (!filters.zoneId || project.zoneId === filters.zoneId) && (!filters.projectType || project.type === filters.projectType)),
+    [projects, zoneIds, filters.zoneId, filters.projectType],
   );
   const myCrews = useMemo(() => (crews ?? []).filter((crew) => zoneIds?.includes(crew.zoneId)), [crews, zoneIds]);
 
@@ -82,6 +83,9 @@ export function ZoneDashboard() {
 
   const zoneName = filters.zoneId ? myZones.find((zone) => zone.id === filters.zoneId)?.name ?? "" : myZones.map((zone) => zone.name).join(" y ");
   const range = stats?.start ? `${rangeDate.format(stats.start)} – ${rangeDate.format(stats.end)}` : "Desde el primer requerimiento";
+  const personRole = filters.projectId
+    ? ownerLabel(projects?.find((project) => project.id === filters.projectId)?.type ?? "HABITACIONAL_ALTURA").toLocaleLowerCase("es")
+    : "propietario / administrador";
   // Una tarjeta que queda sin requerimientos deja de estar seleccionada (se deriva, no se corrige con un efecto).
   const selectedStat = requestedStat && stats && rowsForStat(requestedStat, stats).length > 0 ? requestedStat : null;
   const shownRows = stats && selectedStat ? rowsForStat(selectedStat, stats) : stats?.rows ?? [];
@@ -89,7 +93,7 @@ export function ZoneDashboard() {
   useEffect(() => { const params = new URLSearchParams(searchParams.toString()); if (requestedStat) params.set("ver", requestedStat); else params.delete("ver"); const query = params.toString(); if (query !== searchParams.toString()) router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false }); }, [requestedStat, router, pathname, searchParams]);
   useEffect(() => { if (!selectedStat) return; tableHeading.current?.scrollIntoView({ behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" }); tableHeading.current?.focus({ preventScroll: true }); }, [selectedStat]);
   const toggleStat = (key: StatKey) => { setSelectedStat((current) => current === key ? null : key); setShowAll(false); };
-  const filtered = filters.projectId || filters.categoryId || filters.crewId || filters.status !== "TODOS" || filters.zoneId;
+  const filtered = filters.projectId || filters.projectType || filters.categoryId || filters.crewId || filters.status !== "TODOS" || filters.zoneId;
 
   async function handleExport() {
     if (!stats || !user) return;
@@ -143,13 +147,17 @@ export function ZoneDashboard() {
             </button>
           ))}
         </fieldset>
-        <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+        <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-6">
           {myZones.length > 1 && (
             <Select label="Zona" name="stats-zone" value={filters.zoneId} onChange={(event) => set("zoneId", event.target.value)}>
               <option value="">Todas mis zonas</option>
               {myZones.map((zone) => <option key={zone.id} value={zone.id}>{zone.name}</option>)}
             </Select>
           )}
+          <Select label="Tipo de obra" name="stats-project-type" value={filters.projectType ?? ""} onChange={(event) => set("projectType", event.target.value)}>
+            <option value="">Todos los tipos</option>
+            {PROJECT_TYPES.map((type) => <option key={type} value={type}>{PROJECT_TYPE_LABEL[type]}</option>)}
+          </Select>
           <Select label="Obra" name="stats-project" value={filters.projectId} onChange={(event) => set("projectId", event.target.value)}>
             <option value="">Todas las obras</option>
             {myProjects.map((project) => <option key={project.id} value={project.id}>{project.name}</option>)}
@@ -194,7 +202,7 @@ export function ZoneDashboard() {
           <p className="mt-3 text-sm text-ink-secondary">
             {stats.casosEspeciales} {stats.casosEspeciales === 1 ? "caso especial" : "casos especiales"} ·{" "}
             {stats.reclasificados} con origen reclasificado en la visita · {stats.ownerRejections}{" "}
-            {stats.ownerRejections === 1 ? "rechazo" : "rechazos"} del propietario en la recepción
+            {stats.ownerRejections === 1 ? "rechazo" : "rechazos"} de {personRole} en la recepción
           </p>
 
           <section className="mt-6 rounded-lg border border-line-soft bg-surface p-6 shadow-card">

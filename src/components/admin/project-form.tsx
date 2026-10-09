@@ -8,6 +8,7 @@ import { useDataApi } from "@/data/api";
 import { useQuery } from "@/data/use-query";
 import { formatCoordinates, looksLikeMapsShortLink, mapsUrl, parseCoordinates } from "@/lib/geo";
 import { fieldErrors, projectSchema } from "@/lib/schemas";
+import { PROJECT_TYPES, PROJECT_TYPE_LABEL } from "@/lib/project-types";
 import type { Project } from "@/types/domain";
 
 /** Alta de obra de edificación. La ubicación la define el superadmin aquí (no el propietario). */
@@ -15,7 +16,7 @@ export function ProjectForm({ onCreated, onCancel }: { onCreated: (project: Proj
   const api = useDataApi();
   const { data: zones } = useQuery(api.getZones);
   const { data: projects } = useQuery(api.getProjects);
-  const [values, setValues] = useState({ name: "", code: "", zoneId: "", address: "", commune: "", coordinates: "" });
+  const [values, setValues] = useState({ type: PROJECT_TYPES[0], name: "", code: "", zoneId: "", address: "", commune: "", coordinates: "" });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
   const [locating, setLocating] = useState(false);
@@ -92,6 +93,7 @@ export function ProjectForm({ onCreated, onCancel }: { onCreated: (project: Proj
       const project = await api.createProject({
         name: result.data.name,
         code: result.data.code,
+        type: result.data.type,
         zoneId: result.data.zoneId,
         address: result.data.address,
         commune: result.data.commune,
@@ -108,6 +110,9 @@ export function ProjectForm({ onCreated, onCancel }: { onCreated: (project: Proj
   return (
     <div className="flex flex-col gap-4">
       <Input label="Nombre de la obra" name="project-name" placeholder="Ej.: Edificio Mirador Central" value={values.name} error={errors.name} onChange={(event) => set("name", event.target.value)} />
+      <Select label="Tipo de obra" name="project-type" value={values.type} error={errors.type} onChange={(event) => set("type", event.target.value)}>
+        {PROJECT_TYPES.map((type) => <option key={type} value={type}>{PROJECT_TYPE_LABEL[type]}</option>)}
+      </Select>
       <Input label="Código de obra" name="project-code" placeholder="Ej.: MIR" value={values.code} error={errors.code} maxLength={4} onChange={(event) => set("code", event.target.value.toUpperCase())} />
       <Select label="Zona" name="project-zone" value={values.zoneId} error={errors.zoneId} onChange={(event) => set("zoneId", event.target.value)}>
         <option value="" disabled>Selecciona la zona</option>

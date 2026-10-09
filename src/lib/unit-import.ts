@@ -3,6 +3,8 @@ import { unitLabel } from "@/lib/format";
 import { fieldErrors, unitSchema } from "@/lib/schemas";
 import { normalize, parseSheetDate, pick, type SheetRow } from "@/lib/sheet";
 import type { Unit, UnitType, User } from "@/types/domain";
+import { allowedUnitTypes, PROJECT_TYPE_LABEL, UNIT_TYPE_LABEL } from "@/lib/project-types";
+import type { ProjectType } from "@/types/domain";
 
 /** Columnas de la plantilla de unidades, en orden. */
 export const UNIT_TEMPLATE_HEADERS = [
@@ -22,6 +24,22 @@ export const UNIT_TEMPLATE_EXAMPLE = [
   ["Casa", "", "", "12", "30-11-2026", "mgonzalez@correo.cl", "", ""],
   ["Departamento", "A", "1", "103", "15-10-2026", "", "", ""],
 ];
+
+export function unitTemplateHeadersForRole(personLabel: string): string[] {
+  return UNIT_TEMPLATE_HEADERS.map((header) => header.replace("propietario", personLabel.toLocaleLowerCase("es")));
+}
+
+export function unitTemplateExampleForProject(projectType: ProjectType): string[][] {
+  const examples: Record<UnitType, string[]> = {
+    CASA: ["Casa", "", "", "12", "15-10-2026", "", "", ""],
+    DEPARTAMENTO: ["Departamento", "A", "1", "101", "15-10-2026", "", "", ""],
+    LOCAL: ["Local", "", "", "3", "15-10-2026", "", "", ""],
+    OFICINA: ["Oficina", "B", "12", "1203", "15-10-2026", "", "", ""],
+    RECINTO: ["Recinto", "", "", "Pabellón Norte", "15-10-2026", "", "", ""],
+    SECTOR: ["Sector", "", "", "Tramo 2", "15-10-2026", "", "", ""],
+  };
+  return allowedUnitTypes(projectType).map((type) => examples[type]);
+}
 
 export interface NewOwner {
   name: string;
@@ -49,6 +67,10 @@ function parseType(text: string): UnitType | null {
   const value = normalize(text);
   if (value.startsWith("dep") || value.startsWith("dpto") || value === "dto") return "DEPARTAMENTO";
   if (value.startsWith("casa")) return "CASA";
+  if (value.startsWith("local")) return "LOCAL";
+  if (value.startsWith("oficina") || value.startsWith("of." ) || value === "of") return "OFICINA";
+  if (value.startsWith("recinto")) return "RECINTO";
+  if (value.startsWith("sector")) return "SECTOR";
   return null;
 }
 
@@ -79,9 +101,10 @@ function resolveOwner(
   phone: string,
   users: User[],
   newOwners: Map<string, NewOwner>,
+  person: string,
 ): OwnerOutcome {
   if (!email) {
-    return { kind: "none", warning: name || phone ? "Falta el correo: no se creó el propietario." : null };
+    return { kind: "none", warning: name || phone ? `Falta el correo: no se creó el ${person}.` : null };
   }
   if (!z.string().email().safeParse(email).success) {
     return { kind: "error", message: `Correo "${email}" no válido.` };
@@ -89,7 +112,7 @@ function resolveOwner(
 
   const existing = users.find((user) => user.email.toLowerCase() === email);
   if (existing) {
-    if (existing.role !== "PROPIETARIO") return { kind: "error", message: `${email} pertenece a un usuario que no es propietario.` };
+    if (existing.role !== "PROPIETARIO") return { kind: "error", message: `${email} pertenece a un usuario que no es ${person}.` };
     return { kind: "existing", id: existing.id, label: existing.name };
   }
 
@@ -103,7 +126,7 @@ function resolveOwner(
     return { kind: "create", owner: created, label: `${created.name} (nuevo)` };
   }
   const missing = !name.trim() && !phone.trim() ? "nombre y teléfono" : !name.trim() ? "el nombre" : "el teléfono";
-  return { kind: "none", warning: `Falta ${missing} del propietario nuevo (${email}): no se creó.` };
+  return { kind: "none", warning: `Falta ${missing} del ${person} nuevo (${email}): no se creó.` };
 }
 
 /**
@@ -112,7 +135,9 @@ function resolveOwner(
  * después). Si la fila corresponde a una unidad existente sin propietario y trae uno válido, se
  * asigna en vez de rechazar la fila con "ya existe".
  */
-export function validateUnitImport(rows: SheetRow[], existingUnits: Unit[], users: User[]): UnitImportRow[] {
+export function validateUnitImport(rows: SheetRow[], existingUnits: Unit[], users: User[], projectType: ProjectType = "HABITACIONAL_ALTURA", personLabel = "Propietario"): UnitImportRow[] {
+  const allowed = allowedUnitTypes(projectType);
+  const person = personLabel.toLocaleLowerCase("es");
   const takenUnits = new Map(existingUnits.map((unit) => [unitKey(unit.type, unit.tower, unit.number), unit]));
   const seenUnits = new Set<string>();
   const newOwners = new Map<string, NewOwner>();
@@ -124,23 +149,25 @@ export function validateUnitImport(rows: SheetRow[], existingUnits: Unit[], user
       const errors: string[] = [];
       const warnings: string[] = [];
       const typeText = pick(row, "Tipo");
-      const type = parseType(typeText);
+      const detectedType = parseType(typeText);
+      const type = detectedType ?? (!typeText && allowed.length === 1 ? allowed[0] : null);
       const tower = pick(row, "Torre");
       const floor = pick(row, "Piso");
       const number = pick(row, "Número");
       const dateText = pick(row, "Fecha entrega");
       const deliveryDate = parseSheetDate(dateText);
-      const email = pick(row, "Correo propietario").toLowerCase();
-      const ownerName = pick(row, "Nombre propietario");
-      const ownerPhone = pick(row, "Teléfono propietario");
+      const email = (pick(row, `Correo ${person}`) || pick(row, "Correo propietario")).toLowerCase();
+      const ownerName = pick(row, `Nombre ${person}`) || pick(row, "Nombre propietario");
+      const ownerPhone = pick(row, `Teléfono ${person}`) || pick(row, "Teléfono propietario");
 
-      if (type === null) errors.push(typeText ? `Tipo "${typeText}" no válido: usa Departamento o Casa.` : "Falta el tipo (Departamento o Casa).");
+      if (type === null) errors.push(typeText ? `Tipo "${typeText}" no válido.` : "Falta el tipo de unidad.");
+      else if (!allowed.includes(type)) errors.push(`La obra (${PROJECT_TYPE_LABEL[projectType]}) no admite unidades de tipo ${UNIT_TYPE_LABEL[type]}.`);
       if (dateText && deliveryDate === null) errors.push(`Fecha "${dateText}" no válida: usa DD-MM-AAAA.`);
 
       const parsed = unitSchema.safeParse({
         type: type ?? "DEPARTAMENTO",
-        tower: type === "CASA" ? "" : tower,
-        floor: type === "CASA" ? "" : floor,
+        tower: type === "DEPARTAMENTO" || type === "OFICINA" ? tower : "",
+        floor: type === "DEPARTAMENTO" || type === "OFICINA" || type === "LOCAL" ? floor : "",
         number,
         ownerId: "",
         deliveryDate: deliveryDate ?? (dateText ? "invalida" : ""),
@@ -156,13 +183,13 @@ export function validateUnitImport(rows: SheetRow[], existingUnits: Unit[], user
           ? null
           : {
               type,
-              tower: type === "CASA" || tower === "" ? null : tower,
-              floor: type === "CASA" || floor === "" || !/^-?\d+$/.test(floor) ? null : Number(floor),
+              tower: type !== "DEPARTAMENTO" && type !== "OFICINA" || tower === "" ? null : tower,
+              floor: type !== "DEPARTAMENTO" && type !== "OFICINA" && type !== "LOCAL" || floor === "" || !/^-?\d+$/.test(floor) ? null : Number(floor),
               number,
               deliveryDate,
             };
 
-      const ownerOutcome = resolveOwner(email, ownerName, ownerPhone, users, newOwners);
+      const ownerOutcome = resolveOwner(email, ownerName, ownerPhone, users, newOwners, person);
       if (ownerOutcome.kind === "error") errors.push(ownerOutcome.message);
       else if (ownerOutcome.kind === "none" && ownerOutcome.warning) warnings.push(ownerOutcome.warning);
 
@@ -180,7 +207,7 @@ export function validateUnitImport(rows: SheetRow[], existingUnits: Unit[], user
             unit = null;
             assignToUnitId = takenUnit.id;
           } else {
-            errors.push("Esta unidad ya existe en la obra, y sin propietario en esta fila no hay nada que asignar.");
+            errors.push(`Esta unidad ya existe en la obra, y sin ${person} en esta fila no hay nada que asignar.`);
           }
         }
         seenUnits.add(key);
@@ -191,11 +218,11 @@ export function validateUnitImport(rows: SheetRow[], existingUnits: Unit[], user
         : ownerOutcome.kind === "create" ? { create: ownerOutcome.owner }
         : ownerOutcome.kind === "none" ? { none: true }
         : null;
-      const ownerLabel = ownerOutcome.kind === "error" ? (email || "—") : ownerOutcome.kind === "none" ? "Sin propietario" : ownerOutcome.label;
+      const rowOwnerLabel = ownerOutcome.kind === "error" ? (email || "—") : ownerOutcome.kind === "none" ? `Sin ${person}` : ownerOutcome.label;
 
       const label = unitFields ? unitLabel({ ...unitFields, id: "", projectId: "", ownerId: null }) : [typeText, tower, number].filter(Boolean).join(" ") || "—";
 
-      if (errors.length > 0) return { line, label, ownerLabel, unit: null, owner: null, assignToUnitId: null, warnings: [], errors };
-      return { line, label, ownerLabel, unit, owner, assignToUnitId, warnings, errors };
+      if (errors.length > 0) return { line, label, ownerLabel: rowOwnerLabel, unit: null, owner: null, assignToUnitId: null, warnings: [], errors };
+      return { line, label, ownerLabel: rowOwnerLabel, unit, owner, assignToUnitId, warnings, errors };
     });
 }

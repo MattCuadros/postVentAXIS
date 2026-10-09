@@ -54,4 +54,34 @@ describe("loadState", () => {
     const restored = loadState(stored(7, { ...seed, tickets: [ticket, ...seed.tickets.slice(1)], statusHistory: history }));
     expect(restored?.tickets[0].status).toBe("ASIGNADO");
   });
+
+  it("migra v8 a v9 según las unidades, incluidos proyectos vacíos", () => {
+    const seed = createSeedState();
+    const { projects, units, ...rest } = seed;
+    const oldProjects = projects.map((project) => {
+      const legacy = { ...project } as Partial<typeof project>;
+      delete legacy.type;
+      return legacy;
+    });
+    const legacyProjects = oldProjects.map((project) => ({ ...project }));
+    const legacyUnits = units.filter((unit) => unit.projectId === "p-altobulnes").map((unit) => ({ ...unit }));
+    legacyProjects.push({ ...oldProjects[0], id: "p-empty" });
+    const state = loadState(stored(8, { ...rest, projects: legacyProjects, units: legacyUnits }));
+    expect(state?.projects.find((project) => project.id === "p-altobulnes")?.type).toBe("HABITACIONAL_EXTENSION");
+    expect(state?.projects.find((project) => project.id === "p-empty")?.type).toBe("HABITACIONAL_ALTURA");
+  });
+
+  it("migra a habitacional altura cuando hay departamentos", () => {
+    const seed = createSeedState();
+    const state = loadState(stored(8, {
+      ...seed,
+      projects: seed.projects.map((project) => {
+        const old = { ...project } as Partial<typeof project>;
+        delete old.type;
+        return old;
+      }),
+      units: seed.units.filter((unit) => unit.projectId === "p-mirador"),
+    }));
+    expect(state?.projects.find((project) => project.id === "p-mirador")?.type).toBe("HABITACIONAL_ALTURA");
+  });
 });

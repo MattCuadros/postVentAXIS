@@ -33,12 +33,13 @@ export interface StatsFilters {
   period: StatsPeriod;
   zoneId: string;
   projectId: string;
+  projectType?: string;
   categoryId: string;
   crewId: string;
   status: StatusGroup;
 }
 
-export const DEFAULT_FILTERS: StatsFilters = { period: "MES", zoneId: "", projectId: "", categoryId: "", crewId: "", status: "TODOS" };
+export const DEFAULT_FILTERS: StatsFilters = { period: "MES", zoneId: "", projectId: "", projectType: "", categoryId: "", crewId: "", status: "TODOS" };
 
 export interface StatsSources {
   tickets: Ticket[];
@@ -194,6 +195,7 @@ export function computeZoneStats(filters: StatsFilters, sources: StatsSources, n
     return (
       (!filters.zoneId || project?.zoneId === filters.zoneId) &&
       (!filters.projectId || project?.id === filters.projectId) &&
+      (!filters.projectType || project?.type === filters.projectType) &&
       (!filters.categoryId || ticket.categoryId === filters.categoryId) &&
       (!filters.crewId || ticket.crewId === filters.crewId) &&
       matchesStatus(ticket, filters.status)

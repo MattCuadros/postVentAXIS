@@ -1,11 +1,13 @@
 import { z } from "zod";
 import { parseCoordinates } from "@/lib/geo";
+import { PROJECT_TYPES } from "@/lib/project-types";
 
 /** Esquemas de validación de los formularios de administración (y del importador de usuarios). */
 
 const requiredText = (label: string) => z.string().trim().min(1, `${label} es obligatorio.`);
 
 export const projectSchema = z.object({
+  type: z.enum(PROJECT_TYPES, { message: "Elige el tipo de obra." }),
   name: requiredText("El nombre"),
   code: z.string().trim().regex(/^[A-Z]{2,4}$/, "El código debe tener entre 2 y 4 letras mayúsculas."),
   zoneId: z.string().min(1, "Elige la zona."),
@@ -20,16 +22,16 @@ export const projectSchema = z.object({
 
 export const unitSchema = z
   .object({
-    type: z.enum(["DEPARTAMENTO", "CASA"]),
+    type: z.enum(["DEPARTAMENTO", "CASA", "LOCAL", "OFICINA", "RECINTO", "SECTOR"]),
     tower: z.string().trim(),
     floor: z.string().trim(),
-    number: requiredText("El número"),
+    number: requiredText("El número o nombre"),
     /** "" = sin propietario (se puede completar después). */
     ownerId: z.string(),
     deliveryDate: z.string().min(1, "Indica la fecha de entrega."),
   })
   .superRefine((unit, context) => {
-    if (unit.type === "DEPARTAMENTO" && unit.floor !== "" && !/^-?\d+$/.test(unit.floor)) {
+    if ((unit.type === "DEPARTAMENTO" || unit.type === "OFICINA" || unit.type === "LOCAL") && unit.floor !== "" && !/^-?\d+$/.test(unit.floor)) {
       context.addIssue({ code: "custom", path: ["floor"], message: "El piso debe ser un número." });
     }
   });

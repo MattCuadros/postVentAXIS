@@ -4,6 +4,7 @@
  */
 import { matchCategory, matchOwner, matchProject, matchUnit, parseUnitHint } from "@/lib/document-import/match";
 import { findTicketByRefs } from "@/lib/document-import/plan";
+import { allowedUnitTypes, ownerLabel } from "@/lib/project-types";
 import { sentenceCase, type ParsedDocument, type ParsedRequirement } from "@/lib/document-import/types";
 import type { Project, Ticket, TicketCategory, Unit, UnitType, User } from "@/types/domain";
 
@@ -70,6 +71,7 @@ export function buildDrafts(document: ParsedDocument, sources: DraftSources): Im
     const projectUnits = project ? sources.units.filter((unit) => unit.projectId === project.id) : [];
     const unit = linkedUnit ?? matchUnit(parsed.unitHint, projectUnits);
     const hint = parseUnitHint(parsed.unitHint);
+    const permitted = project ? allowedUnitTypes(project.type) : ["CASA" as UnitType];
     const category = matchCategory([parsed.item, parsed.problem, parsed.description], sources.categories);
     const description = parsed.description ?? [parsed.item, parsed.problem].filter(Boolean).join(": ");
 
@@ -80,7 +82,7 @@ export function buildDrafts(document: ParsedDocument, sources: DraftSources): Im
       projectId: project?.id ?? "",
       unitMode: unit || !project ? "existing" : "new",
       unitId: unit?.id ?? "",
-      newUnit: { type: hint?.type ?? "CASA", tower: hint?.tower ?? "", number: hint?.number ?? "" },
+      newUnit: { type: hint && permitted.includes(hint.type) ? hint.type : permitted[0], tower: hint?.tower ?? "", number: hint?.number ?? "" },
       // Unidad existente sin propietario: se deja "sin asignar" por defecto (es opcional); una
       // unidad nueva siempre necesita uno.
       ...ownerDefaults(unit, parsed, sources),
@@ -98,23 +100,25 @@ export function buildDrafts(document: ParsedDocument, sources: DraftSources): Im
 }
 
 /** Errores de un borrador que impiden registrarlo (en español, por campo). */
-export function draftErrors(draft: ImportDraft, sources: DraftSources): Record<string, string> {
+export function draftErrors(draft: ImportDraft, sources?: DraftSources): Record<string, string> {
   if (draft.linkedTicketId) return {};
   const errors: Record<string, string> = {};
+  const project = sources?.projects.find((item) => item.id === draft.projectId);
+  const person = project ? ownerLabel(project.type).toLocaleLowerCase("es") : "propietario / administrador";
   if (!draft.projectId) errors.project = "Elige la obra.";
   if (draft.unitMode === "existing" && !draft.unitId) errors.unit = "Elige la unidad o crea una nueva.";
   if (draft.unitMode === "new" && !draft.newUnit.number.trim()) errors.unit = "Indica el número de la unidad nueva.";
   // El propietario es obligatorio al crear una unidad; opcional al completar una existente sin
   // propietario ("none" = se deja así). Si se eligió asignar uno, tiene que quedar completo.
-  const selectedUnit = draft.unitMode === "existing" ? sources.units.find((unit) => unit.id === draft.unitId) : undefined;
-  // The owner picker is hidden for an existing unit that already has an owner.
+  const selectedUnit = draft.unitMode === "existing" ? sources?.units.find((unit) => unit.id === draft.unitId) : undefined;
+  // La tarjeta oculta el selector de propietario cuando la unidad existente ya tiene uno.
   const ownerIsVisible = draft.unitMode === "new" || (!!selectedUnit && !selectedUnit.ownerId);
   if (ownerIsVisible && draft.ownerMode !== "none") {
-    if (draft.ownerMode === "existing" && !draft.ownerId) errors.owner = "Elige el propietario o crea uno nuevo.";
+    if (draft.ownerMode === "existing" && !draft.ownerId) errors.owner = `Elige el ${person} o crea uno nuevo.`;
     if (draft.ownerMode === "new") {
-      if (!draft.newOwner.name.trim()) errors.owner = "Indica el nombre del propietario.";
-      else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(draft.newOwner.email.trim())) errors.owner = "Indica un correo válido del propietario.";
-      else if (!draft.newOwner.phone.trim()) errors.owner = "Indica el teléfono del propietario.";
+      if (!draft.newOwner.name.trim()) errors.owner = `Indica el nombre del ${person}.`;
+      else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(draft.newOwner.email.trim())) errors.owner = `Indica un correo válido del ${person}.`;
+      else if (!draft.newOwner.phone.trim()) errors.owner = `Indica el teléfono del ${person}.`;
     }
   }
   if (!draft.categoryId) errors.category = "Elige el origen de la falla.";

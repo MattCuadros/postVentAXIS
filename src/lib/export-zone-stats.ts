@@ -52,13 +52,13 @@ export async function exportZoneStatsToExcel({ stats, filters, filterNames, enca
       ["Ingresados en el período", stats.ingresados],
       ["Abiertos", stats.abiertos],
       [`Abiertos hace más de ${STALE_DAYS} días`, stats.atrasados],
-      ["Esperando conformidad del propietario", stats.enRecepcion],
+      ["Esperando conformidad de Propietario / Administrador", stats.enRecepcion],
       ["Cerrados conformes", stats.cerrados],
       ["Cierres conformes dentro del período", stats.cerradosEnPeriodo],
       ["No procede", stats.noProcede],
       ["Casos especiales", stats.casosEspeciales],
       ["Origen reclasificado en la visita", stats.reclasificados],
-      ["Rechazos del propietario en la recepción", stats.ownerRejections],
+      ["Rechazos de Propietario / Administrador en la recepción", stats.ownerRejections],
       ["Días promedio hasta la visita inspectiva", round1(stats.avgDaysToVisit)],
       ["Días promedio de cierre", round1(stats.avgDaysToClose)],
     ],
@@ -74,7 +74,7 @@ export async function exportZoneStatsToExcel({ stats, filters, filterNames, enca
     [
       [
         "Folio", "Estado", "Obra", "Unidad", "Recinto", "Origen reportado", "Origen confirmado", "Equipo", "Ingresado",
-        "Visita inspectiva", "Trabajo programado", "Cerrado", "Días", "Días a la visita", "Rechazos del propietario",
+        "Visita inspectiva", "Trabajo programado", "Cerrado", "Días", "Días a la visita", "Rechazos de Propietario / Administrador",
         "Caso especial", "Motivo no procede", "Descripción",
       ],
       ...stats.rows.map((row) => [

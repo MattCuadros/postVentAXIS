@@ -21,7 +21,8 @@ export type TicketStatus =
   | "CERRADO"
   | "NO_PROCEDE";
 
-export type UnitType = "DEPARTAMENTO" | "CASA";
+export type ProjectType = "HABITACIONAL_EXTENSION" | "HABITACIONAL_ALTURA" | "RETAIL" | "INSTITUCIONAL" | "URBANIZACION" | "OFICINAS" | "INDUSTRIAL";
+export type UnitType = "CASA" | "DEPARTAMENTO" | "LOCAL" | "OFICINA" | "RECINTO" | "SECTOR";
 export type WorkCrewType = "INTERNO" | "SUBCONTRATO";
 
 export interface GeoPoint {
@@ -53,6 +54,7 @@ export interface Project {
   name: string;
   /** Sigla única de 2 a 4 letras usada en el folio. */
   code: string;
+  type: ProjectType;
   zoneId: string;
   address: string;
   commune: string;

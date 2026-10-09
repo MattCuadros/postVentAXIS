@@ -1,8 +1,8 @@
 import type { DataState } from "@/data/store";
-import type { Project, Ticket, TicketMedia, TicketMediaStage, Zone } from "@/types/domain";
+import type { Project, ProjectType, Ticket, TicketMedia, TicketMediaStage, Zone } from "@/types/domain";
 
 export const STORAGE_KEY = "postventaxis:datos";
-const VERSION = 8;
+const VERSION = 9;
 
 interface StoredData {
   version: number;
@@ -224,6 +224,24 @@ function migrateV7(state: DataState): DataState {
   };
 }
 
+/** v8 → v9: toda obra recibe un tipo; los datos habitacionales previos se infieren por unidades. */
+function migrateV8toV9(state: DataState): DataState {
+  const unitsByProject = new Map<string, DataState["units"]>();
+  for (const unit of state.units) unitsByProject.set(unit.projectId, [...(unitsByProject.get(unit.projectId) ?? []), unit]);
+  return {
+    ...state,
+    projects: state.projects.map((project) => {
+      const existing = (project as Project & { type?: ProjectType }).type;
+      if (existing) return project;
+      const units = unitsByProject.get(project.id) ?? [];
+      const type: ProjectType = units.length > 0 && units.every((unit) => unit.type === "CASA")
+        ? "HABITACIONAL_EXTENSION"
+        : "HABITACIONAL_ALTURA";
+      return { ...project, type };
+    }),
+  };
+}
+
 /** Migración de cada versión a la siguiente (clave = versión de origen). */
 const MIGRATIONS: Record<number, (state: DataState) => DataState> = {
   1: migrateV1,
@@ -233,6 +251,7 @@ const MIGRATIONS: Record<number, (state: DataState) => DataState> = {
   5: migrateV5,
   6: migrateV6,
   7: migrateV7,
+  8: migrateV8toV9,
 };
 
 export function loadState(raw: string | null = readRaw()): DataState | null {

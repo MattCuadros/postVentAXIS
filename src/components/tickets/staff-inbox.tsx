@@ -125,7 +125,7 @@ export function StaffInbox({ basePath, allZones = false }: StaffInboxProps) {
           label="Buscar"
           name="search"
           type="search"
-          placeholder="Folio, obra, unidad o propietario"
+          placeholder="Folio, obra, unidad o Propietario / Administrador"
           value={search}
           onChange={(event) => setSearch(event.target.value)}
         />

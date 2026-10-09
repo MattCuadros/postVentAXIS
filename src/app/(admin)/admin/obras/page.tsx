@@ -12,6 +12,8 @@ import { useDataApi } from "@/data/api";
 import { useQuery } from "@/data/use-query";
 import { mapsUrl } from "@/lib/geo";
 import { isClosed } from "@/lib/ticket-status";
+import { PROJECT_TYPE_LABEL, PROJECT_TYPES } from "@/lib/project-types";
+import { Select } from "@/components/ui/select";
 
 export default function ObrasPage() {
   const api = useDataApi();
@@ -21,8 +23,9 @@ export default function ObrasPage() {
   const { data: tickets } = useQuery(api.getTickets);
   const [creating, setCreating] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
+  const [typeFilter, setTypeFilter] = useState("");
 
-  const rows = projects?.map((project) => {
+  const rows = projects?.filter((project) => !typeFilter || project.type === typeFilter).map((project) => {
     const projectUnits = units?.filter((unit) => unit.projectId === project.id) ?? [];
     const unitIds = new Set(projectUnits.map((unit) => unit.id));
     return {
@@ -41,6 +44,8 @@ export default function ObrasPage() {
         actions={<Button onClick={() => setCreating(true)}>Nueva obra</Button>}
       />
 
+      <div className="mt-5 max-w-sm"><Select label="Tipo de obra" name="project-type-filter" value={typeFilter} onChange={(event) => setTypeFilter(event.target.value)}><option value="">Todos los tipos</option>{PROJECT_TYPES.map((type) => <option key={type} value={type}>{PROJECT_TYPE_LABEL[type]}</option>)}</Select></div>
+
       {notice && <Notice tone="success" className="mt-5" onDismiss={() => setNotice(null)}>{notice}</Notice>}
 
       {rows === undefined ? (
@@ -52,6 +57,7 @@ export default function ObrasPage() {
               <Link href={`/admin/obras/${project.id}`} className="text-lg font-bold text-accent hover:underline">
                 {project.name} · {project.code}
               </Link>
+              <p className="text-sm font-bold text-ink-secondary">{PROJECT_TYPE_LABEL[project.type]}</p>
               <p className="text-sm text-ink-secondary">{project.address}, {project.commune}</p>
               <p className="text-sm text-ink-secondary">{zone}</p>
               <div className="mt-4 flex gap-6 text-sm">

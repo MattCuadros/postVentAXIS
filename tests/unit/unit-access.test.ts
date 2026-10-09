@@ -22,7 +22,7 @@ const admin: User = { id: "u-admin", name: "Admin", email: "admin@demo.cl", phon
 const unitWithOwner: Unit = { id: "un-1", projectId: "p-1", type: "DEPARTAMENTO", tower: "A", floor: 7, number: "704", ownerId: titular.id, deliveryDate: "2026-01-01" };
 const unitNoOwner: Unit = { id: "un-2", projectId: "p-2", type: "CASA", tower: null, floor: null, number: "12", ownerId: null, deliveryDate: "2026-01-01" };
 
-const project: Project = { id: "p-1", name: "Obra Uno", code: "UNO", zoneId: "z-centro", address: "", commune: "", location: { lat: 0, lng: 0 } };
+const project: Project = { id: "p-1", name: "Obra Uno", code: "UNO", type: "HABITACIONAL_EXTENSION", zoneId: "z-centro", address: "", commune: "", location: { lat: 0, lng: 0 } };
 
 const responsibles: UnitResponsible[] = [
   { id: "ur-1", unitId: "un-1", userId: hijo.id, relation: "FAMILIAR", relationNote: "hijo", canSignConformity: true, createdAt: "2026-01-01T00:00:00Z", createdById: encargadoCentro.id },

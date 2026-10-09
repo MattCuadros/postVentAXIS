@@ -25,6 +25,8 @@ Antes de tocar cualquier UI, lee `public/brand/formato-axis/SKILL.md` y `public/
 - El administrador de obra nunca ve nombres, correos ni teléfonos de titulares o responsables (solo unidad, torre y piso).
 - Máquina de estados de tickets: `src/lib/ticket-status.ts` (`TRANSITIONS`, `availableTransitions`, `canTransition`, `STATUS_LABEL`, `STATUS_TONE`, `MAIN_FLOW`). Flujo: `INGRESADO → EN_REVISION → VISITA_INSPECTIVA → ASIGNADO → PROGRAMADO → EN_EJECUCION → EN_RECEPCION → CERRADO` (salida `NO_PROCEDE`). La visita inspectiva la registra el encargado de zona antes de asignar equipo; el diagnóstico queda visible en el detalle. La persistencia v8 migra tickets v7 en `ASIGNADO` sin visita a `EN_REVISION`, conserva su cuadrilla e historial.
 - Datos semilla: `src/mocks/data.ts` (zones, categories, users, projects, units, crews, tickets, statusHistory).
+- `Project.type` es obligatorio (`ProjectType`); `src/lib/project-types.ts` es la fuente única de etiquetas de obra/unidad, unidades permitidas, campos por unidad y nombre visible del rol. Obras habitacionales muestran "Propietario"; Retail, Institucional, Urbanización, Oficinas e Industrial muestran "Administrador". El rol interno sigue siendo `PROPIETARIO`.
+- Tipos de obra: Habitacional extensión, Habitacional altura, Retail, Institucional, Urbanización, Oficinas e Industrial. Los importadores y la capa de datos rechazan unidades no permitidas; actualizar `allowedUnitTypes` y sus pruebas al cambiar estas reglas.
 
 ## Capa de datos (`src/data/`)
 
@@ -101,7 +103,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 ## Persistencia local (sin backend)
 
-- `src/data/persistence.ts` guarda el estado completo en `localStorage` (`postventaxis:datos`, versionado; cada versión migra la anterior: v1→v2 folios por obra, v2→v3 horas de visita/trabajo, v3→v4 referencias y documentos de tickets, v4→v5 zonas Postventa y `projectIds`, v5→v6 `photos` → `media`). `DataProvider` lo carga al montar, guarda en cada cambio y sincroniza entre pestañas. "Restablecer datos de ejemplo" (menú de usuario) vuelve a `createSeedState()`.
+- `src/data/persistence.ts` guarda el estado completo en `localStorage` (`postventaxis:datos`, versión 9; cada versión migra la anterior: v1→v2 folios por obra, v2→v3 horas de visita/trabajo, v3→v4 referencias y documentos de tickets, v4→v5 zonas Postventa y `projectIds`, v5→v6 `photos` → `media`, v6→v7 responsables por unidad, v7→v8 marcador reservado para `feat/visita-antes-de-asignar`, v8→v9 tipo de obra inferido desde las unidades). `DataProvider` lo carga al montar, guarda en cada cambio y sincroniza entre pestañas. "Restablecer datos de ejemplo" (menú de usuario) vuelve a `createSeedState()`.
 - La sesión usa dos cookies: `pv_user_id` y `pv_role`. `src/proxy.ts` rutea solo por rol; el cliente valida que el usuario exista y esté activo.
 
 ## Estadísticas del encargado

@@ -5,6 +5,7 @@
 import { periodStart, type CountRow, type Period } from "@/lib/metrics";
 import { isClosed } from "@/lib/ticket-status";
 import type { Ticket, TicketCategory, TicketStatusHistory, Unit, WorkCrew, WorkCrewType } from "@/types/domain";
+import { unitFields } from "@/lib/project-types";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -74,9 +75,16 @@ export function computeProjectInsights({ tickets, units, categories, crews, hist
   const closed = tickets.filter((ticket) => ticket.status === "CERRADO");
 
   const locationOf = (ticket: Ticket) => units.find((unit) => unit.id === ticket.unitId);
-  const towerLabel = (unit: Unit | undefined) => (!unit ? "Sin unidad" : unit.type === "CASA" ? "Casas" : `Torre ${unit.tower ?? "—"}`);
+  const towerLabel = (unit: Unit | undefined) => {
+    if (!unit) return "Sin unidad";
+    const fields = unitFields(unit.type);
+    if (unit.type === "CASA") return "Casas";
+    if (unit.type === "LOCAL") return "Locales";
+    if (!fields.tower && !fields.floor) return `${unit.type === "RECINTO" ? "Recinto" : "Sector"} ${unit.number}`;
+    return `${unit.type === "OFICINA" ? "Oficinas" : "Torre"} ${unit.tower ?? "—"}`;
+  };
   const floorLabel = (unit: Unit | undefined) => {
-    if (!unit || unit.type === "CASA") return towerLabel(unit);
+    if (!unit || !unitFields(unit.type).floor) return towerLabel(unit);
     return `${towerLabel(unit)} · piso ${unit.floor ?? "—"}`;
   };
 
