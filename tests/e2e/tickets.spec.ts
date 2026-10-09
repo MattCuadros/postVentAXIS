@@ -27,12 +27,12 @@ test("el propietario ingresa un requerimiento con foto y recibe folio por obra",
   await expect(page.getByText(created.folio)).toBeVisible();
 });
 
-test("el encargado registra la visita con foto y video corto; un video largo se rechaza", async ({ page, context }) => {
+test("el encargado registra la visita antes de asignar equipo; un video largo se rechaza", async ({ page, context }) => {
   test.setTimeout(120_000);
   await loginAs(context, "u-enc-centro", "ENCARGADO");
   await page.goto("/encargado");
   const state = await savedState(page);
-  const ticket = state.state.tickets.find((item: { status: string; encargadoId: string }) => item.status === "ASIGNADO" && item.encargadoId === "u-enc-centro");
+  const ticket = state.state.tickets.find((item: { status: string; encargadoId: string }) => item.status === "EN_REVISION" && item.encargadoId === "u-enc-centro");
   expect(ticket).toBeTruthy();
 
   await page.goto(`/encargado/tickets/${ticket.id}`);
@@ -55,4 +55,15 @@ test("el encargado registra la visita con foto y video corto; un video largo se 
   expect(after.status).toBe("VISITA_INSPECTIVA");
   expect(after.media.map((item: { type: string; stage: string }) => `${item.type}:${item.stage}`)).toEqual(["IMAGE:VISITA", "VIDEO:VISITA"]);
   await expect(page.locator("main video")).toHaveCount(1);
+
+  await page.getByRole("button", { name: "Asignar equipo" }).first().click();
+  const assign = page.locator("dialog[open]");
+  const crewOption = assign.locator("label").filter({ has: page.locator('input[type="radio"]') }).first();
+  await expect(crewOption).toBeVisible();
+  await crewOption.click();
+  await assign.getByRole("button", { name: "Asignar equipo" }).click();
+  await expect(assign).toHaveCount(0);
+  const assigned = (await savedState(page)).state.tickets.find((item: { id: string }) => item.id === ticket.id);
+  expect(assigned.status).toBe("ASIGNADO");
+  expect(assigned.crewId).toBeTruthy();
 });

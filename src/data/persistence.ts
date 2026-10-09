@@ -2,7 +2,7 @@ import type { DataState } from "@/data/store";
 import type { Project, Ticket, TicketMedia, TicketMediaStage, Zone } from "@/types/domain";
 
 export const STORAGE_KEY = "postventaxis:datos";
-const VERSION = 7;
+const VERSION = 8;
 
 interface StoredData {
   version: number;
@@ -209,6 +209,21 @@ function migrateV6(state: DataState): DataState {
   };
 }
 
+/** v7 → v8: los equipos se asignan después de la visita; tickets ASIGNADO sin visita vuelven a revisión. */
+function migrateV7(state: DataState): DataState {
+  const visited = new Set(state.statusHistory
+    .filter((entry) => entry.to === "VISITA_INSPECTIVA")
+    .map((entry) => entry.ticketId));
+  return {
+    ...state,
+    tickets: state.tickets.map((ticket) =>
+      ticket.status === "ASIGNADO" && !visited.has(ticket.id)
+        ? { ...ticket, status: "EN_REVISION" }
+        : ticket,
+    ),
+  };
+}
+
 /** Migración de cada versión a la siguiente (clave = versión de origen). */
 const MIGRATIONS: Record<number, (state: DataState) => DataState> = {
   1: migrateV1,
@@ -217,6 +232,7 @@ const MIGRATIONS: Record<number, (state: DataState) => DataState> = {
   4: migrateV4,
   5: migrateV5,
   6: migrateV6,
+  7: migrateV7,
 };
 
 export function loadState(raw: string | null = readRaw()): DataState | null {

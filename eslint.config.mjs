@@ -12,8 +12,14 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Repositorios de trabajo adicionales y artefactos no relevantes para la app.
+    ".git/**",
+    ".worktrees/**",
+    "test-results/**",
+    "coverage/**",
     // Worker de pdfjs-dist copiado tal cual desde node_modules (código de terceros minificado).
     "public/pdf.worker.min.mjs",
+    "**/*.min.*",
   ]),
 ]);
 
