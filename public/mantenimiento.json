@@ -35,6 +35,12 @@
       "titulo": "Estadisticas: informe en PDF y envio por correo",
       "inicio": "2026-10-09T07:00:00.000Z",
       "duracionMinutos": 30
+    },
+    {
+      "rama": "feat/fechas-entrega",
+      "titulo": "Tres fechas de entrega por unidad",
+      "inicio": "2026-10-09T07:00:00.000Z",
+      "duracionMinutos": 30
     }
   ],
   "ultimo": {
