@@ -137,6 +137,11 @@ export function DocumentImport() {
     if (!loaded || !user) return;
     if (hasErrors) {
       setShowErrors(true);
+      requestAnimationFrame(() => {
+        const firstInvalid = document.querySelector<HTMLElement>("[aria-invalid='true']");
+        (firstInvalid ?? document.querySelector<HTMLElement>("[aria-label^='Requerimiento']"))?.focus();
+        firstInvalid?.scrollIntoView({ block: "center", behavior: "smooth" });
+      });
       return;
     }
     setSaving(true);
@@ -318,7 +323,14 @@ export function DocumentImport() {
               />
             ))}
             {showErrors && hasErrors && (
-              <Notice tone="danger">Completa los campos marcados antes de registrar.</Notice>
+              <Notice tone="danger">
+                <p>Revisa estos datos antes de registrar:</p>
+                <ul className="mt-2 list-disc pl-5">
+                  {included.flatMap((draft, index) => Object.values(errorsByKey.get(draft.key) ?? {}).map((message, errorIndex) => (
+                    <li key={`${draft.key}-${errorIndex}`}>Requerimiento {index + 1}: {message}</li>
+                  )))}
+                </ul>
+              </Notice>
             )}
             <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
               <Button variant="secondary" disabled={saving} onClick={reset}>Cancelar</Button>
