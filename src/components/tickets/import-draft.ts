@@ -37,6 +37,20 @@ export interface DraftSources {
   tickets: Ticket[];
 }
 
+/** Defaults the owner picker from a unit, or from complete parsed owner data for a new unit. */
+export function ownerDefaults(
+  unit: Unit | null | undefined,
+  parsed: ParsedRequirement,
+  sources: Pick<DraftSources, "users">,
+): Pick<ImportDraft, "ownerMode" | "ownerId"> {
+  if (unit?.ownerId) return { ownerMode: "existing", ownerId: unit.ownerId };
+  if (unit) return { ownerMode: "none", ownerId: "" };
+  const matchedOwner = matchOwner(parsed.ownerEmail, sources.users, null);
+  if (matchedOwner) return { ownerMode: "existing", ownerId: matchedOwner.id };
+  const valid = !!parsed.ownerName?.trim() && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(parsed.ownerEmail?.trim() ?? "") && !!parsed.ownerPhone?.trim();
+  return valid ? { ownerMode: "new", ownerId: "" } : { ownerMode: "none", ownerId: "" };
+}
+
 function titleCaseName(value: string | null): string {
   if (!value) return "";
   return value
@@ -55,7 +69,6 @@ export function buildDrafts(document: ParsedDocument, sources: DraftSources): Im
       : matchProject(parsed.projectHint, sources.projects);
     const projectUnits = project ? sources.units.filter((unit) => unit.projectId === project.id) : [];
     const unit = linkedUnit ?? matchUnit(parsed.unitHint, projectUnits);
-    const owner = matchOwner(parsed.ownerEmail, sources.users, unit);
     const hint = parseUnitHint(parsed.unitHint);
     const category = matchCategory([parsed.item, parsed.problem, parsed.description], sources.categories);
     const description = parsed.description ?? [parsed.item, parsed.problem].filter(Boolean).join(": ");
@@ -70,8 +83,7 @@ export function buildDrafts(document: ParsedDocument, sources: DraftSources): Im
       newUnit: { type: hint?.type ?? "CASA", tower: hint?.tower ?? "", number: hint?.number ?? "" },
       // Unidad existente sin propietario: se deja "sin asignar" por defecto (es opcional); una
       // unidad nueva siempre necesita uno.
-      ownerMode: owner ? "existing" : unit ? "none" : "new",
-      ownerId: owner?.id ?? "",
+      ...ownerDefaults(unit, parsed, sources),
       newOwner: {
         name: titleCaseName(parsed.ownerName),
         email: parsed.ownerEmail ?? "",
@@ -86,7 +98,7 @@ export function buildDrafts(document: ParsedDocument, sources: DraftSources): Im
 }
 
 /** Errores de un borrador que impiden registrarlo (en español, por campo). */
-export function draftErrors(draft: ImportDraft): Record<string, string> {
+export function draftErrors(draft: ImportDraft, sources: DraftSources): Record<string, string> {
   if (draft.linkedTicketId) return {};
   const errors: Record<string, string> = {};
   if (!draft.projectId) errors.project = "Elige la obra.";
@@ -94,7 +106,10 @@ export function draftErrors(draft: ImportDraft): Record<string, string> {
   if (draft.unitMode === "new" && !draft.newUnit.number.trim()) errors.unit = "Indica el número de la unidad nueva.";
   // El propietario es obligatorio al crear una unidad; opcional al completar una existente sin
   // propietario ("none" = se deja así). Si se eligió asignar uno, tiene que quedar completo.
-  if (draft.ownerMode !== "none") {
+  const selectedUnit = draft.unitMode === "existing" ? sources.units.find((unit) => unit.id === draft.unitId) : undefined;
+  // The owner picker is hidden for an existing unit that already has an owner.
+  const ownerIsVisible = draft.unitMode === "new" || (!!selectedUnit && !selectedUnit.ownerId);
+  if (ownerIsVisible && draft.ownerMode !== "none") {
     if (draft.ownerMode === "existing" && !draft.ownerId) errors.owner = "Elige el propietario o crea uno nuevo.";
     if (draft.ownerMode === "new") {
       if (!draft.newOwner.name.trim()) errors.owner = "Indica el nombre del propietario.";
