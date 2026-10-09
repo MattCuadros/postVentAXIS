@@ -54,16 +54,28 @@ export async function recordVideo(page: Page, seconds: number): Promise<Buffer> 
     const context = canvas.getContext("2d")!;
     const recorder = new MediaRecorder(canvas.captureStream(15), { mimeType: "video/webm" });
     const chunks: Blob[] = [];
-    recorder.ondataavailable = (event) => chunks.push(event.data);
+    // El codificador de Chrome puede demorar más de lo que dura una grabación corta en entregar
+    // su primer dato (la primera grabación de la corrida completa). Si se detiene antes, el
+    // archivo queda vacío (0 bytes) y no se puede decodificar. Por eso el reloj de `ms` parte
+    // recién cuando llega el primer dato, no al llamar a start().
+    let onFirstData: () => void = () => {};
+    const firstData = new Promise<void>((resolve) => (onFirstData = resolve));
+    recorder.ondataavailable = (event) => {
+      chunks.push(event.data);
+      if (event.data.size > 0) onFirstData();
+    };
     let frame = 0;
     const timer = setInterval(() => {
       context.fillStyle = frame++ % 2 ? "#003399" : "#ff6600";
       context.fillRect(0, 0, 160, 120);
     }, 60);
     recorder.start(200);
+    const timeout = new Promise<never>((_, reject) => setTimeout(() => reject(new Error("MediaRecorder no entregó datos en 30 s")), 30_000));
+    await Promise.race([firstData, timeout]);
     await new Promise((resolve) => setTimeout(resolve, ms));
+    const stopped = new Promise((resolve) => (recorder.onstop = resolve));
     recorder.stop();
-    await new Promise((resolve) => (recorder.onstop = resolve));
+    await stopped;
     clearInterval(timer);
     return Array.from(new Uint8Array(await new Blob(chunks).arrayBuffer()));
   }, seconds * 1000);
