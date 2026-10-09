@@ -1,5 +1,12 @@
 {
-  "programado": [],
+  "programado": [
+    {
+      "rama": "fix/e2e-video-estable",
+      "titulo": "Prueba automatica de video mas estable (sin cambios visibles)",
+      "inicio": "2026-10-09T07:00:00.000Z",
+      "duracionMinutos": 30
+    }
+  ],
   "ultimo": {
     "completadoEn": "2026-10-08T05:07:28.409Z",
     "novedades": [
