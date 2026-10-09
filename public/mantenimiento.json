@@ -11,6 +11,12 @@
       "titulo": "Estadisticas: los indicadores se abren con un clic",
       "inicio": "2026-10-09T07:00:00.000Z",
       "duracionMinutos": 30
+    },
+    {
+      "rama": "feat/tipos-de-obra",
+      "titulo": "Tipos de obra: cada obra declara su tipo",
+      "inicio": "2026-10-09T07:00:00.000Z",
+      "duracionMinutos": 30
     }
   ],
   "ultimo": {
