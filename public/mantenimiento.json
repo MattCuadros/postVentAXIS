@@ -29,6 +29,12 @@
       "titulo": "Cargar documento: corrige el aviso falso al elegir una unidad con propietario",
       "inicio": "2026-10-09T07:00:00.000Z",
       "duracionMinutos": 30
+    },
+    {
+      "rama": "feat/enviar-estadisticas",
+      "titulo": "Estadisticas: informe en PDF y envio por correo",
+      "inicio": "2026-10-09T07:00:00.000Z",
+      "duracionMinutos": 30
     }
   ],
   "ultimo": {
