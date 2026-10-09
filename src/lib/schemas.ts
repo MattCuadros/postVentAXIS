@@ -28,13 +28,29 @@ export const unitSchema = z
     number: requiredText("El número o nombre"),
     /** "" = sin propietario (se puede completar después). */
     ownerId: z.string(),
-    deliveryDate: z.string().min(1, "Indica la fecha de entrega."),
+    provisionalDeliveryDate: z.string().nullable().refine(isIsoDate, "La fecha debe ser válida."),
+    municipalReceptionDate: z.string().nullable().refine(isIsoDate, "La fecha debe ser válida."),
+    deliveryDate: z.string().nullable().refine(isIsoDate, "La fecha debe ser válida."),
   })
   .superRefine((unit, context) => {
     if ((unit.type === "DEPARTAMENTO" || unit.type === "OFICINA" || unit.type === "LOCAL") && unit.floor !== "" && !/^-?\d+$/.test(unit.floor)) {
       context.addIssue({ code: "custom", path: ["floor"], message: "El piso debe ser un número." });
     }
   });
+
+export function unitDateWarnings(unit: { provisionalDeliveryDate: string | null; municipalReceptionDate: string | null; deliveryDate: string | null }): string[] {
+  const warnings: string[] = [];
+  if (unit.municipalReceptionDate && unit.provisionalDeliveryDate && unit.municipalReceptionDate < unit.provisionalDeliveryDate) warnings.push("La recepción final municipal es anterior a la recepción provisoria.");
+  if (unit.deliveryDate && unit.municipalReceptionDate && unit.deliveryDate < unit.municipalReceptionDate) warnings.push("La entrega es anterior a la recepción final municipal.");
+  return warnings;
+}
+
+function isIsoDate(value: string | null): boolean {
+  if (value === null || value === "") return true;
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+  const date = new Date(`${value}T00:00:00.000Z`);
+  return !Number.isNaN(date.getTime()) && date.toISOString().slice(0, 10) === value;
+}
 
 export const ROLE_OPTIONS = ["PROPIETARIO", "ENCARGADO", "ADMIN_OBRA", "ADMIN"] as const;
 

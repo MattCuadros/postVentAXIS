@@ -50,15 +50,15 @@ export const projects: Project[] = [
 ];
 
 export const units: Unit[] = [
-  { id: "un-1", projectId: "p-mirador", type: "DEPARTAMENTO", tower: "A", floor: 7, number: "704", ownerId: "u-prop-1", deliveryDate: "2026-03-15" },
-  { id: "un-2", projectId: "p-bosque", type: "CASA", tower: null, floor: null, number: "12", ownerId: "u-prop-2", deliveryDate: "2025-11-02" },
-  { id: "un-3", projectId: "p-mirador", type: "DEPARTAMENTO", tower: "B", floor: 3, number: "302", ownerId: "u-prop-3", deliveryDate: "2026-03-15" },
-  { id: "un-ab-g26", projectId: "p-altobulnes", type: "CASA", tower: null, floor: null, number: "G26", ownerId: "u-prop-5", deliveryDate: "2025-12-26" },
-  { id: "un-ab-f3", projectId: "p-altobulnes", type: "CASA", tower: null, floor: null, number: "F3", ownerId: "u-prop-6", deliveryDate: "2022-12-01" },
-  { id: "un-ab-f35", projectId: "p-altobulnes", type: "CASA", tower: null, floor: null, number: "F35", ownerId: "u-prop-7", deliveryDate: "2023-07-14" },
-  { id: "un-4", projectId: "p-mirador", type: "DEPARTAMENTO", tower: "C", floor: 1, number: "105", ownerId: "u-prop-4", deliveryDate: "2026-04-10" },
-  { id: "un-retail-1", projectId: "p-retail", type: "LOCAL", tower: null, floor: null, number: "3", ownerId: null, deliveryDate: "2026-04-10" },
-  { id: "un-retail-2", projectId: "p-retail", type: "LOCAL", tower: null, floor: null, number: "4", ownerId: null, deliveryDate: "2026-04-10" },
+  { id: "un-1", projectId: "p-mirador", type: "DEPARTAMENTO", tower: "A", floor: 7, number: "704", ownerId: "u-prop-1", provisionalDeliveryDate: "2026-02-15", municipalReceptionDate: "2026-03-01", deliveryDate: "2026-03-15" },
+  { id: "un-2", projectId: "p-bosque", type: "CASA", tower: null, floor: null, number: "12", ownerId: "u-prop-2", provisionalDeliveryDate: "2025-10-02", municipalReceptionDate: "2025-10-20", deliveryDate: "2025-11-02" },
+  { id: "un-3", projectId: "p-mirador", type: "DEPARTAMENTO", tower: "B", floor: 3, number: "302", ownerId: "u-prop-3", provisionalDeliveryDate: "2026-02-15", municipalReceptionDate: "2026-03-01", deliveryDate: "2026-03-15" },
+  { id: "un-ab-g26", projectId: "p-altobulnes", type: "CASA", tower: null, floor: null, number: "G26", ownerId: "u-prop-5", provisionalDeliveryDate: "2025-11-26", municipalReceptionDate: "2025-12-10", deliveryDate: "2025-12-26" },
+  { id: "un-ab-f3", projectId: "p-altobulnes", type: "CASA", tower: null, floor: null, number: "F3", ownerId: "u-prop-6", provisionalDeliveryDate: "2022-11-01", municipalReceptionDate: "2022-11-15", deliveryDate: "2022-12-01" },
+  { id: "un-ab-f35", projectId: "p-altobulnes", type: "CASA", tower: null, floor: null, number: "F35", ownerId: "u-prop-7", provisionalDeliveryDate: "2023-06-01", municipalReceptionDate: "2023-06-15", deliveryDate: "2023-07-14" },
+  { id: "un-4", projectId: "p-mirador", type: "DEPARTAMENTO", tower: "C", floor: 1, number: "105", ownerId: "u-prop-4", provisionalDeliveryDate: "2026-03-10", municipalReceptionDate: "2026-03-25", deliveryDate: "2026-04-10" },
+  { id: "un-retail-1", projectId: "p-retail", type: "LOCAL", tower: null, floor: null, number: "3", ownerId: null, provisionalDeliveryDate: "2026-03-10", municipalReceptionDate: "2026-03-25", deliveryDate: null },
+  { id: "un-retail-2", projectId: "p-retail", type: "LOCAL", tower: null, floor: null, number: "4", ownerId: null, provisionalDeliveryDate: "2026-03-10", municipalReceptionDate: "2026-03-25", deliveryDate: "2026-04-10" },
 ];
 
 /** Además del titular: un hijo (puede firmar) y la administradora del comité (responsable de dos obras). */

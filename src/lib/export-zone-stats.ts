@@ -75,7 +75,7 @@ export async function buildZoneStatsWorkbook({ stats, filters, filterNames, enca
     [
       [
         "Folio", "Estado", "Obra", "Unidad", "Recinto", "Origen reportado", "Origen confirmado", "Equipo", "Ingresado",
-        "Visita inspectiva", "Trabajo programado", "Cerrado", "Días", "Días a la visita", "Rechazos de Propietario / Administrador",
+        "Visita inspectiva", "Trabajo programado", "Recepción Provisoria", "Recepción Final Municipal", "Entrega a propietario/administrador", "Cerrado", "Días", "Días a la visita", "Rechazos de Propietario / Administrador",
         "Caso especial", "Motivo no procede", "Descripción",
       ],
       ...stats.rows.map((row) => [
@@ -90,6 +90,9 @@ export async function buildZoneStatsWorkbook({ stats, filters, filterNames, enca
         day(row.ticket.createdAt),
         row.ticket.visitDate ?? "",
         row.ticket.scheduledDate ?? "",
+        row.unit?.provisionalDeliveryDate ?? "",
+        row.unit?.municipalReceptionDate ?? "",
+        row.unit?.deliveryDate ?? "",
         day(row.closedAt),
         round1(row.days),
         round1(row.daysToVisit),
@@ -99,7 +102,7 @@ export async function buildZoneStatsWorkbook({ stats, filters, filterNames, enca
         row.ticket.description,
       ]),
     ],
-    [14, 20, 26, 16, 14, 20, 20, 26, 12, 14, 14, 12, 8, 10, 12, 10, 30, 60],
+    [14, 20, 26, 16, 14, 20, 20, 26, 12, 14, 14, 14, 14, 18, 12, 8, 10, 12, 10, 30, 60],
   );
 
   return { book, filename: `estadisticas-${slug(filterNames.zone)}-${slug(STATS_PERIOD_LABEL[filters.period])}-${todayIso()}.xlsx` };

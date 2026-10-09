@@ -32,6 +32,7 @@ export interface ProjectInsights {
   byTower: CountRow[];
   /** "Torre A · piso 7" / "Casas" con su cantidad, de mayor a menor. */
   byFloor: CountRow[];
+  receptionDates: { provisional: CountRow[]; municipal: CountRow[] };
   crews: CrewPerformance[];
   byCrewType: Record<WorkCrewType, Omit<CrewPerformance, "id" | "name" | "type">>;
 }
@@ -39,6 +40,7 @@ export interface ProjectInsights {
 interface Sources {
   tickets: Ticket[];
   units: Unit[];
+  projectIds?: string[];
   categories: TicketCategory[];
   crews: WorkCrew[];
   history: TicketStatusHistory[];
@@ -73,6 +75,8 @@ export function computeProjectInsights({ tickets, units, categories, crews, hist
   const rejections = (ticket: Ticket) =>
     history.filter((entry) => entry.ticketId === ticket.id && entry.from === "EN_RECEPCION" && entry.to === "PROGRAMADO").length;
   const closed = tickets.filter((ticket) => ticket.status === "CERRADO");
+  const inScopeUnitIds = new Set(tickets.map((ticket) => ticket.unitId));
+  const scopedUnits = units.filter((unit) => inScopeUnitIds.has(unit.id));
 
   const locationOf = (ticket: Ticket) => units.find((unit) => unit.id === ticket.unitId);
   const towerLabel = (unit: Unit | undefined) => {
@@ -130,6 +134,10 @@ export function computeProjectInsights({ tickets, units, categories, crews, hist
     byCategory: countBy(tickets.map((ticket) => categories.find((item) => item.id === ticket.categoryId)?.name ?? "Sin categoría")),
     byTower: countBy(tickets.map((ticket) => towerLabel(locationOf(ticket)))),
     byFloor: countBy(tickets.map((ticket) => floorLabel(locationOf(ticket)))),
+    receptionDates: {
+      provisional: countBy(scopedUnits.map((unit) => unit.provisionalDeliveryDate ?? "Pendiente")),
+      municipal: countBy(scopedUnits.map((unit) => unit.municipalReceptionDate ?? "Pendiente")),
+    },
     crews: crewRows,
     byCrewType,
   };

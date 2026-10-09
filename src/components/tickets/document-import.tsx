@@ -175,7 +175,9 @@ export function DocumentImport() {
                 tower: (draft.newUnit.type === "DEPARTAMENTO" || draft.newUnit.type === "OFICINA") && draft.newUnit.tower.trim() ? draft.newUnit.tower.trim().toUpperCase() : null,
                 floor: null,
                 number: draft.newUnit.number.trim().toUpperCase(),
-                deliveryDate: draft.parsed.requestDate ?? new Date().toISOString().slice(0, 10),
+                provisionalDeliveryDate: null,
+                municipalReceptionDate: null,
+                deliveryDate: null,
               }
             : null,
           ownerId: draft.ownerMode === "existing" ? draft.ownerId || null : null,

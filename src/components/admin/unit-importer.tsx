@@ -7,7 +7,7 @@ import { useDataApi } from "@/data/api";
 import { useQuery } from "@/data/use-query";
 import { cn } from "@/lib/cn";
 import { downloadCsv, readSheetRows } from "@/lib/sheet";
-import { unitTemplateExampleForProject, unitTemplateHeadersForRole, validateUnitImport, type UnitImportRow } from "@/lib/unit-import";
+import { unitTemplateExampleForProject, unitTemplateHeadersForRole, validateUnitImport, UNIT_TEMPLATE_EXAMPLE, UNIT_TEMPLATE_HEADERS, type UnitImportRow } from "@/lib/unit-import";
 import { allowedUnitTypes, ownerLabel, UNIT_TYPE_LABEL } from "@/lib/project-types";
 import type { Project } from "@/types/domain";
 
@@ -44,7 +44,13 @@ export function UnitImporter({ project, onDone, onCancel }: UnitImporterProps) {
 
   function handleTemplate() {
     const slug = project.name.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
-    downloadCsv(`plantilla-unidades-${slug}.csv`, unitTemplateHeadersForRole(roleLabel), unitTemplateExampleForProject(project.type));
+    const headers = unitTemplateHeadersForRole(roleLabel).map((header) => header.replace("Fecha entrega a propietario", `Fecha entrega a ${roleLabel.toLocaleLowerCase("es")}`));
+    const examples = unitTemplateExampleForProject(project.type);
+    const completeExample = UNIT_TEMPLATE_EXAMPLE.map((row) => row.map((value, index) => {
+      const header = UNIT_TEMPLATE_HEADERS[index];
+      return header.startsWith("Correo ") || header.startsWith("Nombre ") || header.startsWith("Teléfono ") ? "" : value;
+    }));
+    downloadCsv(`plantilla-unidades-${slug}.csv`, headers, examples.length === 1 ? [...examples, ...completeExample.slice(1)] : examples);
   }
 
   async function handleFile(file: File | undefined) {
@@ -117,7 +123,7 @@ export function UnitImporter({ project, onDone, onCancel }: UnitImporterProps) {
         </li>
         <li>
           2. <strong className="text-ink">Tipo</strong>: {allowedTypes}. Las unidades ofrecen solo los campos que corresponden a su tipo.{" "}
-          <strong className="text-ink">Fecha entrega</strong> en formato DD-MM-AAAA.
+          <strong className="text-ink">Fecha entrega a propietario, Fecha Recepción Provisoria y Fecha Recepción Final Municipal</strong> en formato DD-MM-AAAA; puedes dejarlas vacías si están pendientes (el encabezado antiguo «Fecha entrega» sigue aceptado).
         </li>
         <li>
           3. El {roleLower} es opcional. Si lo dejas vacío, la unidad se importa sin {roleLower} y podrás completarlo después

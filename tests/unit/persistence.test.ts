@@ -84,4 +84,16 @@ describe("loadState", () => {
     }));
     expect(state?.projects.find((project) => project.id === "p-mirador")?.type).toBe("HABITACIONAL_ALTURA");
   });
+
+  it("migra v9 a v10 conservando entrega e iniciando las nuevas fechas pendientes", () => {
+    const seed = createSeedState();
+    const oldUnits = seed.units.map((unit) => {
+      const legacy: Record<string, unknown> = { ...unit };
+      delete legacy.provisionalDeliveryDate;
+      delete legacy.municipalReceptionDate;
+      return legacy;
+    });
+    const state = loadState(stored(9, { ...seed, units: oldUnits }));
+    expect(state?.units[0]).toMatchObject({ provisionalDeliveryDate: null, municipalReceptionDate: null, deliveryDate: seed.units[0].deliveryDate });
+  });
 });

@@ -2,7 +2,7 @@ import type { DataState } from "@/data/store";
 import type { Project, ProjectType, Ticket, TicketMedia, TicketMediaStage, Zone } from "@/types/domain";
 
 export const STORAGE_KEY = "postventaxis:datos";
-const VERSION = 9;
+const VERSION = 10;
 
 interface StoredData {
   version: number;
@@ -242,6 +242,19 @@ function migrateV8toV9(state: DataState): DataState {
   };
 }
 
+/** v9 → v10: se separan las fechas de recepción provisoria, municipal y entrega a la persona. */
+function migrateV9toV10(state: DataState): DataState {
+  return {
+    ...state,
+    units: state.units.map((unit) => ({
+      ...unit,
+      provisionalDeliveryDate: null,
+      municipalReceptionDate: null,
+      deliveryDate: unit.deliveryDate ?? null,
+    })),
+  };
+}
+
 /** Migración de cada versión a la siguiente (clave = versión de origen). */
 const MIGRATIONS: Record<number, (state: DataState) => DataState> = {
   1: migrateV1,
@@ -252,6 +265,7 @@ const MIGRATIONS: Record<number, (state: DataState) => DataState> = {
   6: migrateV6,
   7: migrateV7,
   8: migrateV8toV9,
+  9: migrateV9toV10,
 };
 
 export function loadState(raw: string | null = readRaw()): DataState | null {
