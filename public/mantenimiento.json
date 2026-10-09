@@ -23,6 +23,12 @@
       "titulo": "Visita inspectiva: el informe AXIS tambien pasa por Equipo asignado",
       "inicio": "2026-10-09T07:00:00.000Z",
       "duracionMinutos": 30
+    },
+    {
+      "rama": "fix/cargar-documento-propietario",
+      "titulo": "Cargar documento: corrige el aviso falso al elegir una unidad con propietario",
+      "inicio": "2026-10-09T07:00:00.000Z",
+      "duracionMinutos": 30
     }
   ],
   "ultimo": {
