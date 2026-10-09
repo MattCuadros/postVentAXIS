@@ -110,6 +110,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 - `/encargado/estadisticas`: tablero de sus zonas con ventana móvil (última semana, 2 semanas, mes, 3 meses, todo), filtros (zona, obra, origen, equipo, estado), descarga Excel e indicadores seleccionables que filtran la tabla. La selección se conserva en `?ver=<StatKey>`; “Ver todos” la limpia. Los promedios abren las filas que aportan al cálculo.
 - Cálculos puros y `rowsForStat` en `src/lib/zone-stats.ts` (la pantalla y el Excel usan los mismos); Excel en `src/lib/export-zone-stats.ts`. `StatTile` conserva presentación estática si no recibe `onSelect`.
+- El informe PDF se construye en `src/lib/zone-stats-pdf.ts` con los filtros vigentes y sin datos personales de propietarios. `src/data/email.ts` es el único adaptador cliente para el envío, que llega a `POST /api/reports/email`; la ruta valida rol, destinatarios/dominios permitidos, adjunto PDF y frecuencia. Configurar en el servidor `REPORT_SMTP_HOST`, `REPORT_SMTP_PORT`, `REPORT_SMTP_SECURE`, `REPORT_SMTP_USER`, `REPORT_SMTP_PASS`, `REPORT_FROM` y `REPORT_ALLOWED_DOMAINS` (por defecto `axisdc.cl`). Nunca exponer credenciales con `NEXT_PUBLIC_` ni guardarlas en el repositorio; sin SMTP configurado, la interfaz descarga el PDF y prepara un correo `mailto:`.
 
 ## Ubicación de la obra
 
