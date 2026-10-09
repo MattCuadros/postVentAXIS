@@ -5,6 +5,12 @@
       "titulo": "Prueba automatica de video mas estable (sin cambios visibles)",
       "inicio": "2026-10-09T07:00:00.000Z",
       "duracionMinutos": 30
+    },
+    {
+      "rama": "feat/estadisticas-detalle",
+      "titulo": "Estadisticas: los indicadores se abren con un clic",
+      "inicio": "2026-10-09T07:00:00.000Z",
+      "duracionMinutos": 30
     }
   ],
   "ultimo": {
