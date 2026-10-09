@@ -59,6 +59,35 @@ describe("computeZoneStats", () => {
     expect(byCrew.ingresados).toBeLessThanOrEqual(all.ingresados);
   });
 
+  it("calcula días hasta la visita por su estado destino y nunca devuelve duración negativa", () => {
+    const ordered = run({ period: "TODO" }).rows.find((row) => row.ticket.id === "t-1")!;
+    const reversedHistory = [...sources.history].toReversed();
+    const reversed = computeZoneStats(
+      { ...DEFAULT_FILTERS, period: "TODO" },
+      { ...sources, history: reversedHistory },
+    ).rows.find((row) => row.ticket.id === "t-1")!;
+    const legacyOrderHistory = sources.history
+      .map((entry) => entry.id === "h-4" ? { ...entry, createdAt: "2026-09-09T09:00:00Z" } : entry)
+      .toSorted((left, right) => left.createdAt.localeCompare(right.createdAt));
+    const legacyOrder = computeZoneStats(
+      { ...DEFAULT_FILTERS, period: "TODO" },
+      { ...sources, history: legacyOrderHistory },
+    ).rows.find((row) => row.ticket.id === "t-1")!;
+    const beforeCreation = computeZoneStats(
+      { ...DEFAULT_FILTERS, period: "TODO" },
+      {
+        ...sources,
+        history: sources.history.map((entry) => entry.id === "h-3"
+          ? { ...entry, createdAt: "2026-09-01T00:00:00Z" }
+          : entry),
+      },
+    ).rows.find((row) => row.ticket.id === "t-1")!;
+
+    expect(reversed.daysToVisit).toBe(ordered.daysToVisit);
+    expect(legacyOrder.daysToVisit).toBe(ordered.daysToVisit);
+    expect(beforeCreation.daysToVisit).toBe(0);
+  });
+
   it("cada indicador expone las mismas filas que su conteo con y sin filtros", () => {
     for (const filters of [{ period: "TODO" as const }, { period: "TODO" as const, zoneId: "z-centro", status: "ABIERTOS" as const }]) {
       const stats = run(filters);
