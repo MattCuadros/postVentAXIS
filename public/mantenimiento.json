@@ -1,52 +1,15 @@
 {
-  "programado": [
-    {
-      "rama": "fix/e2e-video-estable",
-      "titulo": "Prueba automatica de video mas estable (sin cambios visibles)",
-      "inicio": "2026-10-09T07:00:00.000Z",
-      "duracionMinutos": 30
-    },
-    {
-      "rama": "feat/estadisticas-detalle",
-      "titulo": "Estadisticas: los indicadores se abren con un clic",
-      "inicio": "2026-10-09T07:00:00.000Z",
-      "duracionMinutos": 30
-    },
-    {
-      "rama": "feat/tipos-de-obra",
-      "titulo": "Tipos de obra: cada obra declara su tipo",
-      "inicio": "2026-10-09T07:00:00.000Z",
-      "duracionMinutos": 30
-    },
-    {
-      "rama": "feat/visita-pruebas-y-ajustes",
-      "titulo": "Visita inspectiva: el informe AXIS tambien pasa por Equipo asignado",
-      "inicio": "2026-10-09T07:00:00.000Z",
-      "duracionMinutos": 30
-    },
-    {
-      "rama": "fix/cargar-documento-propietario",
-      "titulo": "Cargar documento: corrige el aviso falso al elegir una unidad con propietario",
-      "inicio": "2026-10-09T07:00:00.000Z",
-      "duracionMinutos": 30
-    },
-    {
-      "rama": "feat/enviar-estadisticas",
-      "titulo": "Estadisticas: informe en PDF y envio por correo",
-      "inicio": "2026-10-09T07:00:00.000Z",
-      "duracionMinutos": 30
-    },
-    {
-      "rama": "feat/fechas-entrega",
-      "titulo": "Tres fechas de entrega por unidad",
-      "inicio": "2026-10-09T07:00:00.000Z",
-      "duracionMinutos": 30
-    }
-  ],
+  "programado": [],
   "ultimo": {
-    "completadoEn": "2026-10-08T05:07:28.409Z",
+    "completadoEn": "2026-10-09T09:50:16.761Z",
     "novedades": [
-      "La visita inspectiva ocurre antes de asignar el equipo"
+      "Prueba automatica de video mas estable (sin cambios visibles)",
+      "Estadisticas: los indicadores se abren con un clic",
+      "Tipos de obra: cada obra declara su tipo",
+      "Visita inspectiva: el informe AXIS tambien pasa por Equipo asignado",
+      "Cargar documento: corrige el aviso falso al elegir una unidad con propietario",
+      "Estadisticas: informe en PDF y envio por correo",
+      "Tres fechas de entrega por unidad"
     ]
   }
 }
