@@ -3,6 +3,7 @@ import { loadState } from "@/data/persistence";
 import { createSeedState } from "@/data/store";
 import { nextFolio } from "@/lib/folio";
 import { computeProjectInsights, ticketsOfProjects } from "@/lib/project-metrics";
+import { availableTransitions, MAIN_FLOW } from "@/lib/ticket-status";
 
 describe("nextFolio", () => {
   it("numera por obra con el sufijo de la zona", () => {
@@ -13,6 +14,15 @@ describe("nextFolio", () => {
     expect(folio).toMatch(new RegExp(`^${project.code}-\\d{4}-${zone.code}$`));
     const used = state.tickets.map((ticket) => ticket.folio);
     expect(used).not.toContain(folio);
+  });
+});
+
+describe("flujo de visita y asignación", () => {
+  it("registra primero la visita y permite asignar equipo después", () => {
+    expect(MAIN_FLOW.slice(0, 5)).toEqual(["INGRESADO", "EN_REVISION", "VISITA_INSPECTIVA", "ASIGNADO", "PROGRAMADO"]);
+    expect(availableTransitions("EN_REVISION", "ENCARGADO").map((item) => item.to)).toContain("VISITA_INSPECTIVA");
+    expect(availableTransitions("VISITA_INSPECTIVA", "ENCARGADO").map((item) => item.to)).toContain("ASIGNADO");
+    expect(availableTransitions("ASIGNADO", "ENCARGADO").map((item) => item.to)).toContain("PROGRAMADO");
   });
 });
 
