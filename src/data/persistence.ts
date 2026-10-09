@@ -209,9 +209,19 @@ function migrateV6(state: DataState): DataState {
   };
 }
 
-// PLACEHOLDER: replaced by feat/visita-antes-de-asignar
-function migrateV7toV8(state: DataState): DataState {
-  return state;
+/** v7 → v8: los equipos se asignan después de la visita; tickets ASIGNADO sin visita vuelven a revisión. */
+function migrateV7(state: DataState): DataState {
+  const visited = new Set(state.statusHistory
+    .filter((entry) => entry.to === "VISITA_INSPECTIVA")
+    .map((entry) => entry.ticketId));
+  return {
+    ...state,
+    tickets: state.tickets.map((ticket) =>
+      ticket.status === "ASIGNADO" && !visited.has(ticket.id)
+        ? { ...ticket, status: "EN_REVISION" }
+        : ticket,
+    ),
+  };
 }
 
 /** v8 → v9: toda obra recibe un tipo; los datos habitacionales previos se infieren por unidades. */
@@ -253,7 +263,7 @@ const MIGRATIONS: Record<number, (state: DataState) => DataState> = {
   4: migrateV4,
   5: migrateV5,
   6: migrateV6,
-  7: migrateV7toV8,
+  7: migrateV7,
   8: migrateV8toV9,
   9: migrateV9toV10,
 };
