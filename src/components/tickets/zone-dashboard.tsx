@@ -43,19 +43,25 @@ function days(value: number | null): string {
   return value === null ? "—" : oneDecimal.format(value);
 }
 
-/** Tablero del encargado zonal: estadísticas del período con filtros y descarga a Excel. */
-export function ZoneDashboard() {
+/**
+ * Tablero de estadísticas del período con filtros, PDF, correo y Excel. El encargado zonal ve solo
+ * sus zonas; el superadministrador ve todas y puede acotar por zona (el tablero de cada encargado).
+ */
+export function ZoneDashboard({ scope = "encargado" }: { scope?: "encargado" | "admin" }) {
   const { user } = useSession();
   const api = useDataApi();
-  const zoneIds = user?.zoneIds;
+  const isAdmin = scope === "admin";
+  const zoneIds = isAdmin ? undefined : user?.zoneIds;
+  const ticketBase = isAdmin ? "/admin/requerimientos" : "/encargado/tickets";
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const tableHeading = useRef<HTMLHeadingElement>(null);
 
   const { data: tickets } = useQuery(
-    useCallback(async () => (zoneIds ? api.getTicketsByZones(zoneIds) : []), [api, zoneIds]),
+    useCallback(async () => (isAdmin ? api.getTickets() : zoneIds ? api.getTicketsByZones(zoneIds) : []), [api, isAdmin, zoneIds]),
   );
+  const { data: users } = useQuery(api.getUsers);
   const { data: history } = useQuery(api.getStatusHistory);
   const { data: units } = useQuery(api.getUnits);
   const { data: projects } = useQuery(api.getProjects);
@@ -78,19 +84,30 @@ export function ZoneDashboard() {
     setFilters((current) => ({ ...current, [key]: value, ...(key === "zoneId" || key === "projectType" ? { projectId: "" } : {}) }));
   };
 
-  const myZones = useMemo(() => (zones ?? []).filter((zone) => zoneIds?.includes(zone.id)), [zones, zoneIds]);
+  const inScope = useCallback((zoneId: string) => !zoneIds || zoneIds.includes(zoneId), [zoneIds]);
+  const myZones = useMemo(() => (zones ?? []).filter((zone) => inScope(zone.id)), [zones, inScope]);
   const myProjects = useMemo(
-    () => (projects ?? []).filter((project) => zoneIds?.includes(project.zoneId) && (!filters.zoneId || project.zoneId === filters.zoneId) && (!filters.projectType || project.type === filters.projectType)),
-    [projects, zoneIds, filters.zoneId, filters.projectType],
+    () => (projects ?? []).filter((project) => inScope(project.zoneId) && (!filters.zoneId || project.zoneId === filters.zoneId) && (!filters.projectType || project.type === filters.projectType)),
+    [projects, inScope, filters.zoneId, filters.projectType],
   );
-  const myCrews = useMemo(() => (crews ?? []).filter((crew) => zoneIds?.includes(crew.zoneId)), [crews, zoneIds]);
+  const myCrews = useMemo(
+    () => (crews ?? []).filter((crew) => inScope(crew.zoneId) && (!filters.zoneId || crew.zoneId === filters.zoneId)),
+    [crews, inScope, filters.zoneId],
+  );
+  const allZonesLabel = isAdmin ? "Todas las zonas" : "Mis zonas";
+  const zoneEncargados = useMemo(() => {
+    if (!isAdmin || !filters.zoneId) return "";
+    return (users ?? []).filter((item) => item.role === "ENCARGADO" && item.active && item.zoneIds.includes(filters.zoneId)).map((item) => item.name).join(", ");
+  }, [isAdmin, users, filters.zoneId]);
 
   const stats = useMemo(() => {
     if (!tickets || !history || !units || !projects || !categories || !crews) return undefined;
     return computeZoneStats(filters, { tickets, history, units, projects, categories, crews });
   }, [filters, tickets, history, units, projects, categories, crews]);
 
-  const zoneName = filters.zoneId ? myZones.find((zone) => zone.id === filters.zoneId)?.name ?? "" : myZones.map((zone) => zone.name).join(" y ");
+  const zoneName = filters.zoneId
+    ? myZones.find((zone) => zone.id === filters.zoneId)?.name ?? ""
+    : isAdmin ? allZonesLabel : myZones.map((zone) => zone.name).join(" y ");
   const range = stats?.start ? `${rangeDate.format(stats.start)} – ${rangeDate.format(stats.end)}` : "Desde el primer requerimiento";
   const personRole = filters.projectId
     ? ownerLabel(projects?.find((project) => project.id === filters.projectId)?.type ?? "HABITACIONAL_ALTURA").toLocaleLowerCase("es")
@@ -106,8 +123,9 @@ export function ZoneDashboard() {
 
   function exportContext() {
     if (!stats || !user) return null;
-    return { stats, filters, encargado: user.name, filterNames: {
-      zone: zoneName || "Mis zonas", project: myProjects.find((item) => item.id === filters.projectId)?.name ?? "Todas",
+    const encargado = isAdmin ? zoneEncargados || `${user.name} (superadministrador)` : user.name;
+    return { stats, filters, encargado, filterNames: {
+      zone: zoneName || allZonesLabel, project: myProjects.find((item) => item.id === filters.projectId)?.name ?? "Todas",
       category: categories?.find((item) => item.id === filters.categoryId)?.name ?? "Todos", crew: myCrews.find((item) => item.id === filters.crewId)?.name ?? "Todos",
     } };
   }
@@ -180,7 +198,7 @@ export function ZoneDashboard() {
     <div className="pb-8">
       <PageHeader
         title="Estadísticas"
-        subtitle={`${zoneName || "Mis zonas"} · ${range}`}
+        subtitle={`${zoneName || allZonesLabel}${zoneEncargados ? ` · Encargado: ${zoneEncargados}` : ""} · ${range}`}
         actions={
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
             <Button variant="secondary" disabled={pdfBusy || !stats} onClick={handlePdfDownload}>{pdfBusy ? "Preparando PDF…" : "Descargar PDF"}</Button>
@@ -225,7 +243,7 @@ export function ZoneDashboard() {
         <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-6">
           {myZones.length > 1 && (
             <Select label="Zona" name="stats-zone" value={filters.zoneId} onChange={(event) => set("zoneId", event.target.value)}>
-              <option value="">Todas mis zonas</option>
+              <option value="">{isAdmin ? "Todas las zonas" : "Todas mis zonas"}</option>
               {myZones.map((zone) => <option key={zone.id} value={zone.id}>{zone.name}</option>)}
             </Select>
           )}
@@ -319,7 +337,7 @@ export function ZoneDashboard() {
                       {(showAll ? shownRows : shownRows.slice(0, TABLE_LIMIT)).map((row) => (
                         <tr key={row.ticket.id} className="border-b border-line-soft last:border-b-0">
                           <td className="py-3 pr-4">
-                            <Link href={`/encargado/tickets/${row.ticket.id}`} className="font-bold text-accent hover:underline">{row.ticket.folio}</Link>
+                            <Link href={`${ticketBase}/${row.ticket.id}`} className="font-bold text-accent hover:underline">{row.ticket.folio}</Link>
                           </td>
                           <td className="py-3 pr-4 text-ink-secondary">{formatShortDate(row.ticket.createdAt)}</td>
                           <td className="py-3 pr-4 text-ink">{row.project}{row.unit ? ` · ${unitLabel(row.unit)}` : ""}</td>

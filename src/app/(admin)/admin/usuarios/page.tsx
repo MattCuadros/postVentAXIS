@@ -295,7 +295,8 @@ function UserForm({ user, currentUserId, ownerUnitCount = 0, onSaved, onCancel }
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
-  const isOwnRole = user?.id === currentUserId;
+  // Sin `user` es un alta: undefined === undefined no debe bloquear el rol.
+  const isOwnRole = user !== undefined && user.id === currentUserId;
   const isOwnerWithUnits = user?.role === "PROPIETARIO" && ownerUnitCount > 0;
   const roleLocked = isOwnRole || isOwnerWithUnits;
 
