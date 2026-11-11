@@ -36,6 +36,9 @@ test("el encargado filtra sus estadísticas por período y descarga el Excel", a
   await page.waitForURL(/\/tickets\//);
   await page.goBack();
   await expect(page).toHaveURL(/ver=abiertos/);
+  // Al volver, el período regresa al de por defecto (último mes): se elige de nuevo "Todo el
+  // período" para que la prueba no dependa de la fecha en que corre frente a los datos de ejemplo.
+  await page.getByRole("button", { name: "Todo el período", exact: true }).click();
   await expect(page.getByText(/^Mostrando: Abiertos/)).toBeVisible();
   await expect(page.locator('button[aria-label^="Ver los 0 requerimientos:"]')).toHaveCount(0);
   await page.getByRole("button", { name: "Todo el período", exact: true }).click();

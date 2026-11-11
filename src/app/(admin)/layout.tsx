@@ -5,6 +5,7 @@ import { SideNav } from "@/components/session/side-nav";
 
 const NAVIGATION = [
   { href: "/admin", label: "Indicadores" },
+  { href: "/admin/estadisticas", label: "Estadísticas por zona" },
   { href: "/admin/requerimientos", label: "Requerimientos" },
   { href: "/admin/usuarios", label: "Usuarios" },
   { href: "/admin/obras", label: "Obras y unidades" },
