@@ -1,15 +1,9 @@
 {
   "programado": [],
   "ultimo": {
-    "completadoEn": "2026-10-09T09:50:16.761Z",
+    "completadoEn": "2026-11-11T17:24:42.292Z",
     "novedades": [
-      "Prueba automatica de video mas estable (sin cambios visibles)",
-      "Estadisticas: los indicadores se abren con un clic",
-      "Tipos de obra: cada obra declara su tipo",
-      "Visita inspectiva: el informe AXIS tambien pasa por Equipo asignado",
-      "Cargar documento: corrige el aviso falso al elegir una unidad con propietario",
-      "Estadisticas: informe en PDF y envio por correo",
-      "Tres fechas de entrega por unidad"
+      "Estadisticas por zona para el superadministrador; alta de usuarios con cualquier rol"
     ]
   }
 }
