@@ -116,6 +116,7 @@ export type DataAction =
   | { type: "DELETE_RESPONSIBLE"; responsibleId: string; actingUserId: string }
   | { type: "CREATE_CREW"; crew: WorkCrew }
   | { type: "CREATE_USER"; user: User }
+  | { type: "UPSERT_USER"; user: User }
   | { type: "UPDATE_USER"; userId: string; changes: Partial<Omit<User, "id">> }
   /** Reemplaza todo el estado (datos leídos del almacenamiento local o restablecidos). */
   | { type: "REPLACE_STATE"; state: DataState };
@@ -314,6 +315,14 @@ export function reducer(state: DataState, action: DataAction): DataState {
       return { ...state, crews: [...state.crews, action.crew] };
     case "CREATE_USER":
       return { ...state, users: [...state.users, action.user] };
+    case "UPSERT_USER": {
+      // Perfil que llega del directorio al ingresar con Google: las obras de un usuario ya
+      // conocido se conservan si el directorio no las trae (pueden existir solo en este navegador).
+      const existing = state.users.find((user) => user.id === action.user.id);
+      if (!existing) return { ...state, users: [...state.users.filter((user) => user.email.toLowerCase() !== action.user.email.toLowerCase()), action.user] };
+      const projectIds = action.user.projectIds.length > 0 ? action.user.projectIds : existing.projectIds;
+      return { ...state, users: state.users.map((user) => (user.id === existing.id ? { ...action.user, projectIds } : user)) };
+    }
     case "UPDATE_USER":
       return {
         ...state,

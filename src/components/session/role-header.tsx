@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { AxisLogo } from "@/components/brand/axis-logo";
+import { signOutGoogle } from "@/data/google-auth";
 import { useSession } from "@/data/session-context";
 import { useDataContext } from "@/data/store-context";
 import { unitLabel } from "@/lib/format";
@@ -67,6 +68,7 @@ export function RoleHeader() {
   // Sesión con un usuario que ya no existe en los datos locales o que fue desactivado: fuera.
   useEffect(() => {
     if (user === null) {
+      void signOutGoogle();
       setUser(null);
       router.replace("/login");
     }
@@ -79,6 +81,7 @@ export function RoleHeader() {
     if (!confirmed) return;
     setMenuOpen(false);
     resetData();
+    void signOutGoogle();
     setUser(null);
     router.replace("/login");
   }
@@ -96,8 +99,9 @@ export function RoleHeader() {
     return state.units.filter((unit) => unit.ownerId === current.id).map(unitLabel).join(" · ");
   }
 
-  function handleLogout() {
+  async function handleLogout() {
     setMenuOpen(false);
+    await signOutGoogle();
     setUser(null);
     router.replace("/login");
   }
