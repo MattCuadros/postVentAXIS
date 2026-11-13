@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { AxisLogo } from "@/components/brand/axis-logo";
-import { signOutGoogle } from "@/data/google-auth";
+import { hasGoogleSession, signOutGoogle } from "@/data/google-auth";
 import { useSession } from "@/data/session-context";
 import { useDataContext } from "@/data/store-context";
 import { unitLabel } from "@/lib/format";
@@ -67,11 +67,15 @@ export function RoleHeader() {
 
   // Sesión con un usuario que ya no existe en los datos locales o que fue desactivado: fuera.
   useEffect(() => {
-    if (user === null) {
-      void signOutGoogle();
-      setUser(null);
-      router.replace("/login");
+    if (user !== null) return;
+    // Con sesión de Google vigente, el perfil se vuelve a traer del directorio (este navegador
+    // puede no tenerlo aún); /auth/listo cierra la sesión si el usuario ya no corresponde.
+    if (hasGoogleSession()) {
+      router.replace("/auth/listo");
+      return;
     }
+    setUser(null);
+    router.replace("/login");
   }, [user, setUser, router]);
 
   function handleReset() {
