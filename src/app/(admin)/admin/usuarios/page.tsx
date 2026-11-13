@@ -285,7 +285,6 @@ function UserForm({ user, currentUserId, ownerUnitCount = 0, onSaved, onCancel }
   const api = useDataApi();
   const { data: zones } = useQuery(api.getZones);
   const { data: projects } = useQuery(api.getProjects);
-  const { data: users } = useQuery(api.getUsers);
   const [values, setValues] = useState(() =>
     user
       ? { name: user.name, email: user.email, phone: user.phone, role: user.role, zoneIds: user.zoneIds, projectIds: user.projectIds }
@@ -317,7 +316,9 @@ function UserForm({ user, currentUserId, ownerUnitCount = 0, onSaved, onCancel }
       setErrors(fieldErrors(result.error));
       return;
     }
-    if (users?.some((item) => item.id !== user?.id && item.email.toLowerCase() === result.data.email)) {
+    // Se consulta al guardar: la lista del formulario puede no haber cargado aún al abrir el diálogo.
+    const current = await api.getUsers();
+    if (current.some((item) => item.id !== user?.id && item.email.toLowerCase() === result.data.email)) {
       setErrors({ email: "Ese correo ya está registrado." });
       return;
     }
