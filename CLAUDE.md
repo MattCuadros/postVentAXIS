@@ -123,6 +123,11 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 - Cálculos puros y `rowsForStat` en `src/lib/zone-stats.ts` (la pantalla y el Excel usan los mismos); Excel en `src/lib/export-zone-stats.ts`. `StatTile` conserva presentación estática si no recibe `onSelect`.
 - El informe PDF se construye en `src/lib/zone-stats-pdf.ts` con los filtros vigentes y sin datos personales de propietarios. `src/data/email.ts` es el único adaptador cliente para el envío, que llega a `POST /api/reports/email`; la ruta valida rol, destinatarios/dominios permitidos, adjunto PDF y frecuencia. Configurar en el servidor `REPORT_SMTP_HOST`, `REPORT_SMTP_PORT`, `REPORT_SMTP_SECURE`, `REPORT_SMTP_USER`, `REPORT_SMTP_PASS`, `REPORT_FROM` y `REPORT_ALLOWED_DOMAINS` (por defecto `axisdc.cl`). Nunca exponer credenciales con `NEXT_PUBLIC_` ni guardarlas en el repositorio; sin SMTP configurado, la interfaz descarga el PDF y prepara un correo `mailto:`.
 
+## Datos de ejemplo
+
+- Todo lo que viene de la semilla (`src/mocks/data.ts`) es dato de ejemplo: `src/lib/example-data.ts` (`isExampleTicket`, `isExampleProject`, `isExampleUser`). Un requerimiento nuevo sobre una obra de ejemplo también lo es.
+- Se muestran con `ExampleBadge` ("Ejemplo") en bandejas, detalle del requerimiento, obras y usuarios, y **no suman** en indicadores ni estadísticas (`ticketsForStats`): superadministrador (`/admin`, `/admin/estadisticas`), encargado y administrador de obra. La casilla "Incluir datos de ejemplo" (`useIncludeExamples`, preferencia del navegador, apagada por defecto) los suma para demostraciones y es lo que usan las pruebas e2e.
+
 ## Ubicación de la obra
 
 - `project-form.tsx`: un solo campo "Ubicación" (coordenadas, enlace de Google Maps largo o corto, o vacío para buscar desde Dirección + Comuna). `parseCoordinates` (`src/lib/geo.ts`) lee coordenadas, `@`, `!3d!4d`, `q=`/`query=`.

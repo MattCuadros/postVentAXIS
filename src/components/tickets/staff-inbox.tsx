@@ -13,6 +13,8 @@ import { useQuery } from "@/data/use-query";
 import { daysOpen, unitLabel } from "@/lib/format";
 import { isClosed, MAIN_FLOW, STATUS_LABEL } from "@/lib/ticket-status";
 import type { Ticket, TicketStatus } from "@/types/domain";
+import { ExampleBadge } from "@/components/ui/example-badge";
+import { isExampleTicket } from "@/lib/example-data";
 
 const OPEN = "ABIERTOS";
 const ALL = "TODOS";
@@ -159,7 +161,7 @@ export function StaffInbox({ basePath, allZones = false }: StaffInboxProps) {
               <li key={row.ticket.id}>
                 <Link href={`${basePath}/${row.ticket.id}`} className="block rounded-lg border border-line-soft bg-surface p-4 shadow-card transition duration-150 ease-axis-out hover:border-accent/40 hover:shadow-raised active:scale-[0.99]">
                   <div className="flex items-baseline justify-between gap-3">
-                    <span className="text-sm font-bold text-accent">{row.ticket.folio}</span>
+                    <span className="text-sm font-bold text-accent">{row.ticket.folio}{isExampleTicket(row.ticket, units ?? []) && <ExampleBadge className="ml-2" />}</span>
                     <span className="text-xs text-ink-meta">{row.days} {row.days === 1 ? "día" : "días"}</span>
                   </div>
                   <p className="mt-1 font-bold text-ink">{row.place} · {row.unit}</p>
@@ -191,6 +193,7 @@ export function StaffInbox({ basePath, allZones = false }: StaffInboxProps) {
                       <Link href={`${basePath}/${row.ticket.id}`} className="font-bold text-accent underline underline-offset-2">
                         {row.ticket.folio}
                       </Link>
+                      {isExampleTicket(row.ticket, units ?? []) && <ExampleBadge className="ml-2" />}
                     </td>
                     <td className="py-4 pr-4 text-ink">{row.place} · {row.unit}</td>
                     <td className="py-4 pr-4 text-ink">{row.category}</td>

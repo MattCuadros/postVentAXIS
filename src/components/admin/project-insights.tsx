@@ -12,6 +12,9 @@ import { useQuery } from "@/data/use-query";
 import { PERIOD_LABEL, type CountRow, type Period } from "@/lib/metrics";
 import { computeProjectInsights, ticketsOfProjects, type CrewPerformance } from "@/lib/project-metrics";
 import { ownerLabel } from "@/lib/project-types";
+import { ExampleToggle } from "@/components/ui/example-badge";
+import { useIncludeExamples } from "@/data/use-include-examples";
+import { ticketsForStats } from "@/lib/example-data";
 
 const PERIODS: Period[] = ["TODO", "TRIMESTRE", "MES"];
 const oneDecimal = new Intl.NumberFormat("es-CL", { maximumFractionDigits: 1, minimumFractionDigits: 1 });
@@ -37,6 +40,7 @@ export function ProjectInsightsView() {
 
   const [projectFilter, setProjectFilter] = useState("");
   const [period, setPeriod] = useState<Period>("TODO");
+  const [includeExamples, setIncludeExamples] = useIncludeExamples();
 
   const myProjects = useMemo(
     () => (projects ?? []).filter((project) => user?.projectIds.includes(project.id)),
@@ -46,9 +50,9 @@ export function ProjectInsightsView() {
   const insights = useMemo(() => {
     if (!tickets || !units || !categories || !crews || !history || !user) return undefined;
     const scope = projectFilter ? [projectFilter] : user.projectIds;
-    const scoped = ticketsOfProjects(tickets, units, scope, period);
+    const scoped = ticketsOfProjects(ticketsForStats(tickets, units, includeExamples), units, scope, period);
     return computeProjectInsights({ tickets: scoped, units, categories, crews, history });
-  }, [tickets, units, categories, crews, history, user, projectFilter, period]);
+  }, [tickets, units, categories, crews, history, user, projectFilter, period, includeExamples]);
 
   const subtitle = myProjects.length === 0
     ? "No tienes obras asignadas. Pide al administrador que te asigne tus obras."
@@ -81,6 +85,7 @@ export function ProjectInsightsView() {
                 ))}
               </Select>
             </div>
+            <ExampleToggle className="h-10" checked={includeExamples} onChange={setIncludeExamples} />
           </>
         }
       />

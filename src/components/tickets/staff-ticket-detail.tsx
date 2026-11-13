@@ -23,6 +23,8 @@ import { STATUS_LABEL, type Transition } from "@/lib/ticket-status";
 import { someoneCanSign } from "@/lib/unit-access";
 import { ownerLabel } from "@/lib/project-types";
 import type { Ticket, TicketDocument, TicketMedia, TicketMediaStage, TicketStatusHistory } from "@/types/domain";
+import { ExampleBadge } from "@/components/ui/example-badge";
+import { isExampleTicket } from "@/lib/example-data";
 
 function doneMessage(status: Ticket["status"], person: string): string | undefined {
   const lower = person.toLocaleLowerCase("es");
@@ -111,6 +113,7 @@ export function StaffTicketDetail({ ticketId, backHref }: StaffTicketDetailProps
         aside={
           <>
             <StatusBadge status={ticket.status} />
+            {isExampleTicket(ticket, units) && <ExampleBadge />}
             {ticket.specialCase && (
               <span className="inline-flex items-center rounded-sm bg-accent-soft px-3 py-1 text-xs font-semibold text-accent">
                 Caso especial

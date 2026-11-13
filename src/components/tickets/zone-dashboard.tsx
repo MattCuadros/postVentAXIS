@@ -33,6 +33,9 @@ import {
   type StatusGroup,
 } from "@/lib/zone-stats";
 import { parseRecipients } from "@/lib/report-email-schema";
+import { ExampleBadge, ExampleToggle } from "@/components/ui/example-badge";
+import { useIncludeExamples } from "@/data/use-include-examples";
+import { isExampleTicket, ticketsForStats } from "@/lib/example-data";
 
 const oneDecimal = new Intl.NumberFormat("es-CL", { maximumFractionDigits: 1, minimumFractionDigits: 1 });
 const rangeDate = new Intl.DateTimeFormat("es-CL", { day: "numeric", month: "short", year: "numeric" });
@@ -78,6 +81,7 @@ export function ZoneDashboard({ scope = "encargado" }: { scope?: "encargado" | "
   const [emailNotice, setEmailNotice] = useState<{ tone: "success" | "danger" | "info"; text: string } | null>(null);
   const [recentRecipients, setRecentRecipients] = useState<string[]>([]);
   const [showAll, setShowAll] = useState(false);
+  const [includeExamples, setIncludeExamples] = useIncludeExamples();
   const [requestedStat, setSelectedStat] = useState<StatKey | null>(() => STAT_KEYS.find((key) => key === searchParams.get("ver")) ?? null);
   const set = <K extends keyof StatsFilters>(key: K, value: StatsFilters[K]) => {
     setShowAll(false);
@@ -102,8 +106,8 @@ export function ZoneDashboard({ scope = "encargado" }: { scope?: "encargado" | "
 
   const stats = useMemo(() => {
     if (!tickets || !history || !units || !projects || !categories || !crews) return undefined;
-    return computeZoneStats(filters, { tickets, history, units, projects, categories, crews });
-  }, [filters, tickets, history, units, projects, categories, crews]);
+    return computeZoneStats(filters, { tickets: ticketsForStats(tickets, units, includeExamples), history, units, projects, categories, crews });
+  }, [filters, includeExamples, tickets, history, units, projects, categories, crews]);
 
   const zoneName = filters.zoneId
     ? myZones.find((zone) => zone.id === filters.zoneId)?.name ?? ""
@@ -267,6 +271,7 @@ export function ZoneDashboard({ scope = "encargado" }: { scope?: "encargado" | "
             {(Object.keys(STATUS_GROUP_LABEL) as StatusGroup[]).map((group) => <option key={group} value={group}>{STATUS_GROUP_LABEL[group]}</option>)}
           </Select>
         </div>
+        <ExampleToggle className="mt-4 flex" checked={includeExamples} onChange={(value) => { setShowAll(false); setIncludeExamples(value); }} />
         {filtered && (
           <button
             type="button"
@@ -338,6 +343,7 @@ export function ZoneDashboard({ scope = "encargado" }: { scope?: "encargado" | "
                         <tr key={row.ticket.id} className="border-b border-line-soft last:border-b-0">
                           <td className="py-3 pr-4">
                             <Link href={`${ticketBase}/${row.ticket.id}`} className="font-bold text-accent hover:underline">{row.ticket.folio}</Link>
+                            {isExampleTicket(row.ticket, units ?? []) && <ExampleBadge className="ml-2" />}
                           </td>
                           <td className="py-3 pr-4 text-ink-secondary">{formatShortDate(row.ticket.createdAt)}</td>
                           <td className="py-3 pr-4 text-ink">{row.project}{row.unit ? ` · ${unitLabel(row.unit)}` : ""}</td>
