@@ -2,6 +2,7 @@
 
 import { useCallback, useMemo } from "react";
 import { applyTransition } from "@/data/store";
+import { syncUserToDirectory } from "@/data/google-auth";
 import { useDataContext } from "@/data/store-context";
 import { delay } from "@/lib/delay";
 import { findTicketByRefs, planImport, type ImportPlan, type ImportRowData } from "@/lib/document-import/plan";
@@ -65,6 +66,18 @@ export interface ImportResult {
 
 function simulatedLatency(): Promise<void> {
   return delay(150 + Math.floor(Math.random() * 151));
+}
+
+/** Con sesión de Google, el alta o cambio de un usuario debe quedar también en el directorio. */
+async function assertDirectorySync(user: User): Promise<void> {
+  const result = await syncUserToDirectory(user);
+  if (!result.ok) throw new DirectorySyncError(result.reason);
+}
+
+export class DirectorySyncError extends Error {
+  constructor(readonly reason: "CORREO_DUPLICADO" | "SIN_PERMISO" | "ERROR") {
+    super(`Directory sync failed: ${reason}`);
+  }
 }
 
 export function useDataApi() {
@@ -481,6 +494,7 @@ export function useDataApi() {
   const createUser = useCallback(async (input: CreateUserInput): Promise<User> => {
     await simulatedLatency();
     const user: User = { ...input, id: crypto.randomUUID() };
+    await assertDirectorySync(user);
     dispatch({ type: "CREATE_USER", user });
     return user;
   }, [dispatch]);
@@ -493,6 +507,7 @@ export function useDataApi() {
     }
 
     const user: User = { ...existingUser, ...changes, id: existingUser.id };
+    await assertDirectorySync(user);
     dispatch({ type: "UPDATE_USER", userId, changes });
     return user;
   }, [dispatch, state.users]);
