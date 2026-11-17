@@ -10,6 +10,12 @@ test("el encargado filtra sus estadísticas por período y descarga el Excel", a
   await page.getByRole("link", { name: "Estadísticas" }).first().click();
   await expect(page.getByRole("heading", { name: "Estadísticas" })).toBeVisible();
 
+  // Los datos de ejemplo no suman: sin marcarlos, el tablero parte en cero.
+  await page.getByRole("button", { name: "Todo el período", exact: true }).click();
+  await expect(page.getByText("Ingresados en el período", { exact: true }).locator("xpath=preceding-sibling::p[1]")).toHaveText("0");
+  await page.getByLabel("Incluir datos de ejemplo").check();
+  await expect(page.locator("main table tbody tr").first().getByText("Ejemplo", { exact: true })).toBeVisible();
+
   const value = (label: string) => page.getByText(label, { exact: true }).locator("xpath=preceding-sibling::p[1]");
   const counts: number[] = [];
   for (const period of PERIODS) {

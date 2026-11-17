@@ -17,6 +17,8 @@ import { unitLabel } from "@/lib/format";
 import { fieldErrors, ROLE_OPTIONS, userSchema } from "@/lib/schemas";
 import { ROLE_LABEL, ROLE_LABEL_PLURAL } from "@/lib/user-import";
 import type { Role, User } from "@/types/domain";
+import { ExampleBadge } from "@/components/ui/example-badge";
+import { isExampleUser } from "@/lib/example-data";
 
 type RoleFilter = Role | "TODOS";
 type DialogKind = "create" | "edit" | "import" | "deactivate" | null;
@@ -164,6 +166,7 @@ export default function UsuariosPage() {
                   <tr key={user.id} className="border-b border-line-soft transition-colors last:border-b-0 hover:bg-surface-warm">
                     <td className="py-4 pr-4 font-bold text-ink">
                       {user.name}
+                      {isExampleUser(user.id) && <ExampleBadge className="ml-2" />}
                       {!user.active && (
                         <span className="ml-2 inline-flex rounded-pill bg-surface-secondary px-2 py-0.5 text-xs font-normal text-ink-meta">
                           Inactivo

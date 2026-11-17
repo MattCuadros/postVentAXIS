@@ -17,6 +17,8 @@ import { formatDateAndTime, formatLongDate, todayIso, unitLabel } from "@/lib/fo
 import { OWNER_STATUS_LABEL, type Transition } from "@/lib/ticket-status";
 import { canSignForUnit, capacityOf, hasAccessToUnit } from "@/lib/unit-access";
 import type { Ticket } from "@/types/domain";
+import { ExampleBadge } from "@/components/ui/example-badge";
+import { isExampleTicket } from "@/lib/example-data";
 
 const DONE_MESSAGE: Partial<Record<Ticket["status"], string>> = {
   CERRADO: "¡Gracias! Registramos tu conformidad y cerramos el requerimiento.",
@@ -88,6 +90,7 @@ export function OwnerTicketDetail({ ticketId, justCreated }: OwnerTicketDetailPr
           <ChevronLeftIcon />
         </Link>
         <p className="font-bold text-ink">{ticket.folio}</p>
+        {isExampleTicket(ticket, units) && <ExampleBadge />}
       </header>
 
       {notice && (

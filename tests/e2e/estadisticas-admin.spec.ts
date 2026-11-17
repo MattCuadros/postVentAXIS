@@ -10,6 +10,7 @@ test("el superadministrador ve las estadísticas de cada zona con los mismos fil
   await page.getByRole("link", { name: "Estadísticas por zona" }).first().click();
   await expect(page.getByRole("heading", { name: "Estadísticas" })).toBeVisible();
   await expect(page.getByText(/^Todas las zonas · /)).toBeVisible();
+  await page.getByLabel("Incluir datos de ejemplo").check();
 
   const value = (label: string) => page.getByText(label, { exact: true }).locator("xpath=preceding-sibling::p[1]");
   const counts: number[] = [];

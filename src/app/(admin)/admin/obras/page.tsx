@@ -14,6 +14,8 @@ import { mapsUrl } from "@/lib/geo";
 import { isClosed } from "@/lib/ticket-status";
 import { PROJECT_TYPE_LABEL, PROJECT_TYPES } from "@/lib/project-types";
 import { Select } from "@/components/ui/select";
+import { ExampleBadge } from "@/components/ui/example-badge";
+import { isExampleProject } from "@/lib/example-data";
 
 export default function ObrasPage() {
   const api = useDataApi();
@@ -57,6 +59,7 @@ export default function ObrasPage() {
               <Link href={`/admin/obras/${project.id}`} className="text-lg font-bold text-accent hover:underline">
                 {project.name} · {project.code}
               </Link>
+              {isExampleProject(project.id) && <ExampleBadge className="self-start" />}
               <p className="text-sm font-bold text-ink-secondary">{PROJECT_TYPE_LABEL[project.type]}</p>
               <p className="text-sm text-ink-secondary">{project.address}, {project.commune}</p>
               <p className="text-sm text-ink-secondary">{zone}</p>

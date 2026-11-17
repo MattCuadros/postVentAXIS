@@ -13,6 +13,9 @@ import { useQuery } from "@/data/use-query";
 import { exportTicketsToExcel } from "@/lib/export-tickets";
 import { computeIndicators, PERIOD_LABEL, type CountRow, type Period } from "@/lib/metrics";
 import { PROJECT_TYPES, PROJECT_TYPE_LABEL } from "@/lib/project-types";
+import { ExampleToggle } from "@/components/ui/example-badge";
+import { useIncludeExamples } from "@/data/use-include-examples";
+import { ticketsForStats } from "@/lib/example-data";
 
 const PERIODS: Period[] = ["MES", "TRIMESTRE", "TODO"];
 const oneDecimal = new Intl.NumberFormat("es-CL", { maximumFractionDigits: 1, minimumFractionDigits: 1 });
@@ -31,13 +34,14 @@ export default function IndicadoresPage() {
   const [period, setPeriod] = useState<Period>("MES");
   const [projectType, setProjectType] = useState("");
   const [exporting, setExporting] = useState(false);
+  const [includeExamples, setIncludeExamples] = useIncludeExamples();
 
   const indicators = useMemo(() => {
     if (!tickets || !history || !units || !projects || !zones || !categories) return undefined;
     const projectIds = new Set(projects.filter((project) => !projectType || project.type === projectType).map((project) => project.id));
     const unitIds = new Set(units.filter((unit) => projectIds.has(unit.projectId)).map((unit) => unit.id));
-    return computeIndicators(period, { tickets: tickets.filter((ticket) => unitIds.has(ticket.unitId)), history, units, projects, zones, categories });
-  }, [period, projectType, tickets, history, units, projects, zones, categories]);
+    return computeIndicators(period, { tickets: ticketsForStats(tickets, units, includeExamples).filter((ticket) => unitIds.has(ticket.unitId)), history, units, projects, zones, categories });
+  }, [period, projectType, includeExamples, tickets, history, units, projects, zones, categories]);
 
   const periodCaption = period === "MES"
     ? new Intl.DateTimeFormat("es-CL", { month: "long", year: "numeric" }).format(new Date())
@@ -71,6 +75,7 @@ export default function IndicadoresPage() {
                 {PROJECT_TYPES.map((type) => <option key={type} value={type}>{PROJECT_TYPE_LABEL[type]}</option>)}
               </Select>
             </div>
+            <ExampleToggle className="h-10" checked={includeExamples} onChange={setIncludeExamples} />
             <Button variant="secondary" disabled={exporting || !tickets} onClick={handleExport}>
               {exporting ? "Exportando…" : "Exportar a Excel"}
             </Button>
